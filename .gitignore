@@ -1,0 +1,10 @@
+node_modules/
+uploads/
+frontend/dist/
+.env
+*.log
+
+# Reference images (tracked locally, too large for git)
+reference/*.jpg
+reference/*.png
+reference/*.xlsx
