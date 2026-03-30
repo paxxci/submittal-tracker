@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { X } from 'lucide-react'
-import { createSubmittal, getContacts } from '../services/api'
+import { createSubmittal, getContacts, resolveSpecSectionId } from '../services/api'
 import { STATUS_OPTIONS, BIC_OPTIONS } from './StatusBadge'
 
 const DIVIDER = '──────────────'
@@ -32,7 +32,17 @@ export default function AddSubmittalModal({ projectId, onClose, onCreated }) {
     try {
       setSaving(true)
       setError(null)
-      await createSubmittal({ ...form, project_id: projectId, round: Number(form.round) })
+      
+      // 1. Resolve the spec_section string into a spec_section_id
+      const spec_section_id = await resolveSpecSectionId(projectId, form.spec_section)
+      
+      // 2. Create the submittal with the ID
+      await createSubmittal({ 
+        ...form, 
+        project_id: projectId, 
+        spec_section_id,
+        round: Number(form.round) 
+      })
       onCreated()
     } catch (err) {
       setError(err.message || 'Failed to create submittal.')

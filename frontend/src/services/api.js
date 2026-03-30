@@ -62,6 +62,27 @@ export const deleteSpecSection = async (id) => {
   if (error) throw error
 }
 
+export const resolveSpecSectionId = async (projectId, csiCode) => {
+  const code = (csiCode || 'GENERAL').trim()
+  const { data: existing } = await supabase
+    .from('spec_sections')
+    .select('id')
+    .eq('project_id', projectId)
+    .eq('csi_code', code)
+    .maybeSingle()
+  
+  if (existing) return existing.id
+  
+  const { data: created, error } = await supabase
+    .from('spec_sections')
+    .insert([{ project_id: projectId, csi_code: code, title: 'Manual Entry' }])
+    .select('id')
+    .single()
+    
+  if (error) throw error
+  return created.id
+}
+
 // ─── SUBMITTALS ────────────────────────────────────────────────────
 export const getSubmittals = async (projectId) => {
   const { data, error } = await supabase

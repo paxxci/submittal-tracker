@@ -1122,3 +1122,41 @@ tr:hover .row-actions { opacity: 1; }
   to { transform: rotate(360deg); }
 }
 .animate-in { animation: slideUp 200ms ease; }
+
+/* ── PRINT STYLES ────────────────────────────────────────────────── */
+@media print {
+  .nav-rail, .top-bar, .row-actions, .filter-chip, .search-wrap, .btn, .detail-panel-overlay, .detail-panel, .btn-icon {
+    display: none !important;
+  }
+  .app-container, .main-content, .project-layout, .submittal-main, .table-wrap {
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+    color: black !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  body, #root {
+    background: white !important;
+  }
+  .submittal-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    color: black !important;
+    background: white !important;
+    margin-top: 20px;
+  }
+  .submittal-table th, .submittal-table td {
+    border: 1px solid #cbd5e1 !important;
+    color: #000 !important;
+    padding: 8px !important;
+    background: transparent !important;
+  }
+  .status-badge {
+    border: 1px solid #94a3b8 !important;
+    color: black !important;
+    background: transparent !important;
+    padding: 2px 6px !important;
+  }
+}

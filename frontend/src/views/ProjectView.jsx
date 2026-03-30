@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { ArrowLeft, Plus, ChevronRight, Layers, Trash2, AlertTriangle, List, Search, X, BookOpen, ExternalLink, FileDown } from 'lucide-react'
+import { ArrowLeft, Plus, ChevronRight, Layers, Trash2, AlertTriangle, List, Search, X, BookOpen, ExternalLink, FileDown, Printer } from 'lucide-react'
 import { StatusBadge, BicChip, PriorityChip } from '../components/StatusBadge'
 import SubmittalDetailPanel from '../components/SubmittalDetailPanel'
 import AddSubmittalModal from '../components/AddSubmittalModal'
@@ -21,31 +21,7 @@ const STATUS_LABELS = {
   in_review: 'In Review', approved: 'Approved', revise_resubmit: 'Revise & Resubmit', rejected: 'Rejected',
 }
 
-const exportToCSV = (submittals, projectName) => {
-  const headers = ['Spec Section', 'Description', 'Status', 'Ball In Court', 'Priority', 'Due Date', 'Submitted Date', 'Revision', 'Next Action']
-  const fmtDate = d => d ? new Date(d + 'T00:00:00').toLocaleDateString('en-US') : ''
-  const rows = submittals.map(s => [
-    s.spec_section || '',
-    s.item_name || '',
-    STATUS_LABELS[s.status] || s.status,
-    s.bic || '',
-    PRIORITY_LABELS[s.priority] || s.priority,
-    fmtDate(s.due_date),
-    fmtDate(s.submitted_date),
-    s.round > 1 ? `Rev ${s.round}` : '1',
-    s.next_action || '',
-  ])
-  const csv = [headers, ...rows]
-    .map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(','))
-    .join('\n')
-  const blob = new Blob([csv], { type: 'text/csv' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `${projectName.replace(/\s+/g, '_')}_Submittals.csv`
-  a.click()
-  URL.revokeObjectURL(url)
-}
+// Export logic is moving inside the component for direct URL management
 
 export default function ProjectView({ project, onBack }) {
   const [submittals, setSubmittals] = useState([])
@@ -57,6 +33,7 @@ export default function ProjectView({ project, onBack }) {
   const [search, setSearch] = useState('')
   const [sortField, setSortField] = useState(null)
   const [sortDir, setSortDir] = useState('asc')
+  const [csvUrl, setCsvUrl] = useState('')
 
   const handleSort = (field) => {
     if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
@@ -126,6 +103,32 @@ export default function ProjectView({ project, onBack }) {
       return sortDir === 'asc' ? cmp : -cmp
     })
 
+  // Native CSV Link Generation — bypasses synthetic click issues
+  useEffect(() => {
+    if (!filtered.length) return
+    const headers = ['Spec Section', 'Description', 'Status', 'Ball In Court', 'Priority', 'Due Date', 'Submitted Date', 'Revision', 'Next Action']
+    const fmtDate = d => d ? new Date(d + 'T00:00:00').toLocaleDateString('en-US') : ''
+    const rows = filtered.map(s => [
+      s.spec_section || '',
+      s.item_name || '',
+      STATUS_LABELS[s.status] || s.status,
+      s.bic || '',
+      PRIORITY_LABELS[s.priority] || s.priority,
+      fmtDate(s.due_date),
+      fmtDate(s.submitted_date),
+      s.round > 1 ? `Rev ${s.round}` : '1',
+      s.next_action || '',
+    ])
+    const csvContent = [headers, ...rows]
+      .map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(','))
+      .join('\n')
+    
+    const blob = new Blob(["\ufeff", csvContent], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    setCsvUrl(url)
+    return () => URL.revokeObjectURL(url)
+  }, [filtered])
+
   // Status counts for filter chips
   const counts = {}
   for (const s of submittals) counts[s.status] = (counts[s.status] || 0) + 1
@@ -146,13 +149,23 @@ export default function ProjectView({ project, onBack }) {
         <div style={{ flex: 1 }} />
         <button
           className="btn btn-ghost btn-sm"
-          onClick={() => exportToCSV(filtered, project.name)}
-          title="Export to CSV"
-          id="btn-export-csv"
+          onClick={() => window.print()}
+          title="Print Visual Report (PDF)"
           style={{ marginRight: 6 }}
         >
-          <FileDown size={12} /> Export
+          <Printer size={12} /> Print Report
         </button>
+        <a
+          className={`btn btn-ghost btn-sm ${!csvUrl ? 'disabled' : ''}`}
+          href={csvUrl || '#'}
+          download={`${project.name.replace(/\s+/g, '_')}_Log.csv`}
+          title="Export CSV"
+          id="btn-export-csv"
+          style={{ marginRight: 6, display: 'inline-flex', alignItems: 'center', gap: 4 }}
+          onClick={(e) => !csvUrl && e.preventDefault()}
+        >
+          <FileDown size={12} /> Export CSV
+        </a>
         <button className="btn btn-primary btn-sm" onClick={() => setShowAddSubmittal(true)} id="btn-add-submittal">
           <Plus size={12} /> Add Submittal
         </button>
