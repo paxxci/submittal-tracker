@@ -651,6 +651,14 @@ table.submittal-table {
   background: rgba(16,185,129,0.1);
   border-color: rgba(16,185,129,0.25);
 }
+.submittal-table tbody tr.om-sub-row {
+  background: rgba(16,185,129,0.02);
+  border-bottom: 1px solid rgba(30,70,120,0.2);
+  cursor: default;
+}
+.submittal-table tbody tr.om-sub-row:hover {
+  background: rgba(16,185,129,0.05);
+}
 .submittal-table td {
   padding: 11px 12px;
   vertical-align: middle;
@@ -748,8 +756,7 @@ tr:hover .row-actions { opacity: 1; }
 .detail-panel-body {
   flex: 1;
   overflow-y: auto;
-  display: flex;
-  flex-direction: column;
+  display: block;
 }
 .detail-section {
   padding: 14px 16px;
@@ -804,12 +811,18 @@ tr:hover .row-actions { opacity: 1; }
 
 /* ── ACTIVITY LOG ────────────────────────────────────────────────── */
 .activity-feed {
-  flex: 1;
+  height: 250px;
+  max-height: 250px;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 12px 16px;
   display: flex;
   flex-direction: column;
   gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-deep);
+  margin-bottom: 10px;
 }
 .activity-entry {
   display: flex;

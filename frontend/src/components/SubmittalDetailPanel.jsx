@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { X, Send, Upload, FileText, Trash2, ExternalLink, CheckCircle2 } from 'lucide-react'
+import { X, Send, Upload, FileText, Trash2, ExternalLink, BookOpen } from 'lucide-react'
 import { StatusBadge, BicChip, STATUS_OPTIONS, BIC_OPTIONS } from './StatusBadge'
 import {
   getActivityLog, addActivity,
@@ -29,12 +29,15 @@ export default function SubmittalDetailPanel({ submittal, projectId, onClose, on
   })
   const [log, setLog] = useState([])
   const [attachments, setAttachments] = useState([])
+  const [omAttachments, setOmAttachments] = useState([])
   const [contacts, setContacts] = useState([])
   const [note, setNote] = useState('')
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [uploadingOM, setUploadingOM] = useState(false)
   const [savingNote, setSavingNote] = useState(false)
   const fileRef = useRef()
+  const omFileRef = useRef()
   const feedRef = useRef()
 
   useEffect(() => {
@@ -60,8 +63,14 @@ export default function SubmittalDetailPanel({ submittal, projectId, onClose, on
   }
 
   const loadAttachments = async () => {
-    try { setAttachments(await getAttachments(submittal.id)) }
-    catch {}
+    try {
+      const [subs, oms] = await Promise.all([
+        getAttachments(submittal.id, 'submittal'),
+        getAttachments(submittal.id, 'om'),
+      ])
+      setAttachments(subs)
+      setOmAttachments(oms)
+    } catch {}
   }
 
   useEffect(() => {
@@ -149,20 +158,47 @@ export default function SubmittalDetailPanel({ submittal, projectId, onClose, on
     finally { setSavingNote(false) }
   }
 
-  const handleUpload = async (e) => {
+  const handleUpload = async (e, type = 'submittal') => {
     const file = e.target.files?.[0]
     if (!file) return
+    const isOM = type === 'om'
     try {
-      setUploading(true)
-      await uploadAttachment(submittal.id, file)
-      setAttachments(await getAttachments(submittal.id))
-      await addActivity(submittal.id, `Attachment uploaded: "${file.name}"`)
+      isOM ? setUploadingOM(true) : setUploading(true)
+      await uploadAttachment(submittal.id, file, type)
+      await loadAttachments()
+      await addActivity(submittal.id, `${isOM ? 'O&M document' : 'Attachment'} uploaded: "${file.name}"`)
       setLog(await getActivityLog(submittal.id))
     } catch (err) {
       console.error('Upload failed:', err)
     } finally {
-      setUploading(false)
+      isOM ? setUploadingOM(false) : setUploading(false)
       e.target.value = ''
+    }
+  }
+
+  const handleOfficialSubmission = async () => {
+    const today = new Date().toISOString().split('T')[0]
+    const next = { ...form, status: 'submitted', submitted_date: today }
+    
+    // Attempt to auto-suggest BIC if Architect/Engineer exists in contacts
+    const suggestedBic = contacts.find(c =>
+      c.type?.toLowerCase().includes('arch') ||
+      c.name?.toLowerCase().includes('arch') ||
+      c.name?.toLowerCase().includes('eng')
+    )?.name
+    if (suggestedBic) next.bic = suggestedBic
+
+    try {
+      setSaving(true)
+      const updated = await updateSubmittal(submittal.id, next)
+      setForm(next)
+      await addActivity(submittal.id, `📤 OFFICIAL SUBMISSION\nStatus: ${submittal.status} → Submitted\nDate set to ${fmtDate(today)}\nBall in court: ${next.bic}`)
+      setLog(await getActivityLog(submittal.id))
+      onUpdated(updated)
+    } catch (err) {
+      console.error('Submission failed:', err)
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -286,9 +322,9 @@ export default function SubmittalDetailPanel({ submittal, projectId, onClose, on
         </div>
 
         {/* Activity Log */}
-        <div className="detail-section" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, paddingBottom: 0 }}>
+        <div className="detail-section">
           <div className="detail-section-title">Activity Log</div>
-          <div className="activity-feed" ref={feedRef} style={{ flex: 1, minHeight: 80, maxHeight: 220 }}>
+          <div className="activity-feed" ref={feedRef}>
             {log.length === 0 && (
               <div style={{ color: 'var(--text-muted)', fontSize: 11, textAlign: 'center', padding: '12px 0' }}>
                 No activity yet. Add a note below.
@@ -327,47 +363,92 @@ export default function SubmittalDetailPanel({ submittal, projectId, onClose, on
           </div>
         </div>
 
-        {/* Attachments */}
-        <div className="detail-section">
-          <div className="detail-section-title">Attachments</div>
+        {/* Submittal Documents */}
+        <AttachmentSection
+          title="Submittal Documents"
+          files={attachments}
+          uploading={uploading}
+          fileRef={fileRef}
+          onUpload={e => handleUpload(e, 'submittal')}
+          onDelete={handleDeleteAttachment}
+          accentColor="var(--accent)"
+          hint="Cut sheets, drawings, stamps"
+          action={attachments.length > 0 && !['submitted', 'in_review', 'approved'].includes(form.status) && (
+            <button
+              className="btn btn-primary btn-sm"
+              onClick={handleOfficialSubmission}
+              style={{ padding: '4px 12px', fontSize: 10, background: 'var(--s-submit)', color: '#000' }}
+              title="Flip to Submitted & set Date"
+            >
+              <Send size={11} /> Official Submission
+            </button>
+          )}
+        />
 
-          <div className="attachment-list" style={{ marginBottom: 8 }}>
-            {attachments.map(att => (
-              <div key={att.id} className="attachment-item">
-                <FileText size={14} style={{ color: 'var(--accent)', flexShrink: 0 }} />
-                <span className="attachment-name" title={att.file_name}>{att.file_name}</span>
-                <a href={att.file_url} target="_blank" rel="noopener noreferrer"
-                  className="btn btn-icon btn-sm" title="Open" style={{ border: 'none' }}>
-                  <ExternalLink size={12} />
-                </a>
-                <button className="btn btn-icon btn-sm"
-                  onClick={() => handleDeleteAttachment(att)}
-                  title="Remove"
-                  style={{ border: 'none', color: 'var(--s-rejected)' }}>
-                  <Trash2 size={12} />
-                </button>
-              </div>
-            ))}
-          </div>
-
-          <div
-            className="upload-zone"
-            onClick={() => fileRef.current?.click()}
-            id="upload-zone"
-          >
-            <Upload size={14} style={{ margin: '0 auto 4px', display: 'block' }} />
-            {uploading ? 'Uploading...' : 'Click to upload PDF or cutsheet'}
-          </div>
-          <input
-            ref={fileRef}
-            type="file"
-            accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
-            style={{ display: 'none' }}
-            onChange={handleUpload}
-            id="file-input"
-          />
-        </div>
+        {/* O&M Documents */}
+        <AttachmentSection
+          title="O&M Documents"
+          files={omAttachments}
+          uploading={uploadingOM}
+          fileRef={omFileRef}
+          onUpload={e => handleUpload(e, 'om')}
+          onDelete={handleDeleteAttachment}
+          accentColor="var(--s-approved)"
+          hint="Operations & maintenance manuals — uploaded at project closeout"
+          icon={<BookOpen size={12} />}
+        />
       </div>
+    </div>
+  )
+}
+
+function AttachmentSection({ title, files, uploading, fileRef, onUpload, onDelete, accentColor, hint, icon, action }) {
+  return (
+    <div className="detail-section">
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+        {icon && <span style={{ color: accentColor }}>{icon}</span>}
+        <div className="detail-section-title" style={{ marginBottom: 0, color: accentColor }}>{title}</div>
+        {hint && <span style={{ fontSize: 10, color: 'var(--text-muted)', marginLeft: 2 }}>— {hint}</span>}
+        <div style={{ flex: 1 }} />
+        {action}
+      </div>
+
+      {files.length > 0 && (
+        <div className="attachment-list" style={{ marginBottom: 8 }}>
+          {files.map(att => (
+            <div key={att.id} className="attachment-item">
+              <FileText size={14} style={{ color: accentColor, flexShrink: 0 }} />
+              <span className="attachment-name" title={att.file_name}>{att.file_name}</span>
+              <a href={att.file_url} target="_blank" rel="noopener noreferrer"
+                className="btn btn-icon btn-sm" title="Open" style={{ border: 'none' }}>
+                <ExternalLink size={12} />
+              </a>
+              <button className="btn btn-icon btn-sm"
+                onClick={() => onDelete(att)}
+                title="Remove"
+                style={{ border: 'none', color: 'var(--s-rejected)' }}>
+                <Trash2 size={12} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div
+        className="upload-zone"
+        style={{ borderColor: `${accentColor}40` }}
+        onClick={() => fileRef.current?.click()}
+      >
+        <Upload size={14} style={{ margin: '0 auto 4px', display: 'block', color: accentColor }} />
+        {uploading ? 'Uploading...' : `Upload to ${title}`}
+      </div>
+      <input
+        ref={fileRef}
+        type="file"
+        accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
+        style={{ display: 'none' }}
+        onChange={onUpload}
+      />
     </div>
   )
 }

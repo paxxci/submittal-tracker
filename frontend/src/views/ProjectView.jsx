@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react'
-import { ArrowLeft, Plus, ChevronRight, Layers, Trash2, AlertTriangle, List, Search, X } from 'lucide-react'
+import { ArrowLeft, Plus, ChevronRight, Layers, Trash2, AlertTriangle, List, Search, X, BookOpen, ExternalLink, FileDown } from 'lucide-react'
 import { StatusBadge, BicChip, PriorityChip } from '../components/StatusBadge'
 import SubmittalDetailPanel from '../components/SubmittalDetailPanel'
 import AddSubmittalModal from '../components/AddSubmittalModal'
-import { getSubmittals, deleteSubmittal } from '../services/api'
+import { getSubmittals, deleteSubmittal, getOmAttachmentsForSubmittals } from '../services/api'
 
 const ALL_STATUSES = [
   { value: 'not_started',     label: 'Not Started' },
@@ -15,13 +15,53 @@ const ALL_STATUSES = [
   { value: 'rejected',        label: 'Rejected'     },
 ]
 
+const PRIORITY_LABELS = { high: 'High', medium: 'Medium', low: 'Low' }
+const STATUS_LABELS = {
+  not_started: 'Not Started', working: 'Working', submitted: 'Submitted',
+  in_review: 'In Review', approved: 'Approved', revise_resubmit: 'Revise & Resubmit', rejected: 'Rejected',
+}
+
+const exportToCSV = (submittals, projectName) => {
+  const headers = ['Spec Section', 'Description', 'Status', 'Ball In Court', 'Priority', 'Due Date', 'Submitted Date', 'Revision', 'Next Action']
+  const fmtDate = d => d ? new Date(d + 'T00:00:00').toLocaleDateString('en-US') : ''
+  const rows = submittals.map(s => [
+    s.spec_section || '',
+    s.item_name || '',
+    STATUS_LABELS[s.status] || s.status,
+    s.bic || '',
+    PRIORITY_LABELS[s.priority] || s.priority,
+    fmtDate(s.due_date),
+    fmtDate(s.submitted_date),
+    s.round > 1 ? `Rev ${s.round}` : '1',
+    s.next_action || '',
+  ])
+  const csv = [headers, ...rows]
+    .map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(','))
+    .join('\n')
+  const blob = new Blob([csv], { type: 'text/csv' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `${projectName.replace(/\s+/g, '_')}_Submittals.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 export default function ProjectView({ project, onBack }) {
   const [submittals, setSubmittals] = useState([])
+  const [omMap, setOmMap] = useState({}) // submittal_id → [attachments]
   const [selectedSubmittal, setSelectedSubmittal] = useState(null)
   const [showAddSubmittal, setShowAddSubmittal] = useState(false)
   const [loading, setLoading] = useState(true)
   const [filterStatus, setFilterStatus] = useState(null)
   const [search, setSearch] = useState('')
+  const [sortField, setSortField] = useState(null)
+  const [sortDir, setSortDir] = useState('asc')
+
+  const handleSort = (field) => {
+    if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortField(field); setSortDir('asc') }
+  }
 
   useEffect(() => { load() }, [project.id])
 
@@ -30,6 +70,16 @@ export default function ProjectView({ project, onBack }) {
       setLoading(true)
       const subs = await getSubmittals(project.id)
       setSubmittals(subs)
+      // Load O&M attachments for all submittals in one query
+      if (subs.length) {
+        const oms = await getOmAttachmentsForSubmittals(subs.map(s => s.id))
+        const grouped = {}
+        for (const om of oms) {
+          if (!grouped[om.submittal_id]) grouped[om.submittal_id] = []
+          grouped[om.submittal_id].push(om)
+        }
+        setOmMap(grouped)
+      }
     } catch (err) { console.error(err) }
     finally { setLoading(false) }
   }
@@ -49,16 +99,32 @@ export default function ProjectView({ project, onBack }) {
 
   const today = new Date().toISOString().split('T')[0]
 
-  // Filter + search
-  const filtered = submittals.filter(s => {
-    const matchStatus = !filterStatus || s.status === filterStatus
-    const q = search.toLowerCase()
-    const matchSearch = !q ||
-      (s.spec_section || '').toLowerCase().includes(q) ||
-      (s.item_name || '').toLowerCase().includes(q) ||
-      (s.next_action || '').toLowerCase().includes(q)
-    return matchStatus && matchSearch
-  })
+  // Filter + search + sort
+  const PRIORITY_ORDER = { high: 0, medium: 1, low: 2 }
+  const STATUS_ORDER = { not_started: 0, working: 1, submitted: 2, in_review: 3, approved: 4, revise_resubmit: 5, rejected: 6 }
+
+  const filtered = submittals
+    .filter(s => {
+      const matchStatus = !filterStatus || s.status === filterStatus
+      const q = search.toLowerCase()
+      const matchSearch = !q ||
+        (s.spec_section || '').toLowerCase().includes(q) ||
+        (s.item_name || '').toLowerCase().includes(q) ||
+        (s.next_action || '').toLowerCase().includes(q)
+      return matchStatus && matchSearch
+    })
+    .sort((a, b) => {
+      if (!sortField) return 0
+      let av, bv
+      if (sortField === 'priority')     { av = PRIORITY_ORDER[a.priority] ?? 1; bv = PRIORITY_ORDER[b.priority] ?? 1 }
+      else if (sortField === 'spec')    { av = a.spec_section || ''; bv = b.spec_section || '' }
+      else if (sortField === 'name')    { av = a.item_name || '';    bv = b.item_name || '' }
+      else if (sortField === 'status')  { av = STATUS_ORDER[a.status] ?? 9; bv = STATUS_ORDER[b.status] ?? 9 }
+      else if (sortField === 'due')       { av = a.due_date || 'zzz'; bv = b.due_date || 'zzz' }
+      else if (sortField === 'submitted') { av = a.submitted_date || 'zzz'; bv = b.submitted_date || 'zzz' }
+      const cmp = typeof av === 'number' ? av - bv : av.localeCompare(bv)
+      return sortDir === 'asc' ? cmp : -cmp
+    })
 
   // Status counts for filter chips
   const counts = {}
@@ -78,6 +144,15 @@ export default function ProjectView({ project, onBack }) {
           {project.number && <span style={{ color: 'var(--text-dim)', fontSize: 11 }}> · #{project.number}</span>}
         </div>
         <div style={{ flex: 1 }} />
+        <button
+          className="btn btn-ghost btn-sm"
+          onClick={() => exportToCSV(filtered, project.name)}
+          title="Export to CSV"
+          id="btn-export-csv"
+          style={{ marginRight: 6 }}
+        >
+          <FileDown size={12} /> Export
+        </button>
         <button className="btn btn-primary btn-sm" onClick={() => setShowAddSubmittal(true)} id="btn-add-submittal">
           <Plus size={12} /> Add Submittal
         </button>
@@ -167,26 +242,31 @@ export default function ProjectView({ project, onBack }) {
               <table className="submittal-table" id="submittal-table">
                 <thead>
                   <tr>
-                    <th style={{ width: 28 }}>Pri</th>
-                    <th style={{ width: 100 }}>Spec Section</th>
-                    <th>Description</th>
-                    <th>Status</th>
+                    <SortTh label="Pri"            field="priority" sortField={sortField} sortDir={sortDir} onSort={handleSort} style={{ width: 28 }} />
+                    <SortTh label="Spec Section"   field="spec"     sortField={sortField} sortDir={sortDir} onSort={handleSort} style={{ width: 100 }} />
+                    <SortTh label="Description"    field="name"     sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                    <SortTh label="Status"          field="status"   sortField={sortField} sortDir={sortDir} onSort={handleSort} />
                     <th>Ball In Court</th>
-                    <th>Due Date</th>
+                    <SortTh label="Due Date"        field="due"      sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                    <SortTh label="Submitted"       field="submitted" sortField={sortField} sortDir={sortDir} onSort={handleSort} />
                     <th style={{ textAlign: 'center', width: 80 }}>Revision</th>
                     <th style={{ width: 48 }} />
                   </tr>
                 </thead>
                 <tbody>
                   {filtered.map(sub => (
-                    <SubmittalRow
-                      key={sub.id}
-                      sub={sub}
-                      today={today}
-                      selected={selectedSubmittal?.id === sub.id}
-                      onClick={() => setSelectedSubmittal(sub)}
-                      onDelete={handleDeleteSubmittal}
-                    />
+                    <React.Fragment key={sub.id}>
+                      <SubmittalRow
+                        sub={sub}
+                        today={today}
+                        selected={selectedSubmittal?.id === sub.id}
+                        onClick={() => setSelectedSubmittal(sub)}
+                        onDelete={handleDeleteSubmittal}
+                      />
+                      {(omMap[sub.id] || []).map(om => (
+                        <OmSubRow key={om.id} om={om} />
+                      ))}
+                    </React.Fragment>
                   ))}
                 </tbody>
               </table>
@@ -212,6 +292,27 @@ export default function ProjectView({ project, onBack }) {
         />
       )}
     </>
+  )
+}
+
+function SortTh({ label, field, sortField, sortDir, onSort, style }) {
+  const active = sortField === field
+  return (
+    <th
+      onClick={() => onSort(field)}
+      style={{
+        cursor: 'pointer', userSelect: 'none',
+        color: active ? 'var(--accent)' : undefined,
+        ...style,
+      }}
+    >
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+        {label}
+        <span style={{ fontSize: 9, opacity: active ? 1 : 0.3 }}>
+          {active ? (sortDir === 'asc' ? '↑' : '↓') : '↕'}
+        </span>
+      </span>
+    </th>
   )
 }
 
@@ -250,6 +351,11 @@ function SubmittalRow({ sub, today, selected, onClick, onDelete }) {
           ? new Date(sub.due_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
           : '—'}
       </td>
+      <td className="td-date">
+        {sub.submitted_date
+          ? new Date(sub.submitted_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+          : <span style={{ color: 'var(--text-dim)' }}>—</span>}
+      </td>
       <td style={{ textAlign: 'center' }}>
         {sub.round > 1
           ? <span style={{ color: 'var(--s-revise)', fontWeight: 700, fontSize: 11 }}>Rev {sub.round}</span>
@@ -266,6 +372,40 @@ function SubmittalRow({ sub, today, selected, onClick, onDelete }) {
             <Trash2 size={12} />
           </button>
         </div>
+      </td>
+    </tr>
+  )
+}
+
+function OmSubRow({ om }) {
+  const fmt = (ts) => ts
+    ? new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    : ''
+  return (
+    <tr className="om-sub-row" id={`om-row-${om.id}`}>
+      <td style={{ width: 28, padding: 0 }} />
+      <td style={{ width: 100, paddingLeft: 20, paddingRight: 4, color: 'var(--text-muted)', fontSize: 12 }}>└─</td>
+      <td colSpan={4} style={{ paddingLeft: 4 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <BookOpen size={11} style={{ color: 'var(--s-approved)', flexShrink: 0 }} />
+          <span style={{ fontSize: 11, color: 'var(--text-sub)' }}>{om.file_name}</span>
+          <span style={{
+            fontSize: 9, fontWeight: 700, letterSpacing: '0.5px',
+            color: 'var(--s-approved)', background: 'rgba(16,185,129,0.1)',
+            padding: '1px 5px', borderRadius: 3,
+          }}>O&amp;M</span>
+          {fmt(om.uploaded_at) && (
+            <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>· {fmt(om.uploaded_at)}</span>
+          )}
+        </div>
+      </td>
+      <td style={{ textAlign: 'center' }} />
+      <td>
+        <a href={om.file_url} target="_blank" rel="noopener noreferrer"
+          className="btn btn-icon btn-sm" title="Open file" style={{ border: 'none' }}
+          onClick={e => e.stopPropagation()}>
+          <ExternalLink size={11} style={{ color: 'var(--s-approved)' }} />
+        </a>
       </td>
     </tr>
   )

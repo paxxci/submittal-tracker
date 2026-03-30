@@ -132,19 +132,33 @@ export const addActivity = async (submittalId, message, author = 'You') => {
 }
 
 // ─── ATTACHMENTS ───────────────────────────────────────────────────
-export const getAttachments = async (submittalId) => {
-  const { data, error } = await supabase
+export const getAttachments = async (submittalId, type = null) => {
+  let query = supabase
     .from('attachments')
     .select('*')
     .eq('submittal_id', submittalId)
     .order('uploaded_at', { ascending: false })
+  if (type) query = query.eq('type', type)
+  const { data, error } = await query
   if (error) throw error
   return data
 }
 
-export const uploadAttachment = async (submittalId, file) => {
+export const getOmAttachmentsForSubmittals = async (submittalIds) => {
+  if (!submittalIds.length) return []
+  const { data, error } = await supabase
+    .from('attachments')
+    .select('*')
+    .eq('type', 'om')
+    .in('submittal_id', submittalIds)
+    .order('uploaded_at', { ascending: true })
+  if (error) throw error
+  return data
+}
+
+export const uploadAttachment = async (submittalId, file, type = 'submittal') => {
   const ext = file.name.split('.').pop()
-  const path = `${submittalId}/${Date.now()}.${ext}`
+  const path = `${submittalId}/${type}/${Date.now()}.${ext}`
 
   const { error: uploadError } = await supabase.storage
     .from('attachments')
@@ -157,7 +171,7 @@ export const uploadAttachment = async (submittalId, file) => {
 
   const { data, error } = await supabase
     .from('attachments')
-    .insert([{ submittal_id: submittalId, file_name: file.name, file_url: publicUrl }])
+    .insert([{ submittal_id: submittalId, file_name: file.name, file_url: publicUrl, type }])
     .select()
     .single()
   if (error) throw error
