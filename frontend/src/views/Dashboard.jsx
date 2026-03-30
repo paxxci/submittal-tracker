@@ -17,7 +17,7 @@ function ProjectCard({ project, onOpen }) {
   return (
     <div className="project-card card-glow" onClick={() => onOpen(project)} id={`project-card-${project.id}`}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 4 }}>
-        <div>
+        <div style={{ flex: 1 }}>
           <div className="project-card-name">{project.name}</div>
           <div className="project-card-meta">
             {project.number && <span>#{project.number}</span>}
@@ -25,18 +25,52 @@ function ProjectCard({ project, onOpen }) {
             {project.client && <span>{project.client}</span>}
           </div>
         </div>
-        <div style={{
-          width: 36, height: 36, borderRadius: 10,
-          background: 'var(--accent-dim)', border: '1px solid var(--border-hover)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: 'var(--accent)', flexShrink: 0
-        }}>
-          <FolderOpen size={16} />
+        <div style={{ position: 'relative' }}>
+          <div style={{
+            width: 36, height: 36, borderRadius: 10,
+            background: 'var(--accent-dim)', border: '1px solid var(--border-hover)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: 'var(--accent)', flexShrink: 0
+          }}>
+            <FolderOpen size={16} />
+          </div>
+          {stats?.action_required > 0 && (
+            <div 
+              title={`${stats.action_required} items in your court`}
+              style={{
+                position: 'absolute', top: -6, right: -6,
+                background: 'var(--s-revise)', color: 'white',
+                fontSize: 10, fontWeight: 900,
+                width: 18, height: 18, borderRadius: '50%',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 0 10px rgba(245,158,11,0.5)',
+                border: '2px solid var(--bg-surface)',
+                animation: 'pulse-subtle 2s infinite'
+              }}
+            >
+              {stats.action_required}
+            </div>
+          )}
         </div>
       </div>
 
+      {/* Action Required Text Banner */}
+      {stats?.action_required > 0 && (
+        <div style={{ 
+          margin: '8px 0', padding: '4px 8px', borderRadius: 4, 
+          background: 'rgba(245,158,11,0.1)', color: 'var(--s-revise)',
+          fontSize: 11, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6
+        }}>
+          <AlertTriangle size={12} />
+          {stats.action_required} Action Required
+        </div>
+      )}
+
       {/* Progress Bar */}
-      <div className="progress-bar-wrap" style={{ marginBottom: 14 }}>
+      <div className="progress-bar-wrap" style={{ 
+        marginBottom: 14, 
+        marginTop: stats?.action_required > 0 ? 6 : 14 
+      }}>
         <div className="progress-bar-fill" style={{ width: `${pct}%` }} />
       </div>
 

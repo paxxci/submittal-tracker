@@ -239,7 +239,7 @@ export const deleteContact = async (id) => {
 export const getProjectStats = async (projectId) => {
   const { data, error } = await supabase
     .from('submittals')
-    .select('status, due_date')
+    .select('status, due_date, bic')
     .eq('project_id', projectId)
   if (error) throw error
 
@@ -256,5 +256,9 @@ export const getProjectStats = async (projectId) => {
       s.due_date && s.due_date < today &&
       !['approved', 'rejected'].includes(s.status)
     ).length,
+    action_required: data.filter(s => 
+      ['you', 'pm'].includes(s.bic?.toLowerCase()) && 
+      !['approved', 'rejected'].includes(s.status)
+    ).length
   }
 }

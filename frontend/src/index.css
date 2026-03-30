@@ -1037,6 +1037,12 @@ tr:hover .row-actions { opacity: 1; }
 .contact-meta { font-size: 11px; color: var(--text-muted); }
 
 /* ── LOADING ─────────────────────────────────────────────────────── */
+@keyframes pulse-subtle {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
+  70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+}
+
 .skeleton {
   background: linear-gradient(90deg, var(--bg-elevated) 25%, var(--bg-overlay) 50%, var(--bg-elevated) 75%);
   background-size: 400% 100%;
