@@ -87,7 +87,7 @@ export const resolveSpecSectionId = async (projectId, csiCode) => {
 export const getSubmittals = async (projectId) => {
   const { data, error } = await supabase
     .from('submittals')
-    .select('*')
+    .select(`*, spec_sections(csi_code, title)`)
     .eq('project_id', projectId)
     .order('created_at', { ascending: true })
   if (error) throw error

@@ -6,6 +6,8 @@ import {
   getAttachments, uploadAttachment, deleteAttachment,
   updateSubmittal, getContacts
 } from '../services/api'
+import { extractSubmittalMetadata } from '../services/ai'
+import * as pdfjsLib from 'pdfjs-dist'
 
 const fmt = (ts) => {
   if (!ts) return ''
@@ -18,7 +20,7 @@ const fmtDate = (d) => d ? new Date(d + 'T00:00:00').toLocaleDateString('en-US',
 
 export default function SubmittalDetailPanel({ submittal, projectId, activeUser, onClose, onUpdated }) {
   const [form, setForm] = useState({
-    spec_section: submittal?.spec_section || '',
+    spec_section: submittal?.spec_sections?.csi_code || '',
     item_name: submittal?.item_name || '',
     status: submittal?.status || 'not_started',
     bic: submittal?.bic || 'you',
@@ -36,6 +38,8 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
   const [uploading, setUploading] = useState(false)
   const [uploadingOM, setUploadingOM] = useState(false)
   const [savingNote, setSavingNote] = useState(false)
+  const [isAiParsing, setIsAiParsing] = useState(false)
+  const [aiFields, setAiFields] = useState(new Set())
   const fileRef = useRef()
   const omFileRef = useRef()
   const feedRef = useRef()
@@ -43,7 +47,7 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
   useEffect(() => {
     if (!submittal) return
     setForm({
-      spec_section: submittal.spec_section || '',
+      spec_section: submittal.spec_sections?.csi_code || '',
       item_name: submittal.item_name || '',
       status: submittal.status,
       bic: submittal.bic,
@@ -121,6 +125,44 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
     const isOM = type === 'om'
     try {
       isOM ? setUploadingOM(true) : setUploading(true)
+      
+      // --- SUBMITTAL INTEL: AI Parsing ---
+      if (!isOM && file.type === 'application/pdf') {
+        try {
+          setIsAiParsing(true)
+          const arrayBuffer = await file.arrayBuffer()
+          const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
+          let text = ''
+          const maxPages = Math.min(pdf.numPages, 5)
+          for (let i = 1; i <= maxPages; i++) {
+            const page = await pdf.getPage(i)
+            const content = await page.getTextContent()
+            text += content.items.map(it => it.str).join(' ') + '\n'
+          }
+          
+          const meta = await extractSubmittalMetadata(text)
+          if (meta) {
+            const newFields = new Set()
+            setForm(f => {
+              const next = { ...f }
+              if (meta.spec_section && !f.spec_section) { next.spec_section = meta.spec_section; newFields.add('spec_section') }
+              if (meta.item_name && !f.item_name) { next.item_name = meta.item_name; newFields.add('item_name') }
+              if (meta.model) { 
+                next.next_action = `Model: ${meta.model}${meta.manufacturer ? ` by ${meta.manufacturer}` : ''}`
+                newFields.add('next_action')
+              }
+              return next
+            })
+            setAiFields(newFields)
+            await addActivity(submittal.id, `🤖 AI Intel: Analyzed "${file.name}" and extracted metadata.`, activeUser)
+          }
+        } catch (aiErr) {
+          console.error('AI Intel failed:', aiErr)
+        } finally {
+          setIsAiParsing(false)
+        }
+      }
+      
       await uploadAttachment(submittal.id, file, type)
       await loadAttachments()
       await addActivity(submittal.id, `${isOM ? 'O&M document' : 'Attachment'} uploaded: "${file.name}"`, activeUser)
@@ -204,11 +246,13 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
           <div className="field-row-2">
             <div className="field-row">
               <label className="field-label">Spec Section #</label>
-              <input className="field-input" placeholder="26 05 19" value={form.spec_section} onChange={set('spec_section')} id="detail-spec-section" />
+              <input className={`field-input ${isAiParsing ? 'ai-shimmer' : ''} ${aiFields.has('spec_section') ? 'ai-populated' : ''}`} 
+                placeholder="26 05 19" value={form.spec_section} onChange={set('spec_section')} id="detail-spec-section" />
             </div>
             <div className="field-row">
               <label className="field-label">Description</label>
-              <input className="field-input" placeholder="Description" value={form.item_name} onChange={set('item_name')} id="detail-item-name" />
+              <input className={`field-input ${isAiParsing ? 'ai-shimmer' : ''} ${aiFields.has('item_name') ? 'ai-populated' : ''}`} 
+                placeholder="Description" value={form.item_name} onChange={set('item_name')} id="detail-item-name" />
             </div>
           </div>
 

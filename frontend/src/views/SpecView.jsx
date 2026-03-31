@@ -17,8 +17,9 @@ const FileSearch = ({ className }) => (
   </svg>
 )
 
-// Set worker source (using CDN for reliability in Vite)
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`
+// Set worker source (using local bundle for Vite compatibility)
+import pdfWorker from 'pdfjs-dist/build/pdf.worker.mjs?url'
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker
 
 export default function SpecView({ project, onBack, activeUser }) {
   const [file, setFile] = useState(null)
@@ -127,9 +128,9 @@ export default function SpecView({ project, onBack, activeUser }) {
         await createSubmittal({
           project_id: project.id,
           spec_section_id: sectionId,
-          item_name: `${s.title} Submittal Package`,
+          item_name: s.title,
           status: 'not_started',
-          bic: 'vendor',
+          bic: 'you',
           priority: 'medium',
           next_action: 'Initial extraction from Spec Intel'
         }, activeUser)

@@ -25,7 +25,7 @@ const STATUS_LABELS = {
 
 // Export logic is moving inside the component for direct URL management
 
-export default function ProjectView({ project, onBack, activeUser }) {
+export default function ProjectView({ project, onBack, activeUser, onSpecIntel }) {
   const [submittals, setSubmittals] = useState([])
   const [omMap, setOmMap] = useState({}) // submittal_id → [attachments]
   const [activityLogs, setActivityLogs] = useState([])
@@ -93,7 +93,7 @@ export default function ProjectView({ project, onBack, activeUser }) {
         const matchStatus = !filterStatus || s.status === filterStatus
         const q = search.toLowerCase()
         const matchSearch = !q ||
-          (s.spec_section || '').toLowerCase().includes(q) ||
+          (s.spec_sections?.csi_code || '').toLowerCase().includes(q) ||
           (s.item_name || '').toLowerCase().includes(q) ||
           (s.next_action || '').toLowerCase().includes(q)
         return matchStatus && matchSearch
@@ -102,7 +102,7 @@ export default function ProjectView({ project, onBack, activeUser }) {
         if (!sortField) return 0
         let av, bv
         if (sortField === 'priority')     { av = PRIORITY_ORDER[a.priority] ?? 1; bv = PRIORITY_ORDER[b.priority] ?? 1 }
-        else if (sortField === 'spec')    { av = a.spec_section || ''; bv = b.spec_section || '' }
+        else if (sortField === 'spec')    { av = a.spec_sections?.csi_code || ''; bv = b.spec_sections?.csi_code || '' }
         else if (sortField === 'name')    { av = a.item_name || '';    bv = b.item_name || '' }
         else if (sortField === 'status')  { av = STATUS_ORDER[a.status] ?? 9; bv = STATUS_ORDER[b.status] ?? 9 }
         else if (sortField === 'due')       { av = a.due_date || 'zzz'; bv = b.due_date || 'zzz' }
@@ -118,7 +118,7 @@ export default function ProjectView({ project, onBack, activeUser }) {
     const headers = ['Spec Section', 'Description', 'Status', 'Ball In Court', 'Priority', 'Due Date', 'Submitted Date', 'Revision', 'Next Action']
     const fmtDate = d => d ? new Date(d + 'T00:00:00').toLocaleDateString('en-US') : ''
     const rows = filtered.map(s => [
-      s.spec_section || '',
+      s.spec_sections?.csi_code || '',
       s.item_name || '',
       STATUS_LABELS[s.status] || s.status,
       s.bic || '',
@@ -364,7 +364,7 @@ function SubmittalRow({ sub, today, selected, onClick, onDelete }) {
           color: isApproved ? 'var(--s-approved)' : 'var(--accent)',
           letterSpacing: '0.3px'
         }}>
-          {sub.spec_section || '—'}
+          {sub.spec_sections?.csi_code || '—'}
         </span>
       </td>
       <td className="td-name">

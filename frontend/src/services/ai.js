@@ -102,3 +102,42 @@ export async function callAI(prompt) {
     throw error;
   }
 }
+
+export async function extractSubmittalMetadata(text) {
+  if (!OPENROUTER_API_KEY) throw new Error("OpenRouter API key is missing.");
+  
+  const prompt = `
+    You are a construction submittal expert. 
+    Extract the following metadata from this product cutsheet text. 
+    Return ONLY a JSON object with these keys: "spec_section", "item_name", "manufacturer", "model", "revision".
+    - spec_section (clean CSI code like 26 05 19)
+    - item_name (clear descriptive name like "THHN Copper Wire")
+    - manufacturer (like "Southwire" or "Leviton")
+    - model (part # or series)
+    - revision (number like 1, 2, or 3)
+    
+    If you cannot find a field, use null.
+    Text:
+    ${text.slice(0, 5000)}
+  `;
+
+  try {
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        messages: [{ role: "user", content: prompt }]
+      })
+    });
+    const data = await response.json();
+    const cleanStr = data.choices[0].message.content.match(/\{[\s\S]*\}/)?.[0] || '{}';
+    return JSON.parse(cleanStr);
+  } catch (error) {
+    console.error("AI Extraction Error:", error);
+    return {};
+  }
+}
