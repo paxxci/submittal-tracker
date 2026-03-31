@@ -5,7 +5,7 @@ import { STATUS_OPTIONS, BIC_OPTIONS } from './StatusBadge'
 
 const DIVIDER = '──────────────'
 
-export default function AddSubmittalModal({ projectId, onClose, onCreated }) {
+export default function AddSubmittalModal({ projectId, activeUser, onClose, onCreated }) {
   const [form, setForm] = useState({
     spec_section: '',
     item_name: '',
@@ -33,16 +33,14 @@ export default function AddSubmittalModal({ projectId, onClose, onCreated }) {
       setSaving(true)
       setError(null)
       
-      // 1. Resolve the spec_section string into a spec_section_id
       const spec_section_id = await resolveSpecSectionId(projectId, form.spec_section)
       
-      // 2. Create the submittal with the ID
       await createSubmittal({ 
         ...form, 
         project_id: projectId, 
         spec_section_id,
         round: Number(form.round) 
-      })
+      }, activeUser)
       onCreated()
     } catch (err) {
       setError(err.message || 'Failed to create submittal.')

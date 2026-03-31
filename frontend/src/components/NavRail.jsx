@@ -1,6 +1,14 @@
-import { LayoutDashboard, FolderOpen, Settings } from 'lucide-react'
+import { LayoutDashboard, FolderOpen, Settings, Cpu, UserCircle } from 'lucide-react'
 
-export default function NavRail({ view, setView, currentProject, goToDashboard }) {
+export default function NavRail({ view, setView, currentProject, goToDashboard, activeUser, setActiveUser }) {
+  const roles = ['PM', 'GC', 'ARCH', 'ENG', 'VENDOR']
+  
+  const cycleUser = () => {
+    const currentIndex = roles.indexOf(activeUser)
+    const nextIndex = (currentIndex + 1) % roles.length
+    setActiveUser(roles[nextIndex])
+  }
+
   return (
     <nav className="nav-rail">
       <div className="nav-logo">ST</div>
@@ -21,7 +29,18 @@ export default function NavRail({ view, setView, currentProject, goToDashboard }
           id="nav-project"
         >
           <FolderOpen size={18} />
-          <span className="nav-tooltip">{currentProject.name}</span>
+          <span className="nav-tooltip">Workbench</span>
+        </button>
+      )}
+
+      {currentProject && (
+        <button
+          className={`nav-btn ${view === 'spec' ? 'active' : ''}`}
+          onClick={() => setView('spec')}
+          id="nav-spec"
+        >
+          <Cpu size={18} />
+          <span className="nav-tooltip">Spec Intel</span>
         </button>
       )}
 
@@ -37,6 +56,13 @@ export default function NavRail({ view, setView, currentProject, goToDashboard }
       )}
 
       <div className="nav-spacer" />
+
+      <button className="user-switcher" onClick={cycleUser} title="Click to switch role">
+        <div className={`user-avatar tag-${activeUser.toLowerCase()}`}>
+          {activeUser[0]}
+        </div>
+        <span className="user-label">{activeUser}</span>
+      </button>
     </nav>
   )
 }

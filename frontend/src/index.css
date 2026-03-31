@@ -289,6 +289,102 @@ body {
   background: var(--accent);
   color: #000;
 }
+/* SPEC INTEL HUB */
+.spec-hub {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.spec-dropzone {
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+  border: 2px dashed var(--border);
+  border-radius: 24px;
+  padding: 60px 40px;
+  background: var(--bg-surface);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.spec-dropzone:hover {
+  border-color: var(--accent);
+  background: var(--bg-surface-elevated);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px -12px rgba(0, 204, 255, 0.15);
+}
+
+.spec-dropzone-icon {
+  width: 48px;
+  height: 48px;
+  color: var(--accent);
+  opacity: 0.8;
+  margin-bottom: 12px;
+}
+
+.spec-discovery-grid {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  min-height: 500px;
+  max-height: 70vh;
+  box-shadow: 0 20px 50px -12px rgba(0,0,0,0.3);
+}
+
+.spec-section-list {
+  overflow-y: auto;
+}
+
+.spec-wizard-step {
+  margin-bottom: 24px;
+}
+
+.div-header {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.checkbox-item:hover {
+  background: var(--bg-surface-elevated);
+}
+
+.checkbox-item input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+}
+
+.skeleton-circle {
+  border-radius: 50%;
+  animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 rgba(0, 204, 255, 0.4); }
+  70% { box-shadow: 0 0 0 20px rgba(0, 204, 255, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(0, 204, 255, 0); }
+}
 .btn-primary:hover {
   background: #22d3ee;
   box-shadow: 0 0 16px rgba(0,180,216,0.4);
@@ -1165,4 +1261,183 @@ tr:hover .row-actions { opacity: 1; }
     background: transparent !important;
     padding: 2px 6px !important;
   }
+}
+/* ── USER SWITCHER ──────────────────────────────────────────────── */
+.user-switcher {
+  width: 44px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 8px 0;
+  transition: transform var(--t);
+  margin-bottom: 8px;
+}
+.user-switcher:hover { transform: scale(1.05); }
+
+.user-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  box-shadow: 0 0 10px rgba(0,0,0,0.3);
+}
+
+.tag-pm      { background: linear-gradient(135deg, #a855f7, #7e22ce); border-color: #a855f7; }
+.tag-gc      { background: linear-gradient(135deg, #3b82f6, #1d4ed8); border-color: #3b82f6; }
+.tag-arch    { background: linear-gradient(135deg, #6366f1, #4338ca); border-color: #6366f1; }
+.tag-eng     { background: linear-gradient(135deg, #14b8a6, #0f766e); border-color: #14b8a6; }
+.tag-vendor  { background: linear-gradient(135deg, #f59e0b, #b45309); border-color: #f59e0b; }
+
+.user-label {
+  font-size: 8px;
+  font-weight: 800;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ── SPEC DISCOVERY HUB ────────────────────────────────────────── */
+.spec-hub {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg-base);
+}
+
+.spec-dropzone {
+  margin: 32px auto;
+  width: 100%;
+  max-width: 600px;
+  height: 200px;
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: all var(--t-med);
+  background: var(--bg-surface);
+}
+.spec-dropzone:hover {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  box-shadow: var(--glow-sm);
+}
+.spec-dropzone-icon {
+  width: 48px;
+  height: 48px;
+  color: var(--accent);
+  opacity: 0.6;
+}
+
+.spec-discovery-grid {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  flex: 1;
+  overflow: hidden;
+  border-top: 1px solid var(--border);
+}
+
+.spec-section-list {
+  background: var(--bg-surface);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.spec-wizard-step {
+  margin-bottom: 24px;
+}
+
+/* Checkbox styling */
+.checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background var(--t);
+}
+.checkbox-item:hover { background: var(--bg-elevated); }
+.checkbox-item input {
+  accent-color: var(--accent);
+  width: 14px;
+  height: 14px;
+}
+
+/* Division Labels */
+.div-header {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--accent);
+  margin: 16px 0 8px 4px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* ── AUDIT TRAIL PILLS ─────────────────────────────────────────── */
+.role-pill {
+  font-size: 8px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: rgba(255,255,255,0.05);
+  color: var(--text-muted);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.role-pill-pm { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border-color: rgba(59, 130, 246, 0.2); }
+.role-pill-gc { background: rgba(16, 185, 129, 0.15); color: #34d399; border-color: rgba(16, 185, 129, 0.2); }
+.role-pill-arch { background: rgba(139, 92, 246, 0.15); color: #a78bfa; border-color: rgba(139, 92, 246, 0.2); }
+.role-pill-eng { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border-color: rgba(245, 158, 11, 0.2); }
+.role-pill-vendor { background: rgba(236, 72, 153, 0.15); color: #f472b6; border-color: rgba(236, 72, 153, 0.2); }
+.role-pill-system { background: rgba(107, 114, 128, 0.15); color: #9ca3af; border-color: rgba(107, 114, 128, 0.2); }
+
+.activity-author-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.activity-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.activity-entry {
+  padding: 12px;
+  background: var(--bg-surface);
+  border-radius: 12px;
+  margin-bottom: 8px;
+  border: 1px solid var(--border);
+}
+
+.activity-time {
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+.activity-msg {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  white-space: pre-wrap;
 }

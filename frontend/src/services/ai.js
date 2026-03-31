@@ -78,3 +78,27 @@ Use markdown for bolding critical info. Keep responses short and actionable.
     throw error;
   }
 }
+
+export async function callAI(prompt) {
+  if (!OPENROUTER_API_KEY) {
+    throw new Error("OpenRouter API key is missing.");
+  }
+  try {
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        messages: [{ role: "user", content: prompt }]
+      })
+    });
+    const data = await response.json();
+    return data.choices[0].message.content;
+  } catch (error) {
+    console.error("AI callAI Error:", error);
+    throw error;
+  }
+}

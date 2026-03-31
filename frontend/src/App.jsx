@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import NavRail from './components/NavRail'
 import Dashboard from './views/Dashboard'
 import ProjectView from './views/ProjectView'
+import SpecView from './views/SpecView'
 import Settings from './views/Settings'
 import { getProjects } from './services/api'
 
@@ -10,6 +11,13 @@ export default function App() {
   const [projects, setProjects] = useState([])
   const [currentProject, setCurrentProject] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [activeUser, setActiveUser] = useState(() => {
+    return localStorage.getItem('st_active_user') || 'PM'
+  })
+
+  useEffect(() => {
+    localStorage.setItem('st_active_user', activeUser)
+  }, [activeUser])
 
   useEffect(() => {
     loadProjects()
@@ -49,6 +57,8 @@ export default function App() {
         setView={setView}
         currentProject={currentProject}
         goToDashboard={goToDashboard}
+        activeUser={activeUser}
+        setActiveUser={setActiveUser}
       />
       <div className="main-stage">
         {view === 'dashboard' && (
@@ -63,6 +73,14 @@ export default function App() {
           <ProjectView
             project={currentProject}
             onBack={goToDashboard}
+            activeUser={activeUser}
+          />
+        )}
+        {view === 'spec' && currentProject && (
+          <SpecView
+            project={currentProject}
+            activeUser={activeUser}
+            onBack={() => setView('project')}
           />
         )}
         {view === 'settings' && (

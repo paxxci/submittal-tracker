@@ -105,17 +105,24 @@ const cleanDates = (obj) => {
   return cleaned
 }
 
-export const createSubmittal = async (fields) => {
+export const createSubmittal = async (fields, authorRole = 'PM') => {
   const { data, error } = await supabase
     .from('submittals')
     .insert([cleanDates(fields)])
     .select(`*, spec_sections(csi_code, title)`)
     .single()
   if (error) throw error
+  
+  // Auto-log creation
+  await addActivity(data.id, `Created submittal: ${data.item_name}`, authorRole)
+  
   return data
 }
 
-export const updateSubmittal = async (id, updates) => {
+export const updateSubmittal = async (id, updates, authorRole = 'PM') => {
+  // Fetch current for comparison to log changes
+  const { data: current } = await supabase.from('submittals').select('*').eq('id', id).single()
+  
   const { data, error } = await supabase
     .from('submittals')
     .update(cleanDates(updates))
@@ -123,6 +130,21 @@ export const updateSubmittal = async (id, updates) => {
     .select(`*, spec_sections(csi_code, title)`)
     .single()
   if (error) throw error
+
+  // Automated Logging logic
+  const changes = []
+  if (updates.status && updates.status !== current.status) changes.push(`Status → ${updates.status.toUpperCase()}`)
+  if (updates.bic && updates.bic !== current.bic) changes.push(`BIC → ${updates.bic.toUpperCase()}`)
+  if (updates.priority && updates.priority !== current.priority) changes.push(`Priority → ${updates.priority.toUpperCase()}`)
+  if (updates.due_date && updates.due_date !== current.due_date) changes.push(`Due Date → ${updates.due_date}`)
+  if (updates.item_name && updates.item_name !== current.item_name) changes.push(`Description updated`)
+  if (updates.spec_section && updates.spec_section !== current.spec_section) changes.push(`Spec Section updated`)
+  if (updates.next_action && updates.next_action !== current.next_action) changes.push(`Updated Next Action`)
+
+  if (changes.length > 0) {
+    await addActivity(id, `Auto-Audit: ${changes.join(', ')}`, authorRole)
+  }
+
   return data
 }
 

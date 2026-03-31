@@ -25,7 +25,7 @@ const STATUS_LABELS = {
 
 // Export logic is moving inside the component for direct URL management
 
-export default function ProjectView({ project, onBack }) {
+export default function ProjectView({ project, onBack, activeUser }) {
   const [submittals, setSubmittals] = useState([])
   const [omMap, setOmMap] = useState({}) // submittal_id → [attachments]
   const [activityLogs, setActivityLogs] = useState([])
@@ -303,6 +303,7 @@ export default function ProjectView({ project, onBack }) {
           <SubmittalDetailPanel
             submittal={selectedSubmittal}
             projectId={project.id}
+            activeUser={activeUser}
             onClose={() => setSelectedSubmittal(null)}
             onUpdated={handleSubmittalUpdated}
           />
@@ -312,6 +313,7 @@ export default function ProjectView({ project, onBack }) {
       {showAddSubmittal && (
         <AddSubmittalModal
           projectId={project.id}
+          activeUser={activeUser}
           onClose={() => setShowAddSubmittal(false)}
           onCreated={() => { setShowAddSubmittal(false); load() }}
         />

@@ -16,7 +16,7 @@ const fmt = (ts) => {
 
 const fmtDate = (d) => d ? new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'
 
-export default function SubmittalDetailPanel({ submittal, projectId, onClose, onUpdated }) {
+export default function SubmittalDetailPanel({ submittal, projectId, activeUser, onClose, onUpdated }) {
   const [form, setForm] = useState({
     spec_section: submittal?.spec_section || '',
     item_name: submittal?.item_name || '',
@@ -83,7 +83,6 @@ export default function SubmittalDetailPanel({ submittal, projectId, onClose, on
     const value = e.target.value
     setForm(f => {
       const next = { ...f, [field]: value }
-      // Auto-fill submitted date when status flips to submitted
       if (field === 'status' && value === 'submitted' && !f.submitted_date) {
         next.submitted_date = new Date().toISOString().split('T')[0]
       }
@@ -94,50 +93,8 @@ export default function SubmittalDetailPanel({ submittal, projectId, onClose, on
   const handleSave = async () => {
     try {
       setSaving(true)
-      const updated = await updateSubmittal(submittal.id, form)
-
-      // Build a list of everything that changed
-      const changes = []
-
-      if (form.spec_section !== (submittal.spec_section || ''))
-        changes.push(`Spec section updated to "${form.spec_section}"`)
-
-      if (form.item_name !== (submittal.item_name || ''))
-        changes.push(`Description updated to "${form.item_name}"`)
-
-      if (form.status !== submittal.status) {
-        const from = STATUS_OPTIONS.find(o => o.value === submittal.status)?.label || submittal.status
-        const to   = STATUS_OPTIONS.find(o => o.value === form.status)?.label   || form.status
-        changes.push(`Status: ${from} → ${to}`)
-      }
-
-      if (form.bic !== submittal.bic) {
-        const from = BIC_OPTIONS.find(o => o.value === submittal.bic)?.label || submittal.bic
-        const to   = BIC_OPTIONS.find(o => o.value === form.bic)?.label   || form.bic
-        changes.push(`Ball in court: ${from} → ${to}`)
-      }
-
-      if (form.priority !== submittal.priority) {
-        const cap = s => s.charAt(0).toUpperCase() + s.slice(1)
-        changes.push(`Priority: ${cap(submittal.priority)} → ${cap(form.priority)}`)
-      }
-
-      if (form.due_date !== (submittal.due_date || '')) {
-        const d = form.due_date
-          ? new Date(form.due_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-          : 'none'
-        changes.push(`Due date set to ${d}`)
-      }
-
-      if (form.next_action !== (submittal.next_action || '') && form.next_action.trim())
-        changes.push(`Next action: "${form.next_action.trim()}"`)
-
-      // Log all changes as one entry so the feed stays clean
-      if (changes.length > 0) {
-        await addActivity(submittal.id, changes.join('\n'))
-        setLog(await getActivityLog(submittal.id))
-      }
-
+      const updated = await updateSubmittal(submittal.id, form, activeUser)
+      setLog(await getActivityLog(submittal.id))
       onUpdated(updated)
     } catch (err) {
       console.error('Save failed:', err)
@@ -151,7 +108,7 @@ export default function SubmittalDetailPanel({ submittal, projectId, onClose, on
     if (!note.trim()) return
     try {
       setSavingNote(true)
-      await addActivity(submittal.id, note.trim())
+      await addActivity(submittal.id, note.trim(), activeUser)
       setNote('')
       setLog(await getActivityLog(submittal.id))
     } catch {}
@@ -166,7 +123,7 @@ export default function SubmittalDetailPanel({ submittal, projectId, onClose, on
       isOM ? setUploadingOM(true) : setUploading(true)
       await uploadAttachment(submittal.id, file, type)
       await loadAttachments()
-      await addActivity(submittal.id, `${isOM ? 'O&M document' : 'Attachment'} uploaded: "${file.name}"`)
+      await addActivity(submittal.id, `${isOM ? 'O&M document' : 'Attachment'} uploaded: "${file.name}"`, activeUser)
       setLog(await getActivityLog(submittal.id))
     } catch (err) {
       console.error('Upload failed:', err)
@@ -180,7 +137,7 @@ export default function SubmittalDetailPanel({ submittal, projectId, onClose, on
     const today = new Date().toISOString().split('T')[0]
     const next = { ...form, status: 'submitted', submitted_date: today }
     
-    // Attempt to auto-suggest BIC if Architect/Engineer exists in contacts
+    // Suggest BIC
     const suggestedBic = contacts.find(c =>
       c.type?.toLowerCase().includes('arch') ||
       c.name?.toLowerCase().includes('arch') ||
@@ -190,9 +147,9 @@ export default function SubmittalDetailPanel({ submittal, projectId, onClose, on
 
     try {
       setSaving(true)
-      const updated = await updateSubmittal(submittal.id, next)
+      const updated = await updateSubmittal(submittal.id, next, activeUser)
       setForm(next)
-      await addActivity(submittal.id, `📤 OFFICIAL SUBMISSION\nStatus: ${submittal.status} → Submitted\nDate set to ${fmtDate(today)}\nBall in court: ${next.bic}`)
+      await addActivity(submittal.id, `📤 OFFICIAL SUBMISSION FILED`, activeUser)
       setLog(await getActivityLog(submittal.id))
       onUpdated(updated)
     } catch (err) {
@@ -333,7 +290,12 @@ export default function SubmittalDetailPanel({ submittal, projectId, onClose, on
             {log.map(entry => (
               <div key={entry.id} className="activity-entry">
                 <div className="activity-meta">
-                  <span className="activity-author">{entry.author}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span className={`role-pill role-pill-${(entry.author || 'system').toLowerCase()}`}>
+                      {entry.author || 'System'}
+                    </span>
+                    <span className="activity-author-name">{entry.author_name || 'System Auto'}</span>
+                  </div>
                   <span className="activity-time">{fmt(entry.created_at)}</span>
                 </div>
                 <div className="activity-msg">{entry.message}</div>
