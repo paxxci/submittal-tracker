@@ -142,6 +142,17 @@ export const getActivityLog = async (submittalId) => {
   return data
 }
 
+export const getAllActivityLogs = async (submittalIds) => {
+  if (!submittalIds.length) return []
+  const { data, error } = await supabase
+    .from('activity_log')
+    .select('*')
+    .in('submittal_id', submittalIds)
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return data
+}
+
 export const addActivity = async (submittalId, message, author = 'You') => {
   const { data, error } = await supabase
     .from('activity_log')

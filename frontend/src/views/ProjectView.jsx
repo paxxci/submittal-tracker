@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { ArrowLeft, Plus, ChevronRight, Layers, Trash2, AlertTriangle, List, Search, X, BookOpen, ExternalLink, FileDown, Printer } from 'lucide-react'
 import { StatusBadge, BicChip, PriorityChip } from '../components/StatusBadge'
 import SubmittalDetailPanel from '../components/SubmittalDetailPanel'
 import AddSubmittalModal from '../components/AddSubmittalModal'
-import { getSubmittals, deleteSubmittal, getOmAttachmentsForSubmittals } from '../services/api'
+import SubmittalChat from '../components/SubmittalChat'
+import { Sparkles } from 'lucide-react'
+import { getSubmittals, deleteSubmittal, getOmAttachmentsForSubmittals, getAllActivityLogs } from '../services/api'
 
 const ALL_STATUSES = [
   { value: 'not_started',     label: 'Not Started' },
@@ -26,6 +28,7 @@ const STATUS_LABELS = {
 export default function ProjectView({ project, onBack }) {
   const [submittals, setSubmittals] = useState([])
   const [omMap, setOmMap] = useState({}) // submittal_id → [attachments]
+  const [activityLogs, setActivityLogs] = useState([])
   const [selectedSubmittal, setSelectedSubmittal] = useState(null)
   const [showAddSubmittal, setShowAddSubmittal] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -56,6 +59,10 @@ export default function ProjectView({ project, onBack }) {
           grouped[om.submittal_id].push(om)
         }
         setOmMap(grouped)
+
+        // Load all activity logs for the AI to parse
+        const logs = await getAllActivityLogs(subs.map(s => s.id))
+        setActivityLogs(logs)
       }
     } catch (err) { console.error(err) }
     finally { setLoading(false) }
@@ -80,31 +87,33 @@ export default function ProjectView({ project, onBack }) {
   const PRIORITY_ORDER = { high: 0, medium: 1, low: 2 }
   const STATUS_ORDER = { not_started: 0, working: 1, submitted: 2, in_review: 3, approved: 4, revise_resubmit: 5, rejected: 6 }
 
-  const filtered = submittals
-    .filter(s => {
-      const matchStatus = !filterStatus || s.status === filterStatus
-      const q = search.toLowerCase()
-      const matchSearch = !q ||
-        (s.spec_section || '').toLowerCase().includes(q) ||
-        (s.item_name || '').toLowerCase().includes(q) ||
-        (s.next_action || '').toLowerCase().includes(q)
-      return matchStatus && matchSearch
-    })
-    .sort((a, b) => {
-      if (!sortField) return 0
-      let av, bv
-      if (sortField === 'priority')     { av = PRIORITY_ORDER[a.priority] ?? 1; bv = PRIORITY_ORDER[b.priority] ?? 1 }
-      else if (sortField === 'spec')    { av = a.spec_section || ''; bv = b.spec_section || '' }
-      else if (sortField === 'name')    { av = a.item_name || '';    bv = b.item_name || '' }
-      else if (sortField === 'status')  { av = STATUS_ORDER[a.status] ?? 9; bv = STATUS_ORDER[b.status] ?? 9 }
-      else if (sortField === 'due')       { av = a.due_date || 'zzz'; bv = b.due_date || 'zzz' }
-      else if (sortField === 'submitted') { av = a.submitted_date || 'zzz'; bv = b.submitted_date || 'zzz' }
-      const cmp = typeof av === 'number' ? av - bv : av.localeCompare(bv)
-      return sortDir === 'asc' ? cmp : -cmp
-    })
+  const filtered = useMemo(() => {
+    return submittals
+      .filter(s => {
+        const matchStatus = !filterStatus || s.status === filterStatus
+        const q = search.toLowerCase()
+        const matchSearch = !q ||
+          (s.spec_section || '').toLowerCase().includes(q) ||
+          (s.item_name || '').toLowerCase().includes(q) ||
+          (s.next_action || '').toLowerCase().includes(q)
+        return matchStatus && matchSearch
+      })
+      .sort((a, b) => {
+        if (!sortField) return 0
+        let av, bv
+        if (sortField === 'priority')     { av = PRIORITY_ORDER[a.priority] ?? 1; bv = PRIORITY_ORDER[b.priority] ?? 1 }
+        else if (sortField === 'spec')    { av = a.spec_section || ''; bv = b.spec_section || '' }
+        else if (sortField === 'name')    { av = a.item_name || '';    bv = b.item_name || '' }
+        else if (sortField === 'status')  { av = STATUS_ORDER[a.status] ?? 9; bv = STATUS_ORDER[b.status] ?? 9 }
+        else if (sortField === 'due')       { av = a.due_date || 'zzz'; bv = b.due_date || 'zzz' }
+        else if (sortField === 'submitted') { av = a.submitted_date || 'zzz'; bv = b.submitted_date || 'zzz' }
+        const cmp = typeof av === 'number' ? av - bv : av.localeCompare(bv)
+        return sortDir === 'asc' ? cmp : -cmp
+      })
+  }, [submittals, filterStatus, search, sortField, sortDir])
 
-  // Native CSV Link Generation — bypasses synthetic click issues
-  useEffect(() => {
+  // Native CSV Export — On-demand to prevent render loops
+  const handleExport = () => {
     if (!filtered.length) return
     const headers = ['Spec Section', 'Description', 'Status', 'Ball In Court', 'Priority', 'Due Date', 'Submitted Date', 'Revision', 'Next Action']
     const fmtDate = d => d ? new Date(d + 'T00:00:00').toLocaleDateString('en-US') : ''
@@ -125,9 +134,14 @@ export default function ProjectView({ project, onBack }) {
     
     const blob = new Blob(["\ufeff", csvContent], { type: 'text/csv;charset=utf-8' })
     const url = URL.createObjectURL(blob)
-    setCsvUrl(url)
-    return () => URL.revokeObjectURL(url)
-  }, [filtered])
+    const link = document.createElement("a")
+    link.href = url
+    link.download = `${(project?.name || 'Submittals').replace(/\s+/g, '_')}_Log.csv`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }
 
   // Status counts for filter chips
   const counts = {}
@@ -155,18 +169,16 @@ export default function ProjectView({ project, onBack }) {
         >
           <Printer size={12} /> Print Report
         </button>
-        <a
-          className={`btn btn-ghost btn-sm ${!csvUrl ? 'disabled' : ''}`}
-          href={csvUrl || '#'}
-          download={`${project.name.replace(/\s+/g, '_')}_Log.csv`}
+        <button
+          className="btn btn-ghost btn-sm"
+          onClick={handleExport}
           title="Export CSV"
           id="btn-export-csv"
           style={{ marginRight: 6, display: 'inline-flex', alignItems: 'center', gap: 4 }}
-          onClick={(e) => !csvUrl && e.preventDefault()}
         >
           <FileDown size={12} /> Export CSV
-        </a>
-        <button className="btn btn-primary btn-sm" onClick={() => setShowAddSubmittal(true)} id="btn-add-submittal">
+        </button>
+        <button className="btn btn-primary btn-sm" onClick={() => setShowAddSubmittal(true)} id="btn-add-submittal" style={{ marginRight: 6 }}>
           <Plus size={12} /> Add Submittal
         </button>
       </div>
@@ -304,6 +316,12 @@ export default function ProjectView({ project, onBack }) {
           onCreated={() => { setShowAddSubmittal(false); load() }}
         />
       )}
+
+      <SubmittalChat
+        submittals={submittals}
+        activityLogs={activityLogs}
+        projectName={project.name}
+      />
     </>
   )
 }
