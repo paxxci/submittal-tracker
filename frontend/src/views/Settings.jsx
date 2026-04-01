@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Plus, Trash2, Save, Users, Archive, Package, AlertTriangle, RefreshCw, X, Shield } from 'lucide-react'
+import { Plus, Trash2, Save, Users, Archive, Package, AlertTriangle, RefreshCw, X, Shield, Printer, Link, Check } from 'lucide-react'
 import JSZip from 'jszip'
 import { saveAs } from 'file-saver'
 import { 
@@ -17,6 +17,7 @@ import {
   getSubmittals,
   getAttachments
 } from '../services/api'
+import { generateProjectReport } from '../services/reports'
 
 const ROLE_CONFIG = {
   gc:         { label: 'GC',         color: 'var(--bic-gc)'       },
@@ -50,10 +51,14 @@ export default function Settings({ project, onProjectUpdated }) {
   const [showMemberForm, setShowMemberForm] = useState(false)
   const [memberForm, setMemberForm] = useState({ email: '', role: 'editor' })
   const [addingMember, setAddingMember] = useState(false)
+  const [copiedEmail, setCopiedEmail] = useState(null)
 
   useEffect(() => {
     if (project) {
       setProjectForm({
+        name: project.name || '',
+        number: project.number || '',
+        client: project.client || '',
         address: project.address || '',
       })
       loadContacts()
@@ -136,10 +141,28 @@ export default function Settings({ project, onProjectUpdated }) {
     } catch {}
   }
 
+  const handleCopyInvite = (email) => {
+    const inviteLink = `${window.location.origin}/?signup=true&email=${encodeURIComponent(email)}`
+    navigator.clipboard.writeText(inviteLink)
+    setCopiedEmail(email)
+    setTimeout(() => setCopiedEmail(null), 2000)
+  }
+
   // ─── Project Closeout ──────────────────────────────────────────────
   const [zipping, setZipping] = useState(false)
   const [archiving, setArchiving] = useState(false)
   const [purging, setPurging] = useState(false)
+
+  const handleDownloadReport = async () => {
+    try {
+      const subs = await getSubmittals(project.id)
+      const doc = generateProjectReport(project, subs)
+      doc.save(`${project.number || 'PROJECT'}_SUBMITTAL_LOG_${new Date().toISOString().split('T')[0]}.pdf`)
+    } catch (err) {
+      console.error('Report failed:', err)
+      alert('Failed to generate PDF report.')
+    }
+  }
 
   const handleDownloadPackage = async () => {
     try {
@@ -168,6 +191,11 @@ export default function Settings({ project, onProjectUpdated }) {
           } catch (e) { console.error('Failed to add file to zip:', a.file_name) }
         }
       }
+
+      // Add the Professional Log Report to the root of the ZIP
+      const doc = generateProjectReport(project, subs)
+      const pdfBlob = doc.output('blob')
+      folder.file(`00_${project.number || 'PROJECT'}_SUBMITTAL_LOG.pdf`, pdfBlob)
 
       const content = await zip.generateAsync({ type: 'blob' })
       saveAs(content, `${project.name.replace(/\s/g, '_')}_Approved_Package.zip`)
@@ -403,15 +431,30 @@ export default function Settings({ project, onProjectUpdated }) {
                         {m.role}
                       </span>
                     </div>
-                    <button 
-                      className="btn btn-icon btn-sm" 
-                      style={{ color: 'var(--s-rejected)', border: 'none', opacity: m.email === 'PM' ? 0.3 : 1 }}
-                      onClick={() => handleRemoveMember(m.id, m.email)}
-                      disabled={m.email === 'PM'}
-                      title="Revoke Access"
-                    >
-                      <X size={12} />
-                    </button>
+                    <div style={{ display: 'flex', gap: 4 }}>
+                      <button 
+                        className="btn btn-icon btn-sm" 
+                        style={{ color: copiedEmail === m.email ? 'var(--s-approved)' : 'var(--text-muted)' }}
+                        onClick={() => handleCopyInvite(m.email)}
+                        title="Copy Invite Link"
+                      >
+                        {copiedEmail === m.email ? <Check size={12} /> : <Link size={12} />}
+                        {copiedEmail === m.email && (
+                          <span style={{ position: 'absolute', top: -20, right: 0, fontSize: 10, background: 'var(--bg-overlay)', padding: '2px 6px', borderRadius: 4, border: '1px solid var(--border)', whiteSpace: 'nowrap' }}>
+                            Copied!
+                          </span>
+                        )}
+                      </button>
+                      <button 
+                        className="btn btn-icon btn-sm" 
+                        style={{ color: 'var(--s-rejected)', border: 'none', opacity: m.email === 'PM' ? 0.3 : 1 }}
+                        onClick={() => handleRemoveMember(m.id, m.email)}
+                        disabled={m.email === 'PM'}
+                        title="Revoke Access"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -430,17 +473,25 @@ export default function Settings({ project, onProjectUpdated }) {
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 12, background: 'var(--bg-overlay)', borderRadius: 8, border: '1px solid var(--border)' }}>
                   <div>
                     <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-sub)', marginBottom: 2 }}>Export Approved Package</div>
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Bundle all approved documents into a single ZIP folder.</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Bundle all approved documents + digital log into a single ZIP.</div>
                   </div>
-                  <button 
-                    className="btn btn-ghost btn-sm" 
-                    onClick={handleDownloadPackage} 
-                    disabled={zipping}
-                    style={{ whiteSpace: 'nowrap' }}
-                  >
-                    {zipping ? <RefreshCw size={12} className="animate-spin" /> : <Package size={12} />} 
-                    {zipping ? 'Bundling...' : 'Download ZIP'}
-                  </button>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button 
+                      className="btn btn-ghost btn-sm" 
+                      onClick={handleDownloadReport}
+                      title="Download Log PDF"
+                    >
+                      <Printer size={12} /> Log PDF
+                    </button>
+                    <button 
+                      className="btn btn-ghost btn-sm" 
+                      onClick={handleDownloadPackage} 
+                      disabled={zipping}
+                    >
+                      {zipping ? <RefreshCw size={12} className="animate-spin" /> : <Package size={12} />} 
+                      {zipping ? 'Bundling...' : 'Download ZIP'}
+                    </button>
+                  </div>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 12, background: 'var(--bg-overlay)', borderRadius: 8, border: '1px solid var(--border)' }}>

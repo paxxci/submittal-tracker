@@ -4,26 +4,37 @@ import Dashboard from './views/Dashboard'
 import ProjectView from './views/ProjectView'
 import SpecView from './views/SpecView'
 import Settings from './views/Settings'
+import Login from './views/Login'
 import { getProjects } from './services/api'
+import { supabase } from './supabase_client'
 
 export default function App() {
+  const [session, setSession] = useState(null)
   const [view, setView] = useState('dashboard')
   const [projects, setProjects] = useState([])
   const [currentProject, setCurrentProject] = useState(null)
   const [loading, setLoading] = useState(true)
   const [showArchived, setShowArchived] = useState(false)
-  const [activeUser, setActiveUser] = useState(() => {
-    return localStorage.getItem('st_active_user') || 'PM'
-  })
 
   useEffect(() => {
-    localStorage.setItem('st_active_user', activeUser)
-  }, [activeUser])
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+    })
+
+    // Listen for changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
 
   const loadProjects = async () => {
+    if (!session) return
     try {
       setLoading(true)
-      const data = await getProjects(showArchived, activeUser)
+      const data = await getProjects(showArchived)
       setProjects(data)
     } catch (err) {
       console.error('Failed to load projects:', err)
@@ -33,8 +44,8 @@ export default function App() {
   }
 
   useEffect(() => {
-    loadProjects()
-  }, [showArchived])
+    if (session) loadProjects()
+  }, [showArchived, session])
 
   const openProject = (project) => {
     setCurrentProject(project)
@@ -51,6 +62,10 @@ export default function App() {
     setProjects(ps => ps.map(p => p.id === updated.id ? updated : p))
   }
 
+  if (!session) {
+    return <Login />
+  }
+
   return (
     <div className="app-shell">
       <NavRail
@@ -58,8 +73,7 @@ export default function App() {
         setView={setView}
         currentProject={currentProject}
         goToDashboard={goToDashboard}
-        activeUser={activeUser}
-        setActiveUser={setActiveUser}
+        userEmail={session.user.email}
       />
       <div className="main-stage">
         {view === 'dashboard' && (
@@ -76,13 +90,13 @@ export default function App() {
           <ProjectView
             project={currentProject}
             onBack={goToDashboard}
-            activeUser={activeUser}
+            activeUser={session.user.email}
           />
         )}
         {view === 'spec' && currentProject && (
           <SpecView
             project={currentProject}
-            activeUser={activeUser}
+            activeUser={session.user.email}
             onBack={() => setView('project')}
           />
         )}

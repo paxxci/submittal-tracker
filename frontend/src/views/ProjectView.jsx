@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { ArrowLeft, Plus, ChevronRight, Layers, Trash2, AlertTriangle, List, Search, X, BookOpen, ExternalLink, FileDown, Printer } from 'lucide-react'
+import { generateProjectReport } from '../services/reports'
 import { StatusBadge, BicChip, PriorityChip } from '../components/StatusBadge'
 import SubmittalDetailPanel from '../components/SubmittalDetailPanel'
 import AddSubmittalModal from '../components/AddSubmittalModal'
@@ -37,6 +38,11 @@ export default function ProjectView({ project, onBack, activeUser, onSpecIntel }
   const [sortField, setSortField] = useState(null)
   const [sortDir, setSortDir] = useState('asc')
   const [csvUrl, setCsvUrl] = useState('')
+
+  const handleDownloadReport = () => {
+    const doc = generateProjectReport(project, submittals)
+    doc.save(`${project.number || 'PROJECT'}_SUBMITTAL_LOG_${new Date().toISOString().split('T')[0]}.pdf`)
+  }
 
   const handleSort = (field) => {
     if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
@@ -173,6 +179,15 @@ export default function ProjectView({ project, onBack, activeUser, onSpecIntel }
                 </button>
               )}
             </div>
+
+            <button 
+              className="btn btn-ghost btn-sm" 
+              onClick={handleDownloadReport}
+              title="Download Professional PDF Log"
+              id="btn-print-log"
+            >
+              <Printer size={12} /> Print Log
+            </button>
 
             {/* Status filter chips */}
             <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>

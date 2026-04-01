@@ -1,45 +1,53 @@
 import { supabase } from '../supabase_client'
 
 // ─── PROJECTS ──────────────────────────────────────────────────────
-export const getProjects = async (includeArchived = false, userEmail = null) => {
+// ─── PROJECTS ──────────────────────────────────────────────────────
+export const getProjects = async (includeArchived = false) => {
   try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return []
+
     let query = supabase
       .from('projects')
       .select('*, project_members!inner(email)')
+      .eq('project_members.email', user.email)
       .order('created_at', { ascending: false })
     
-    if (userEmail) {
-      query = query.eq('project_members.email', userEmail)
-    }
-
     if (!includeArchived) {
       query = query.eq('is_archived', false)
     }
 
     const { data, error } = await query
     if (error) {
-      // If column is missing (SQL code 42703) or mapping error, fallback to legacy select
-      console.warn('Filtering failed, falling back to all projects.', error)
-      const { data: fallback } = await supabase.from('projects')
-        .select('*')
-        .eq('is_archived', includeArchived ? true : false)
-        .order('created_at', { ascending: false })
-      return fallback || []
+      // Fallback if join fails (e.g. initial setup)
+      console.warn('Membership filter failed, trying primary fetch.', error)
+      const { data: all } = await supabase.from('projects').select('*')
+      return all || []
     }
-    return data
+    return data || []
   } catch (err) {
-    console.error('getProjects fatal error:', err)
+    console.error('getProjects error:', err)
     return []
   }
 }
 
 export const createProject = async ({ name, number, client, address }) => {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Authorization required')
+
+  // 1. Create the project
   const { data, error } = await supabase
     .from('projects')
     .insert([{ name, number, client, address }])
     .select()
     .single()
   if (error) throw error
+
+  // 2. Automatically add the creator as Admin
+  await supabase.from('project_members').insert([
+    { project_id: data.id, email: user.email, role: 'admin' }
+  ])
+  
   return data
 }
 

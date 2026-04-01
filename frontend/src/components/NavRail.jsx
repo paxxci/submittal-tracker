@@ -1,13 +1,15 @@
-import { LayoutDashboard, FolderOpen, Settings, Cpu, UserCircle } from 'lucide-react'
+import { LayoutDashboard, FolderOpen, Settings, Cpu, UserCircle, LogOut } from 'lucide-react'
+import { supabase } from '../supabase_client'
 
-export default function NavRail({ view, setView, currentProject, goToDashboard, activeUser, setActiveUser }) {
-  const roles = ['PM', 'GC', 'ARCH', 'ENG', 'VENDOR', 'SUPER']
+export default function NavRail({ view, setView, currentProject, goToDashboard, userEmail }) {
   
-  const cycleUser = () => {
-    const currentIndex = roles.indexOf(activeUser)
-    const nextIndex = (currentIndex + 1) % roles.length
-    setActiveUser(roles[nextIndex])
+  const handleLogout = async () => {
+    if (window.confirm('Are you sure you want to log out?')) {
+      await supabase.auth.signOut()
+    }
   }
+
+  const userInitial = userEmail?.[0].toUpperCase() || '?'
 
   return (
     <nav className="nav-rail">
@@ -57,12 +59,36 @@ export default function NavRail({ view, setView, currentProject, goToDashboard, 
 
       <div className="nav-spacer" />
 
-      <button className="user-switcher" onClick={cycleUser} title="Click to switch role">
-        <div className={`user-avatar tag-${activeUser.toLowerCase()}`}>
-          {activeUser[0]}
-        </div>
-        <span className="user-label">{activeUser}</span>
-      </button>
+      <div className="user-section">
+        <button className="user-switcher" title={userEmail}>
+          <div className="user-avatar" style={{ background: 'var(--accent)', color: 'white' }}>
+            {userInitial}
+          </div>
+          <span className="user-label">Account</span>
+        </button>
+        
+        <button className="nav-btn logout-btn" onClick={handleLogout} title="Log Out">
+          <LogOut size={18} />
+        </button>
+      </div>
+
+      <style>{`
+        .user-section {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          align-items: center;
+          padding-bottom: 20px;
+        }
+        .logout-btn {
+          color: var(--text-muted);
+          transition: color 0.2s;
+        }
+        .logout-btn:hover {
+          color: #ef4444;
+          background: rgba(239, 68, 68, 0.1);
+        }
+      `}</style>
     </nav>
   )
 }
