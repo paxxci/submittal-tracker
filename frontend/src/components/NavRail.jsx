@@ -1,7 +1,7 @@
 import { LayoutDashboard, FolderOpen, Settings, Cpu, UserCircle } from 'lucide-react'
 
 export default function NavRail({ view, setView, currentProject, goToDashboard, activeUser, setActiveUser }) {
-  const roles = ['PM', 'GC', 'ARCH', 'ENG', 'VENDOR']
+  const roles = ['PM', 'GC', 'ARCH', 'ENG', 'VENDOR', 'SUPER']
   
   const cycleUser = () => {
     const currentIndex = roles.indexOf(activeUser)

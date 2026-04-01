@@ -28,12 +28,23 @@ function ProjectCard({ project, onOpen }) {
         <div style={{ position: 'relative' }}>
           <div style={{
             width: 36, height: 36, borderRadius: 10,
-            background: 'var(--accent-dim)', border: '1px solid var(--border-hover)',
+            background: project.is_archived ? 'var(--bg-overlay)' : 'var(--accent-dim)', 
+            border: '1px solid var(--border-hover)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: 'var(--accent)', flexShrink: 0
+            color: project.is_archived ? 'var(--text-muted)' : 'var(--accent)', flexShrink: 0
           }}>
-            <FolderOpen size={16} />
+            {project.is_archived ? <Archive size={16} /> : <FolderOpen size={16} />}
           </div>
+          {project.is_archived && (
+            <div style={{
+              position: 'absolute', top: -6, right: -6,
+              background: 'var(--bg-overlay)', border: '1px solid var(--border)',
+              borderRadius: 4, padding: '2px 6px', fontSize: 9, fontWeight: 700,
+              color: 'var(--text-muted)', letterSpacing: 0.5, boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
+            }}>
+              ARCHIVED
+            </div>
+          )}
         </div>
       </div>
 
@@ -82,7 +93,14 @@ function ProjectCard({ project, onOpen }) {
   )
 }
 
-export default function Dashboard({ projects, loading, onOpenProject, onProjectsChange }) {
+export default function Dashboard({ 
+  projects, 
+  loading, 
+  onOpenProject, 
+  onProjectsChange, 
+  showArchived, 
+  setShowArchived 
+}) {
   const [showNewProject, setShowNewProject] = useState(false)
 
   return (
@@ -91,6 +109,19 @@ export default function Dashboard({ projects, loading, onOpenProject, onProjects
       <div className="top-bar">
         <span className="top-bar-title">Dashboard</span>
         <div style={{ flex: 1 }} />
+        
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginRight: 16 }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 12, color: 'var(--text-muted)' }}>
+            <input 
+              type="checkbox" 
+              checked={showArchived} 
+              onChange={e => setShowArchived(e.target.checked)}
+              style={{ accentColor: 'var(--accent)' }}
+            />
+            Show Archived
+          </label>
+        </div>
+
         <button
           className="btn btn-primary"
           onClick={() => setShowNewProject(true)}

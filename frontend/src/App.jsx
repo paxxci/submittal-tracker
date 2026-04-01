@@ -11,6 +11,7 @@ export default function App() {
   const [projects, setProjects] = useState([])
   const [currentProject, setCurrentProject] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [showArchived, setShowArchived] = useState(false)
   const [activeUser, setActiveUser] = useState(() => {
     return localStorage.getItem('st_active_user') || 'PM'
   })
@@ -19,14 +20,10 @@ export default function App() {
     localStorage.setItem('st_active_user', activeUser)
   }, [activeUser])
 
-  useEffect(() => {
-    loadProjects()
-  }, [])
-
   const loadProjects = async () => {
     try {
       setLoading(true)
-      const data = await getProjects()
+      const data = await getProjects(showArchived, activeUser)
       setProjects(data)
     } catch (err) {
       console.error('Failed to load projects:', err)
@@ -34,6 +31,10 @@ export default function App() {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    loadProjects()
+  }, [showArchived])
 
   const openProject = (project) => {
     setCurrentProject(project)
@@ -67,6 +68,8 @@ export default function App() {
             loading={loading}
             onOpenProject={openProject}
             onProjectsChange={loadProjects}
+            showArchived={showArchived}
+            setShowArchived={setShowArchived}
           />
         )}
         {view === 'project' && currentProject && (

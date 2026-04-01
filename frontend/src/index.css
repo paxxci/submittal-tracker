@@ -1402,12 +1402,20 @@ tr:hover .row-actions { opacity: 1; }
   border: 1px solid rgba(255,255,255,0.1);
 }
 
-.role-pill-pm { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border-color: rgba(59, 130, 246, 0.2); }
-.role-pill-gc { background: rgba(16, 185, 129, 0.15); color: #34d399; border-color: rgba(16, 185, 129, 0.2); }
-.role-pill-arch { background: rgba(139, 92, 246, 0.15); color: #a78bfa; border-color: rgba(139, 92, 246, 0.2); }
-.role-pill-eng { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border-color: rgba(245, 158, 11, 0.2); }
-.role-pill-vendor { background: rgba(236, 72, 153, 0.15); color: #f472b6; border-color: rgba(236, 72, 153, 0.2); }
+.role-pill-pm { background: rgba(168, 85, 247, 0.15); color: #c084fc; border-color: rgba(168, 85, 247, 0.2); }
+.role-pill-gc { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border-color: rgba(59, 130, 246, 0.2); }
+.role-pill-arch { background: rgba(99, 102, 241, 0.15); color: #818cf8; border-color: rgba(99, 102, 241, 0.2); }
+.role-pill-eng { background: rgba(20, 184, 166, 0.15); color: #2dd4bf; border-color: rgba(20, 184, 166, 0.2); }
+.role-pill-vendor { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border-color: rgba(245, 158, 11, 0.2); }
+.role-pill-super { background: rgba(236, 72, 153, 0.15); color: #f472b6; border-color: rgba(236, 72, 153, 0.2); }
 .role-pill-system { background: rgba(107, 114, 128, 0.15); color: #9ca3af; border-color: rgba(107, 114, 128, 0.2); }
+
+.tag-pm { background: var(--bic-pm); color: #fff; }
+.tag-gc { background: var(--bic-gc); color: #fff; }
+.tag-arch { background: var(--bic-architect); color: #fff; }
+.tag-eng { background: var(--bic-engineer); color: #fff; }
+.tag-vendor { background: var(--bic-vendor); color: #fff; }
+.tag-super { background: #ec4899; color: #fff; }
 
 .activity-author-name {
   font-size: 11px;

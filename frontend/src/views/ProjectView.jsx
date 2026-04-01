@@ -112,37 +112,6 @@ export default function ProjectView({ project, onBack, activeUser, onSpecIntel }
       })
   }, [submittals, filterStatus, search, sortField, sortDir])
 
-  // Native CSV Export — On-demand to prevent render loops
-  const handleExport = () => {
-    if (!filtered.length) return
-    const headers = ['Spec Section', 'Description', 'Status', 'Ball In Court', 'Priority', 'Due Date', 'Submitted Date', 'Revision', 'Next Action']
-    const fmtDate = d => d ? new Date(d + 'T00:00:00').toLocaleDateString('en-US') : ''
-    const rows = filtered.map(s => [
-      s.spec_sections?.csi_code || '',
-      s.item_name || '',
-      STATUS_LABELS[s.status] || s.status,
-      s.bic || '',
-      PRIORITY_LABELS[s.priority] || s.priority,
-      fmtDate(s.due_date),
-      fmtDate(s.submitted_date),
-      s.round > 1 ? `Rev ${s.round}` : '1',
-      s.next_action || '',
-    ])
-    const csvContent = [headers, ...rows]
-      .map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(','))
-      .join('\n')
-    
-    const blob = new Blob(["\ufeff", csvContent], { type: 'text/csv;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement("a")
-    link.href = url
-    link.download = `${(project?.name || 'Submittals').replace(/\s+/g, '_')}_Log.csv`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
-  }
-
   // Status counts for filter chips
   const counts = {}
   for (const s of submittals) counts[s.status] = (counts[s.status] || 0) + 1
@@ -168,15 +137,6 @@ export default function ProjectView({ project, onBack, activeUser, onSpecIntel }
           style={{ marginRight: 6 }}
         >
           <Printer size={12} /> Print Report
-        </button>
-        <button
-          className="btn btn-ghost btn-sm"
-          onClick={handleExport}
-          title="Export CSV"
-          id="btn-export-csv"
-          style={{ marginRight: 6, display: 'inline-flex', alignItems: 'center', gap: 4 }}
-        >
-          <FileDown size={12} /> Export CSV
         </button>
         <button className="btn btn-primary btn-sm" onClick={() => setShowAddSubmittal(true)} id="btn-add-submittal" style={{ marginRight: 6 }}>
           <Plus size={12} /> Add Submittal

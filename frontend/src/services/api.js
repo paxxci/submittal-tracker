@@ -1,13 +1,36 @@
 import { supabase } from '../supabase_client'
 
 // ─── PROJECTS ──────────────────────────────────────────────────────
-export const getProjects = async () => {
-  const { data, error } = await supabase
-    .from('projects')
-    .select('*')
-    .order('created_at', { ascending: false })
-  if (error) throw error
-  return data
+export const getProjects = async (includeArchived = false, userEmail = null) => {
+  try {
+    let query = supabase
+      .from('projects')
+      .select('*, project_members!inner(email)')
+      .order('created_at', { ascending: false })
+    
+    if (userEmail) {
+      query = query.eq('project_members.email', userEmail)
+    }
+
+    if (!includeArchived) {
+      query = query.eq('is_archived', false)
+    }
+
+    const { data, error } = await query
+    if (error) {
+      // If column is missing (SQL code 42703) or mapping error, fallback to legacy select
+      console.warn('Filtering failed, falling back to all projects.', error)
+      const { data: fallback } = await supabase.from('projects')
+        .select('*')
+        .eq('is_archived', includeArchived ? true : false)
+        .order('created_at', { ascending: false })
+      return fallback || []
+    }
+    return data
+  } catch (err) {
+    console.error('getProjects fatal error:', err)
+    return []
+  }
 }
 
 export const createProject = async ({ name, number, client, address }) => {
@@ -20,10 +43,10 @@ export const createProject = async ({ name, number, client, address }) => {
   return data
 }
 
-export const updateProject = async (id, updates) => {
+export const updateProject = async (id, { name, number, client, address }) => {
   const { data, error } = await supabase
     .from('projects')
-    .update(updates)
+    .update({ name, number, client, address })
     .eq('id', id)
     .select()
     .single()
@@ -33,6 +56,50 @@ export const updateProject = async (id, updates) => {
 
 export const deleteProject = async (id) => {
   const { error } = await supabase.from('projects').delete().eq('id', id)
+  if (error) throw error
+}
+
+export const archiveProject = async (id) => {
+  const { data, error } = await supabase
+    .from('projects')
+    .update({ is_archived: true, archived_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export const restoreProject = async (id) => {
+  const { data, error } = await supabase
+    .from('projects')
+    .update({ is_archived: false, archived_at: null })
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export const purgeProjectFiles = async (projectId) => {
+  // 1. Get all submittal IDs for this project
+  const { data: subs } = await supabase.from('submittals').select('id').eq('project_id', projectId)
+  if (!subs?.length) return
+
+  const subIds = subs.map(s => s.id)
+
+  // 2. Get all attachments for these submittals
+  const { data: atts } = await supabase.from('attachments').select('id, file_url').in('submittal_id', subIds)
+  if (!atts?.length) return
+
+  // 3. Delete files from storage
+  const paths = atts.map(a => a.file_url.split('/attachments/')[1]).filter(Boolean)
+  if (paths.length) {
+    await supabase.storage.from('attachments').remove(paths)
+  }
+
+  // 4. Delete rows from attachments table
+  const { error } = await supabase.from('attachments').delete().in('id', atts.map(a => a.id))
   if (error) throw error
 }
 
@@ -265,6 +332,32 @@ export const createContact = async (fields) => {
 
 export const deleteContact = async (id) => {
   const { error } = await supabase.from('contacts').delete().eq('id', id)
+  if (error) throw error
+}
+
+// ─── PROJECT MEMBERS ───────────────────────────────────────────────
+export const getProjectMembers = async (projectId) => {
+  const { data, error } = await supabase
+    .from('project_members')
+    .select('*')
+    .eq('project_id', projectId)
+    .order('created_at', { ascending: true })
+  if (error) throw error
+  return data
+}
+
+export const addProjectMember = async (projectId, email, role = 'editor') => {
+  const { data, error } = await supabase
+    .from('project_members')
+    .insert([{ project_id: projectId, email, role }])
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export const removeProjectMember = async (id) => {
+  const { error } = await supabase.from('project_members').delete().eq('id', id)
   if (error) throw error
 }
 
