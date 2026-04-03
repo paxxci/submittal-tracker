@@ -21,8 +21,6 @@ function ProjectCard({ project, onOpen }) {
           <div className="project-card-name">{project.name}</div>
           <div className="project-card-meta">
             {project.number && <span>#{project.number}</span>}
-            {project.number && project.client && <span> · </span>}
-            {project.client && <span>{project.client}</span>}
           </div>
         </div>
         <div style={{ position: 'relative' }}>
@@ -99,9 +97,11 @@ export default function Dashboard({
   onOpenProject, 
   onProjectsChange, 
   showArchived, 
-  setShowArchived 
+  setShowArchived,
+  userEmail
 }) {
   const [showNewProject, setShowNewProject] = useState(false)
+  const isAdmin = ['paxtonmike11@gmail.com'].includes(userEmail)
 
   return (
     <>
@@ -122,14 +122,16 @@ export default function Dashboard({
           </label>
         </div>
 
-        <button
-          className="btn btn-primary"
-          onClick={() => setShowNewProject(true)}
-          id="btn-new-project"
-        >
-          <Plus size={14} />
-          New Project
-        </button>
+        {isAdmin && (
+          <button
+            className="btn btn-primary"
+            onClick={() => setShowNewProject(true)}
+            id="btn-new-project"
+          >
+            <Plus size={14} />
+            New Project
+          </button>
+        )}
       </div>
 
       {/* Body */}
@@ -168,9 +170,11 @@ export default function Dashboard({
             <div className="empty-state-sub" style={{ marginBottom: 20 }}>
               Create your first project to start tracking submittals.
             </div>
-            <button className="btn btn-primary" onClick={() => setShowNewProject(true)}>
-              <Plus size={14} /> New Project
-            </button>
+            {isAdmin && (
+              <button className="btn btn-primary" onClick={() => setShowNewProject(true)}>
+                <Plus size={14} /> New Project
+              </button>
+            )}
           </div>
         ) : (
           <div className="projects-grid animate-in">

@@ -110,9 +110,9 @@ export async function extractSubmittalMetadata(text) {
     You are a construction submittal expert. 
     Extract the following metadata from this product cutsheet text. 
     Return ONLY a JSON object with these keys: "spec_section", "item_name", "manufacturer", "model", "revision".
-    - spec_section (clean CSI code like 26 05 19)
-    - item_name (clear descriptive name like "THHN Copper Wire")
-    - manufacturer (like "Southwire" or "Leviton")
+    - spec_section (clean CSI code like 08 11 00)
+    - item_name (clear descriptive name like "Hollow Metal Doors")
+    - manufacturer (like "Assa Abloy" or "Schlage")
     - model (part # or series)
     - revision (number like 1, 2, or 3)
     

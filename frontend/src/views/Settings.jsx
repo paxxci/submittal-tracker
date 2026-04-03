@@ -15,7 +15,8 @@ import {
   addProjectMember,
   removeProjectMember,
   getSubmittals,
-  getAttachments
+  getAttachments,
+  purgeProjectArchive
 } from '../services/api'
 import { generateProjectReport } from '../services/reports'
 
@@ -30,7 +31,7 @@ const ROLE_CONFIG = {
   other:      { label: 'Other',      color: 'var(--text-sub)'      },
 }
 
-export default function Settings({ project, onProjectUpdated }) {
+export default function Settings({ project, onProjectUpdated, activeUserRole }) {
   const [contacts, setContacts] = useState([])
   const [showForm, setShowForm] = useState(false)
   const [contactForm, setContactForm] = useState({ name: '', company: '', role: 'vendor', email: '' })
@@ -49,9 +50,12 @@ export default function Settings({ project, onProjectUpdated }) {
   // Team Access
   const [members, setMembers] = useState([])
   const [showMemberForm, setShowMemberForm] = useState(false)
-  const [memberForm, setMemberForm] = useState({ email: '', role: 'editor' })
+  const [memberForm, setMemberForm] = useState({ name: '', email: '', role: 'editor' })
   const [addingMember, setAddingMember] = useState(false)
   const [copiedEmail, setCopiedEmail] = useState(null)
+  const [inviteSuccess, setInviteSuccess] = useState(null)
+
+  const isAdmin = activeUserRole === 'admin'
 
   useEffect(() => {
     if (project) {
@@ -123,10 +127,12 @@ export default function Settings({ project, onProjectUpdated }) {
     if (!memberForm.email.trim()) return
     try {
       setAddingMember(true)
-      await addProjectMember(project.id, memberForm.email, memberForm.role)
-      setMemberForm({ email: '', role: 'editor' })
+      await addProjectMember(project.id, memberForm.email, memberForm.role, memberForm.name)
+      setInviteSuccess(memberForm.email)
+      setMemberForm({ name: '', email: '', role: 'editor' })
       setShowMemberForm(false)
       loadMembers()
+      setTimeout(() => setInviteSuccess(null), 10000)
     } catch (err) {
       alert('Failed to add member. They might already have access.')
     } finally { setAddingMember(false) }
@@ -178,18 +184,25 @@ export default function Settings({ project, onProjectUpdated }) {
       const zip = new JSZip()
       const folder = zip.folder(`${project.name}_Approved_Package`)
       
-      // Fetch all attachments for approved submittals
+      let fileCount = 0
       for (const s of approved) {
-        const atts = await getAttachments(s.id)
+        // Only include approved versions! 🏆
+        const atts = s.attachments?.filter(a => a.is_approved_version) || []
+        
         for (const a of atts) {
           try {
             const resp = await fetch(a.file_url)
             const blob = await resp.blob()
-            // Organization: SpecCode_FileName
             const specCode = s.spec_sections?.csi_code?.replace(/\s/g, '') || 'GENERAL'
             folder.file(`${specCode}/${a.file_name}`, blob)
+            fileCount++
           } catch (e) { console.error('Failed to add file to zip:', a.file_name) }
         }
+      }
+
+      if (fileCount === 0) {
+        alert('Found approved submittals, but none have a "Final Approved Version" marked. Please mark them in the detail panel first. 🛡️🔐')
+        return
       }
 
       // Add the Professional Log Report to the root of the ZIP
@@ -205,6 +218,15 @@ export default function Settings({ project, onProjectUpdated }) {
     } finally {
       setZipping(false)
     }
+  }
+
+  const handlePurgeArchive = async () => {
+    if (!confirm('ARCHIVE PURGE: This will delete ALL old revisions except for the "Final Approved Versions". This is permanent and saves storage space. Proceed? 🛡️🗑️')) return
+    try {
+      setPurging(true)
+      await purgeProjectArchive(project.id)
+      alert('Non-approved revision files have been purged. 🛡️✅')
+    } finally { setPurging(false) }
   }
 
   const handleToggleArchive = async () => {
@@ -271,32 +293,29 @@ export default function Settings({ project, onProjectUpdated }) {
                     value={projectForm.name}
                     onChange={setProj('name')}
                     required
+                    disabled={!isAdmin}
                     id="settings-project-name"
                   />
                 </div>
-                <div className="form-grid-2" style={{ marginBottom: 10 }}>
-                  <div className="form-group">
-                    <label className="form-label">Project Number</label>
-                    <input className="form-input" value={projectForm.number} onChange={setProj('number')} id="settings-project-number" />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Client / GC</label>
-                    <input className="form-input" value={projectForm.client} onChange={setProj('client')} id="settings-project-client" />
-                  </div>
+                <div className="form-group">
+                  <label className="form-label">Project Number</label>
+                  <input className="form-input" value={projectForm.number} onChange={setProj('number')} disabled={!isAdmin} id="settings-project-number" />
                 </div>
                 <div className="form-group" style={{ marginBottom: 14 }}>
                   <label className="form-label">Project Address</label>
-                  <input className="form-input" value={projectForm.address} onChange={setProj('address')} id="settings-project-address" />
+                  <input className="form-input" value={projectForm.address} onChange={setProj('address')} disabled={!isAdmin} id="settings-project-address" />
                 </div>
-                <button
-                  type="submit"
-                  className="btn btn-primary btn-sm"
-                  disabled={savingProject}
-                  id="btn-save-project"
-                >
-                  <Save size={12} />
-                  {projectSaved ? 'Saved ✓' : savingProject ? 'Saving...' : 'Save Changes'}
-                </button>
+                {isAdmin && (
+                  <button
+                    type="submit"
+                    className="btn btn-primary btn-sm"
+                    disabled={savingProject}
+                    id="btn-save-project"
+                  >
+                    <Save size={12} />
+                    {projectSaved ? 'Saved ✓' : savingProject ? 'Saving...' : 'Save Changes'}
+                  </button>
+                )}
               </form>
             </div>
 
@@ -399,12 +418,28 @@ export default function Settings({ project, onProjectUpdated }) {
                 </button>
               </div>
 
+              {inviteSuccess && (
+                <div style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid var(--s-approved)', color: 'var(--s-approved)', padding: '12px 16px', borderRadius: 8, marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ fontSize: 13 }}>
+                    <div style={{ fontWeight: 700 }}>Member Added! 🛡️✨</div>
+                    <div style={{ opacity: 0.8, fontSize: 12 }}>Invite link ready for <strong>{inviteSuccess}</strong></div>
+                  </div>
+                  <button className="btn btn-primary btn-sm" onClick={() => handleCopyInvite(inviteSuccess)}>
+                    Copy Link
+                  </button>
+                </div>
+              )}
+
               {showMemberForm && (
                 <form onSubmit={handleAddMember} style={{ background: 'var(--bg-overlay)', border: '1px solid var(--border)', borderRadius: 8, padding: 14, marginBottom: 12 }}>
+                  <div className="form-group" style={{ marginBottom: 10 }}>
+                    <label className="form-label">Member Name <span className="form-required">*</span></label>
+                    <input className="form-input" style={{ fontSize: 12, padding: '7px 10px' }} placeholder="e.g. John Smith" value={memberForm.name} onChange={e => setMemberForm(m => ({ ...m, name: e.target.value }))} required id="input-member-name" />
+                  </div>
                   <div className="form-grid-2" style={{ marginBottom: 10 }}>
                     <div className="form-group">
-                      <label className="form-label">Persona / Email <span className="form-required">*</span></label>
-                      <input className="form-input" style={{ fontSize: 12, padding: '7px 10px' }} placeholder="e.g. Superintendent or email" value={memberForm.email} onChange={e => setMemberForm(m => ({ ...m, email: e.target.value }))} required autoFocus id="input-member-email" />
+                      <label className="form-label">Email <span className="form-required">*</span></label>
+                      <input className="form-input" style={{ fontSize: 12, padding: '7px 10px' }} placeholder="e.g. john@email.com" value={memberForm.email} onChange={e => setMemberForm(m => ({ ...m, email: e.target.value }))} required id="input-member-email" />
                     </div>
                     <div className="form-group">
                       <label className="form-label">Permission Level</label>
@@ -426,22 +461,22 @@ export default function Settings({ project, onProjectUpdated }) {
                 {members.map(m => (
                   <div key={m.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--bg-card)', borderRadius: 6, border: '1px solid var(--border)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-sub)' }}>{m.email}</div>
-                      <span style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', color: 'var(--accent)', background: 'rgba(0,186,198,0.1)', padding: '1px 6px', borderRadius: 4 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-sub)' }}>{m.name || m.email}</div>
+                      {m.name && <div style={{ fontSize: 11, color: 'var(--text-dim)', marginLeft: 4 }}>({m.email})</div>}
+                      <span style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', color: 'var(--accent)', background: 'rgba(0,186,198,0.1)', padding: '1px 6px', borderRadius: 4, marginLeft: 8 }}>
                         {m.role}
                       </span>
                     </div>
-                    <div style={{ display: 'flex', gap: 4 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <button 
-                        className="btn btn-icon btn-sm" 
-                        style={{ color: copiedEmail === m.email ? 'var(--s-approved)' : 'var(--text-muted)' }}
+                        className="btn btn-ghost btn-sm" 
+                        style={{ position: 'relative', fontSize: 11, padding: '4px 8px', color: copiedEmail === m.email ? 'var(--s-approved)' : 'var(--text-dim)', background: copiedEmail === m.email ? 'rgba(34,197,94,0.1)' : 'transparent' }}
                         onClick={() => handleCopyInvite(m.email)}
-                        title="Copy Invite Link"
                       >
-                        {copiedEmail === m.email ? <Check size={12} /> : <Link size={12} />}
+                        {copiedEmail === m.email ? 'Link Copied!' : 'Copy Invite Link'}
                         {copiedEmail === m.email && (
-                          <span style={{ position: 'absolute', top: -20, right: 0, fontSize: 10, background: 'var(--bg-overlay)', padding: '2px 6px', borderRadius: 4, border: '1px solid var(--border)', whiteSpace: 'nowrap' }}>
-                            Copied!
+                          <span style={{ position: 'absolute', top: -24, right: 0, fontSize: 10, background: 'var(--bg-overlay)', padding: '2px 6px', borderRadius: 4, border: '1px solid var(--border)', whiteSpace: 'nowrap', zIndex: 10 }}>
+                            Ready to Send! ✅
                           </span>
                         )}
                       </button>

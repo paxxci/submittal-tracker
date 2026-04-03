@@ -14,7 +14,7 @@ export default function AddSubmittalModal({ projectId, activeUser, onClose, onCr
     priority: 'medium',
     next_action: '',
     due_date: '',
-    round: 1,
+    round: 0,
   })
   const [contacts, setContacts] = useState([])
   const [saving, setSaving] = useState(false)
@@ -106,7 +106,7 @@ export default function AddSubmittalModal({ projectId, activeUser, onClose, onCr
               </div>
               <div className="form-group">
                 <label className="form-label">Revision #</label>
-                <input className="form-input" type="number" min="1" value={form.round} onChange={set('round')} id="input-round" />
+                <input className="form-input" type="number" min="0" value={form.round} onChange={set('round')} id="input-round" />
               </div>
             </div>
 

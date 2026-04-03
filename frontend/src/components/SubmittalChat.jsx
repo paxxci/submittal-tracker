@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { X, Send, Bot, Sparkles, MessageSquare, ChevronRight, MessageCircle } from 'lucide-react'
 import { getChatCompletion } from '../services/ai'
 
-export default function SubmittalChat({ submittals = [], activityLogs = [], projectName }) {
+export default function SubmittalChat({ submittals = [], activityLogs = [], projectName, activeUserRole }) {
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
@@ -118,25 +118,32 @@ export default function SubmittalChat({ submittals = [], activityLogs = [], proj
             )}
           </div>
 
-          <div className="chat-input-wrap">
-            <div className="chat-suggestions">
-              <button onClick={() => handleSend('What can you do?')}>Capabilities?</button>
-              <button onClick={() => handleSend('Is it my turn?')}>My Turn?</button>
-              <button onClick={() => handleSend('Tell me what is overdue')}>Overdue?</button>
-              <button onClick={() => handleSend('Give me high priority count')}>High Priority?</button>
+          {activeUserRole !== 'viewer' ? (
+            <div className="chat-input-wrap">
+              <div className="chat-suggestions">
+                <button onClick={() => handleSend('What can you do?')}>Capabilities?</button>
+                <button onClick={() => handleSend('Is it my turn?')}>My Turn?</button>
+                <button onClick={() => handleSend('Tell me what is overdue')}>Overdue?</button>
+                <button onClick={() => handleSend('Give me high priority count')}>High Priority?</button>
+              </div>
+              <div className="chat-input-row">
+                <input 
+                  placeholder="Ask project intel..."
+                  value={input}
+                  onChange={e => setInput(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleSend()}
+                />
+                <button className="btn btn-primary btn-icon" onClick={() => handleSend()} disabled={!input.trim()}>
+                  <Send size={16} />
+                </button>
+              </div>
             </div>
-            <div className="chat-input-row">
-              <input 
-                placeholder="Ask project intel..."
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleSend()}
-              />
-              <button className="btn btn-primary btn-icon" onClick={() => handleSend()} disabled={!input.trim()}>
-                <Send size={16} />
-              </button>
+          ) : (
+            <div className="chat-input-wrap" style={{ textAlign: 'center', color: 'var(--text-dim)', fontSize: 12, padding: '20px' }}>
+              <div style={{ marginBottom: 4 }}>Locked in Read-Only Mode 🔒</div>
+              <div style={{ fontSize: 10, opacity: 0.7 }}>Viewers cannot interact with the AI.</div>
             </div>
-          </div>
+          )}
         </div>
       ) : (
         <button 

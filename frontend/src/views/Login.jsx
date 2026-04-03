@@ -7,8 +7,8 @@ const MODE_SIGNUP = 'signup'
 const MODE_FORGOT = 'forgot'
 const MODE_RESET = 'reset'
 
-export default function Login() {
-  const [mode, setMode] = useState(MODE_LOGIN)
+export default function Login({ initialMode = MODE_LOGIN, onComplete }) {
+  const [mode, setMode] = useState(initialMode)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -17,8 +17,23 @@ export default function Login() {
   const [message, setMessage] = useState(null)
 
   useEffect(() => {
-    // 1. Check for URL Parameters (Invitations)
+    // 1. Check for URL Parameters (Invitations & Errors)
     const params = new URLSearchParams(window.location.search)
+    const hashParams = new URLSearchParams(window.location.hash.substring(1))
+    
+    // Check for Errors (like expired links)
+    const errorCode = params.get('error_code') || hashParams.get('error_code')
+    
+    if (errorCode === 'otp_expired' || errorCode === 'access_denied') {
+      setError("Your recovery link has expired or has already been used. Please request a new one below.")
+      setMode(MODE_FORGOT)
+    } else {
+      // If we are in initialMode 'reset' (passed from App.jsx), keep it
+      if (initialMode === MODE_RESET) {
+        setMode(MODE_RESET)
+      }
+    }
+
     if (params.get('signup') === 'true') {
       setMode(MODE_SIGNUP)
     }
@@ -34,7 +49,7 @@ export default function Login() {
       }
     })
     return () => subscription.unsubscribe()
-  }, [])
+  }, [initialMode])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -66,11 +81,17 @@ export default function Login() {
       else if (mode === MODE_RESET) {
         const { error } = await supabase.auth.updateUser({ password })
         if (error) throw error
-        setMessage("Password updated! You can now log in.")
-        setMode(MODE_LOGIN)
+        setMessage("Password updated! Logging you in...")
+        setTimeout(() => {
+          if (onComplete) onComplete()
+        }, 1500)
       }
     } catch (err) {
-      setError(err.message)
+      if (err.message.toLowerCase().includes('rate limit')) {
+        setError("Security Cooldown: You've requested several links recently. Please wait about 5-10 minutes before trying again to protect your account. In the meantime, check your spam for the last link sent!")
+      } else {
+        setError(err.message)
+      }
     } finally {
       setLoading(false)
     }

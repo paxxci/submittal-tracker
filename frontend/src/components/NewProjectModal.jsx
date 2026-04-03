@@ -38,7 +38,7 @@ export default function NewProjectModal({ onClose, onCreated }) {
               <label className="form-label">Project Name <span className="form-required">*</span></label>
               <input
                 className="form-input"
-                placeholder="e.g. GPWTP Electrical"
+                placeholder="e.g. City Center Plaza"
                 value={form.name}
                 onChange={set('name')}
                 autoFocus
@@ -46,27 +46,15 @@ export default function NewProjectModal({ onClose, onCreated }) {
               />
             </div>
 
-            <div className="form-grid-2">
-              <div className="form-group">
-                <label className="form-label">Project Number</label>
-                <input
-                  className="form-input"
-                  placeholder="e.g. PEC-2024-001"
-                  value={form.number}
-                  onChange={set('number')}
-                  id="input-project-number"
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Client / GC</label>
-                <input
-                  className="form-input"
-                  placeholder="e.g. Turner Construction"
-                  value={form.client}
-                  onChange={set('client')}
-                  id="input-project-client"
-                />
-              </div>
+            <div className="form-group">
+              <label className="form-label">Project Number</label>
+              <input
+                className="form-input"
+                placeholder="e.g. PEC-2024-001"
+                value={form.number}
+                onChange={set('number')}
+                id="input-project-number"
+              />
             </div>
 
             <div className="form-group">

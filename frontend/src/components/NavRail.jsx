@@ -1,15 +1,14 @@
-import { LayoutDashboard, FolderOpen, Settings, Cpu, UserCircle, LogOut } from 'lucide-react'
+import React from 'react'
+import { LayoutDashboard, FolderOpen, Settings, Cpu, LogOut, Shield } from 'lucide-react'
 import { supabase } from '../supabase_client'
 
-export default function NavRail({ view, setView, currentProject, goToDashboard, userEmail }) {
-  
+export default function NavRail({ view, setView, currentProject, goToDashboard, userEmail, onLogoutRequest }) {
   const handleLogout = async () => {
-    if (window.confirm('Are you sure you want to log out?')) {
-      await supabase.auth.signOut()
-    }
+    onLogoutRequest()
   }
 
   const userInitial = userEmail?.[0].toUpperCase() || '?'
+  const isAdmin = ['paxtonmike11@gmail.com'].includes(userEmail)
 
   return (
     <nav className="nav-rail">
@@ -46,7 +45,7 @@ export default function NavRail({ view, setView, currentProject, goToDashboard, 
         </button>
       )}
 
-      {currentProject && (
+      {currentProject && isAdmin && (
         <button
           className={`nav-btn ${view === 'settings' ? 'active' : ''}`}
           onClick={() => setView('settings')}
@@ -56,6 +55,15 @@ export default function NavRail({ view, setView, currentProject, goToDashboard, 
           <span className="nav-tooltip">Project Settings</span>
         </button>
       )}
+
+      <button
+        className={`nav-btn ${view === 'security' ? 'active' : ''}`}
+        onClick={() => setView('security')}
+        id="nav-security"
+      >
+        <Shield size={18} />
+        <span className="nav-tooltip">Security</span>
+      </button>
 
       <div className="nav-spacer" />
 

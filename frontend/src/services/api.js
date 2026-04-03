@@ -9,7 +9,7 @@ export const getProjects = async (includeArchived = false) => {
 
     let query = supabase
       .from('projects')
-      .select('*, project_members!inner(email)')
+      .select('*, project_members!inner(email, role)')
       .eq('project_members.email', user.email)
       .order('created_at', { ascending: false })
     
@@ -162,7 +162,7 @@ export const resolveSpecSectionId = async (projectId, csiCode) => {
 export const getSubmittals = async (projectId) => {
   const { data, error } = await supabase
     .from('submittals')
-    .select(`*, spec_sections(csi_code, title)`)
+    .select(`*, spec_sections(csi_code, title), attachments(id, file_name, file_url, type, round, is_approved_version)`)
     .eq('project_id', projectId)
     .order('created_at', { ascending: true })
   if (error) throw error
@@ -176,6 +176,10 @@ const cleanDates = (obj) => {
     if (cleaned[field] === '' || cleaned[field] === undefined) {
       cleaned[field] = null
     }
+  }
+  // Ensure expected_days is an integer
+  if (cleaned.expected_days !== undefined) {
+    cleaned.expected_days = parseInt(cleaned.expected_days) || 21
   }
   return cleaned
 }
@@ -215,6 +219,10 @@ export const updateSubmittal = async (id, updates, authorRole = 'PM') => {
   if (updates.item_name && updates.item_name !== current.item_name) changes.push(`Description updated`)
   if (updates.spec_section && updates.spec_section !== current.spec_section) changes.push(`Spec Section updated`)
   if (updates.next_action && updates.next_action !== current.next_action) changes.push(`Updated Next Action`)
+  if (updates.expected_days !== undefined && updates.expected_days !== current.expected_days) {
+    changes.push(`Target Turnaround → ${updates.expected_days} Days`)
+  }
+  if (updates.round && updates.round !== current.round) changes.push(`REVISION → Rev ${updates.round}`)
 
   if (changes.length > 0) {
     await addActivity(id, `Auto-Audit: ${changes.join(', ')}`, authorRole)
@@ -285,10 +293,8 @@ export const getOmAttachmentsForSubmittals = async (submittalIds) => {
   return data
 }
 
-export const uploadAttachment = async (submittalId, file, type = 'submittal') => {
-  const ext = file.name.split('.').pop()
-  const path = `${submittalId}/${type}/${Date.now()}.${ext}`
-
+export const uploadAttachment = async (submittalId, file, type = 'submittal', round = 1) => {
+  const path = `${submittalId}/${Date.now()}_${file.name}`
   const { error: uploadError } = await supabase.storage
     .from('attachments')
     .upload(path, file)
@@ -300,11 +306,62 @@ export const uploadAttachment = async (submittalId, file, type = 'submittal') =>
 
   const { data, error } = await supabase
     .from('attachments')
-    .insert([{ submittal_id: submittalId, file_name: file.name, file_url: publicUrl, type }])
+    .insert([{ 
+      submittal_id: submittalId, 
+      file_name: file.name, 
+      file_url: publicUrl, 
+      type,
+      round: parseInt(round)
+    }])
     .select()
     .single()
   if (error) throw error
   return data
+}
+
+export const markAttachmentApproved = async (submittalId, attachmentId) => {
+  // Reset all for this submittal
+  await supabase
+    .from('attachments')
+    .update({ is_approved_version: false })
+    .eq('submittal_id', submittalId)
+
+  // Mark this one
+  const { data, error } = await supabase
+    .from('attachments')
+    .update({ is_approved_version: true })
+    .eq('id', attachmentId)
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export const purgeProjectArchive = async (projectId) => {
+  // Fetch submittals to get attachments
+  const { data: submittals } = await supabase.from('submittals').select('id').eq('project_id', projectId)
+  const subIds = submittals.map(s => s.id)
+  
+  if (!subIds.length) return
+
+  // Find all non-approved attachments
+  const { data: atts } = await supabase
+    .from('attachments')
+    .select('id, file_url')
+    .in('submittal_id', subIds)
+    .eq('is_approved_version', false)
+
+  if (!atts.length) return
+
+  // Delete from storage
+  for (const a of atts) {
+    const path = a.file_url.split('/attachments/')[1]
+    if (path) await supabase.storage.from('attachments').remove([path])
+  }
+
+  // Delete from DB
+  const { error } = await supabase.from('attachments').delete().in('id', atts.map(a => a.id))
+  if (error) throw error
 }
 
 export const deleteAttachment = async (id, fileUrl) => {
@@ -354,10 +411,10 @@ export const getProjectMembers = async (projectId) => {
   return data
 }
 
-export const addProjectMember = async (projectId, email, role = 'editor') => {
+export const addProjectMember = async (projectId, email, role = 'editor', name = '') => {
   const { data, error } = await supabase
     .from('project_members')
-    .insert([{ project_id: projectId, email, role }])
+    .insert([{ project_id: projectId, email, role, name }])
     .select()
     .single()
   if (error) throw error

@@ -51,39 +51,61 @@ export default function SpecView({ project, onBack, activeUser }) {
       const arrayBuffer = await file.arrayBuffer()
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
       
-      // Extract text from first 10 pages (TOC potential)
+      // ADAPTIVE SCANNING: For larger files, search up to 30 pages
+      const isLargeFile = file.size > 5 * 1024 * 1024 // 5MB
+      const scanLimit = isLargeFile ? 40 : 15
+      const maxPages = Math.min(pdf.numPages, scanLimit)
+      
       let tocText = ''
-      const maxPages = Math.min(pdf.numPages, 10)
+      let detectedPages = []
+
+      // PHASE 1: KEYWORD SEARCH - Look for 'Table of Contents' or 'Division 26'
+      console.log(`Starting adaptive scan of ${maxPages} pages...`)
+      
       for (let i = 1; i <= maxPages; i++) {
         const page = await pdf.getPage(i)
         const textContent = await page.getTextContent()
         const strings = textContent.items.map(item => item.str)
-        tocText += strings.join(' ') + '\n'
+        const pageText = strings.join(' ')
+        
+        const hasTOC = /table\s+of\s+contents|project\s+manual\s+index|division\s+26/i.test(pageText)
+        if (hasTOC || i <= 5) {
+          tocText += `--- PAGE ${i} ---\n${pageText}\n`
+          detectedPages.push(i)
+        }
+        
+        // Stop early if we have enough TOC data (e.g. 15 solid pages)
+        if (detectedPages.length >= 20) break 
       }
 
-      console.log('TOC Text extracted, sending to AI...')
+      console.log(`Extracted text from ${detectedPages.length} smart-sampled pages. Sending to AI...`)
       
       const prompt = `
-        I am uploading a construction specification Table of Contents. 
-        Please extract a clean list of Divisions and Sections.
-        Return ONLY a JSON array of objects with this format:
+        You are a construction specification expert. I am providing a text dump from a ${file.name} project index.
+        
+        GOAL: Extract ALL Divisions and Sections listed in this index (e.g. Div 01, 02, 08, 10, 26, 27, 28, etc.).
+        Do not filter by trade; extract everything so the user can choose their responsibility.
+        
+        Return ONLY a JSON array:
         [
-          { "division": "26", "code": "26 05 19", "title": "Low-Voltage Electrical Power Conductors and Cables" },
+          { "division": "01", "code": "01 10 00", "title": "Summary of Work" },
+          { "division": "26", "code": "26 05 19", "title": "Low-Voltage Power Conductors" },
           ...
         ]
-        Extract all relevant sections in Divisions 26, 27, and 28 if present, as well as any other common architectural/mechanical divisions.
-        Text:
-        ${tocText}
+        
+        Text Data:
+        ${tocText.slice(0, 50000)} // Deep scan
       `
 
       const aiResponse = await callAI(prompt)
       let sections = []
       try {
-        // Clean AI response in case it wraps in markdown
-        const jsonStr = aiResponse.match(/\[[\s\S]*\]/)?.[0] || '[]'
-        sections = JSON.parse(jsonStr)
+        // More robust JSON cleaning for different AI response styles
+        const cleanJson = aiResponse.replace(/```json|```/g, '').trim()
+        const match = cleanJson.match(/\[[\s\S]*\]/)
+        sections = JSON.parse(match ? match[0] : cleanJson)
       } catch (err) {
-        console.error('AI JSON Parse Error:', err)
+        console.error('AI JSON Parse Error:', err, 'Response was:', aiResponse)
         sections = []
       }
 
@@ -228,8 +250,22 @@ export default function SpecView({ project, onBack, activeUser }) {
               </button>
             </div>
 
-            <div className="spec-discovery-grid" style={{ background: 'var(--bg-surface)', borderRadius: 16, border: '1px solid var(--border)', overflow: 'hidden' }}>
-              <div className="spec-section-list" style={{ padding: 20 }}>
+            <div className="spec-discovery-container" style={{ 
+              height: 'calc(100vh - 250px)', 
+              minHeight: 500,
+              display: 'flex',
+              flexDirection: 'column'
+            }}>
+              <div className="spec-discovery-grid" style={{ 
+                background: 'var(--bg-surface)', 
+                borderRadius: 16, 
+                border: '1px solid var(--border)', 
+                display: 'grid',
+                gridTemplateColumns: 'minmax(0, 1fr) 320px',
+                flex: 1,
+                overflow: 'hidden' 
+              }}>
+                <div className="spec-section-list" style={{ padding: '0 20px', overflowY: 'auto' }}>
                 {Object.entries(groups).map(([div, sections]) => (
                   <div key={div} className="spec-wizard-step">
                     <div className="div-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -277,7 +313,8 @@ export default function SpecView({ project, onBack, activeUser }) {
               </div>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
         {step === 4 && (
           <div style={{ textAlign: 'center', marginTop: '15vh' }}>
