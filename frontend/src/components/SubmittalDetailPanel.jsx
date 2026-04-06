@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { X, Send, Upload, FileText, Trash2, ExternalLink, BookOpen } from 'lucide-react'
 import { StatusBadge, BicChip, STATUS_OPTIONS, BIC_OPTIONS } from './StatusBadge'
+import ConfirmModal from './ConfirmModal'
 import { getActivityLog, addActivity } from '../services/activity_service'
 import { getAttachments, uploadAttachment, deleteAttachment } from '../services/attachment_service'
 import { updateSubmittal } from '../services/submittal_service'
@@ -15,9 +16,10 @@ const fmt = (ts) => {
     ' · ' + new Date(ts).toLocaleDateString('en-US', { hour: 'numeric', minute: '2-digit' })
 }
 
-export default function SubmittalDetailPanel({ submittal, projectId, activeUser, onClose, onUpdated }) {
+export default function SubmittalDetailPanel({ submittal, projectId, activeUser, activeUserRole, onClose, onUpdated }) {
   const [form, setForm] = useState({
-    spec_section: submittal?.spec_sections?.csi_code || '',
+    spec_section_id: submittal?.spec_section_id || '',
+    spec_section_code: submittal?.spec_sections?.csi_code || '',
     item_name: submittal?.item_name || '',
     status: submittal?.status || 'not_started',
     bic: submittal?.bic || 'you',
@@ -42,10 +44,21 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
   const omFileRef = useRef()
   const feedRef = useRef()
 
+  // Universal Confirmation Modal State
+  const [confirm, setConfirm] = useState({ 
+    isOpen: false, 
+    title: '', 
+    message: '', 
+    onConfirm: () => {}, 
+    type: 'danger', 
+    confirmLabel: 'Confirm'
+  })
+
   useEffect(() => {
     if (!submittal) return
     setForm({
-      spec_section: submittal.spec_sections?.csi_code || '',
+      spec_section_id: submittal.spec_section_id,
+      spec_section_code: submittal.spec_sections?.csi_code || '',
       item_name: submittal.item_name || '',
       status: submittal.status,
       bic: submittal.bic,
@@ -96,7 +109,12 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
   const handleSave = async () => {
     try {
       setSaving(true)
-      const updated = await updateSubmittal(submittal.id, form, activeUser)
+      
+      // Clean data for DB (only send valid columns)
+      const { spec_section_code, review_duration, ...cleanForm } = form
+      if (review_duration) cleanForm.expected_days = review_duration
+      
+      const updated = await updateSubmittal(submittal.id, cleanForm, activeUserRole || 'PM')
       setLog(await getActivityLog(submittal.id))
       onUpdated(updated)
     } catch (err) {
@@ -144,7 +162,7 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
             const newFields = new Set()
             setForm(f => {
               const next = { ...f }
-              if (meta.spec_section && !f.spec_section) { next.spec_section = meta.spec_section; newFields.add('spec_section') }
+              if (meta.spec_section && !f.spec_section_code) { next.spec_section_code = meta.spec_section; newFields.add('spec_section') }
               if (meta.item_name && !f.item_name) { next.item_name = meta.item_name; newFields.add('item_name') }
               if (meta.model) { 
                 next.next_action = `Model: ${meta.model}${meta.manufacturer ? ` by ${meta.manufacturer}` : ''}`
@@ -188,7 +206,12 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
 
     try {
       setSaving(true)
-      const updated = await updateSubmittal(submittal.id, next, activeUser)
+      
+      // Clean data for DB
+      const { spec_section_code, review_duration, ...cleanForm } = next
+      if (review_duration) cleanForm.expected_days = review_duration
+
+      const updated = await updateSubmittal(submittal.id, cleanForm, activeUserRole || 'PM')
       setForm(next)
       await addActivity(submittal.id, `📤 OFFICIAL SUBMISSION FILED`, activeUser)
       setLog(await getActivityLog(submittal.id))
@@ -201,11 +224,21 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
   }
 
   const handleDeleteAttachment = async (att) => {
-    if (!confirm(`Remove "${att.file_name}"?`)) return
-    try {
-      await deleteAttachment(att.id, att.file_url)
-      setAttachments(a => a.filter(x => x.id !== att.id))
-    } catch {}
+    setConfirm({
+      isOpen: true,
+      title: 'Remove Attachment?',
+      message: `Permanently delete "${att.file_name}"? This action cannot be undone.`,
+      confirmLabel: 'Remove File',
+      onConfirm: async () => {
+        try {
+          await deleteAttachment(att.id, att.file_url)
+          setAttachments(a => a.filter(x => x.id !== att.id))
+          setOmAttachments(a => a.filter(x => x.id !== att.id))
+        } catch (err) {
+          console.error('Delete failed:', err)
+        }
+      }
+    })
   }
 
   const expectedDateStr = calculateExpectedDate(form.submitted_date, form.review_duration)
@@ -245,7 +278,7 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
             <div className="field-row">
               <label className="field-label">Spec Section #</label>
               <input className={`field-input ${isAiParsing ? 'ai-shimmer' : ''} ${aiFields.has('spec_section') ? 'ai-populated' : ''}`} 
-                placeholder="26 05 19" value={form.spec_section} onChange={set('spec_section')} id="detail-spec-section" />
+                placeholder="26 05 19" value={form.spec_section_code} onChange={set('spec_section_code')} id="detail-spec-section" />
             </div>
             <div className="field-row">
               <label className="field-label">Description</label>
@@ -269,7 +302,7 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
                   <>
                     <option disabled value="">── Contacts ──</option>
                     {contacts.map(c => (
-                      <option key={c.id} value={c.name}>
+                      <option key={c.id} value={`${c.name}${c.company ? ` (${c.company})` : ''}`}>
                         {c.name}{c.company ? ` (${c.company})` : ''}
                       </option>
                     ))}
@@ -423,6 +456,11 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
           icon={<BookOpen size={12} />}
         />
       </div>
+
+      <ConfirmModal
+        {...confirm}
+        onCancel={() => setConfirm(c => ({ ...c, isOpen: false }))}
+      />
     </div>
   )
 }

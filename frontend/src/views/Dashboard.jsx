@@ -90,9 +90,11 @@ export default function Dashboard({
           </div>
         ) : (
           <div className="projects-grid animate-in">
-            {projects.map(p => (
-              <ProjectCard key={p.id} project={p} onOpen={onOpenProject} />
-            ))}
+            {projects
+              .filter(p => showArchived || !p.is_archived)
+              .map(p => (
+                <ProjectCard key={p.id} project={p} onOpen={onOpenProject} />
+              ))}
           </div>
         )}
       </div>

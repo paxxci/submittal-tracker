@@ -87,7 +87,7 @@ export default function AddSubmittalModal({ projectId, activeUser, onClose, onCr
                     <>
                       <option disabled value="">── Contacts ──</option>
                       {contacts.map(c => (
-                        <option key={c.id} value={c.name}>
+                        <option key={c.id} value={`${c.name}${c.company ? ` (${c.company})` : ''}`}>
                           {c.name}{c.company ? ` (${c.company})` : ''}
                         </option>
                       ))}

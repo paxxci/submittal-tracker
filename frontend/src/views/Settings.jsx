@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { Plus, Trash2, Save, Users, Archive, Package, AlertTriangle, RefreshCw, X, Shield, Printer, Link, Check } from 'lucide-react'
+import { Plus, Trash2, Save, Users, Archive, Package, AlertTriangle, RefreshCw, X, Shield, Printer, Link, Check, ShieldAlert } from 'lucide-react'
+import ConfirmModal from '../components/ConfirmModal'
 import JSZip from 'jszip'
 import { saveAs } from 'file-saver'
 import { getContacts, createContact, deleteContact } from '../services/contact_service'
@@ -38,18 +39,25 @@ export default function Settings({ project, onProjectUpdated, activeUserRole }) 
   const [savingProject, setSavingProject] = useState(false)
   const [projectSaved, setProjectSaved] = useState(false)
 
-  // Delete Modal
-  const [showDeleteModal, setShowDeleteModal] = useState(false)
-  const [deleteConfirmInput, setDeleteConfirmInput] = useState('')
-  const [isDeleting, setIsDeleting] = useState(false)
+  const [inviteSuccess, setInviteSuccess] = useState(null)
 
-  // Team Access
+  // Team Access State (Restored)
   const [members, setMembers] = useState([])
   const [showMemberForm, setShowMemberForm] = useState(false)
   const [memberForm, setMemberForm] = useState({ name: '', email: '', role: 'editor' })
   const [addingMember, setAddingMember] = useState(false)
   const [copiedEmail, setCopiedEmail] = useState(null)
-  const [inviteSuccess, setInviteSuccess] = useState(null)
+
+  // Universal Confirmation Modal State
+  const [confirm, setConfirm] = useState({ 
+    isOpen: false, 
+    title: '', 
+    message: '', 
+    onConfirm: () => {}, 
+    type: 'danger', 
+    confirmText: '',
+    confirmLabel: 'Confirm'
+  })
 
   const isAdmin = activeUserRole === 'admin'
 
@@ -113,9 +121,21 @@ export default function Settings({ project, onProjectUpdated, activeUserRole }) 
   }
 
   const handleDeleteContact = async (id) => {
-    if (!confirm('Remove this person?')) return
-    await deleteContact(id)
-    setContacts(c => c.filter(x => x.id !== id))
+    setConfirm({
+      isOpen: true,
+      title: 'Remove Contact?',
+      message: 'This person will no longer appear in the project team or Ball In Court lists.',
+      confirmLabel: 'Remove Person',
+      onConfirm: async () => {
+        try {
+          await deleteContact(id)
+          setContacts(prev => prev.filter(x => x.id !== id))
+        } catch (err) {
+          console.error('Failed to delete contact:', err)
+          alert('Failed to remove contact.')
+        }
+      }
+    })
   }
 
   const handleAddMember = async (e) => {
@@ -136,11 +156,19 @@ export default function Settings({ project, onProjectUpdated, activeUserRole }) 
 
   const handleRemoveMember = async (id, email) => {
     if (email === 'PM') return alert('Cannot remove the Project Manager role.')
-    if (!confirm(`Revoke project access for "${email}"?`)) return
-    try {
-      await removeProjectMember(id)
-      setMembers(m => m.filter(x => x.id !== id))
-    } catch {}
+    
+    setConfirm({
+      isOpen: true,
+      title: 'Revoke Access?',
+      message: `Revoke project access for "${email}"? They will no longer be able to view this project.`,
+      confirmLabel: 'Revoke Access',
+      onConfirm: async () => {
+        try {
+          await removeProjectMember(id)
+          setMembers(m => m.filter(x => x.id !== id))
+        } catch {}
+      }
+    })
   }
 
   const handleCopyInvite = (email) => {
@@ -217,48 +245,86 @@ export default function Settings({ project, onProjectUpdated, activeUserRole }) 
   }
 
   const handlePurgeArchive = async () => {
-    if (!confirm('ARCHIVE PURGE: This will delete ALL old revisions except for the "Final Approved Versions". This is permanent and saves storage space. Proceed? 🛡️🗑️')) return
-    try {
-      setPurging(true)
-      await purgeProjectArchive(project.id)
-      alert('Non-approved revision files have been purged. 🛡️✅')
-    } finally { setPurging(false) }
+    setConfirm({
+      isOpen: true,
+      title: 'Purge Revision Archive?',
+      message: 'This will delete ALL old revisions except for the "Final Approved Versions". This action is permanent.',
+      confirmLabel: 'Purge Now',
+      type: 'alert',
+      onConfirm: async () => {
+        try {
+          setPurging(true)
+          await purgeProjectArchive(project.id)
+        } finally { setPurging(false) }
+      }
+    })
   }
 
   const handleToggleArchive = async () => {
     const isArchiving = !project?.is_archived
-    if (isArchiving && !confirm('Archive this project? It will be hidden from the active dashboard.')) return
-    
-    try {
-      setArchiving(true)
-      const updated = isArchiving ? await archiveProject(project.id) : await restoreProject(project.id)
-      if (onProjectUpdated) onProjectUpdated(updated)
-    } finally { setArchiving(false) }
+    if (!isArchiving) {
+      // Just restore immediately or ask? Standard pop-up is better.
+      try {
+        setArchiving(true)
+        const updated = await restoreProject(project.id)
+        if (onProjectUpdated) onProjectUpdated(updated)
+      } finally { setArchiving(false) }
+      return
+    }
+
+    setConfirm({
+      isOpen: true,
+      title: 'Archive Project?',
+      message: 'Hide this project from the active dashboard. You can restore it later from settings.',
+      confirmLabel: 'Archive Now',
+      type: 'alert',
+      onConfirm: async () => {
+        try {
+          setArchiving(true)
+          const updated = await archiveProject(project.id)
+          if (onProjectUpdated) onProjectUpdated(updated)
+        } finally { setArchiving(false) }
+      }
+    })
   }
 
   const handlePurge = async () => {
-    if (!confirm('CRITICAL: This will PERMANENTLY delete all uploaded PDF files for this project from cloud storage to free up space. The submittal log (text data) will remain. PROCEED?')) return
-    try {
-      setPurging(true)
-      await purgeProjectFiles(project.id)
-      alert('Storage purged. Project files have been deleted.')
-    } finally { setPurging(false) }
+    setConfirm({
+      isOpen: true,
+      title: 'CRITICAL: Purge All Storage?',
+      message: 'Permanently delete all PDF files from cloud storage. The tracking log will remain. PROCEED?',
+      confirmLabel: 'Purge Storage',
+      type: 'danger',
+      onConfirm: async () => {
+        try {
+          setPurging(true)
+          await purgeProjectFiles(project.id)
+        } finally { setPurging(false) }
+      }
+    })
   }
 
   const handleDeleteProject = async () => {
-    if (deleteConfirmInput !== 'DELETE') return
-    
-    try {
-      setIsDeleting(true)
-      await deleteProject(project.id)
-      alert('Project deleted.')
-      window.location.reload()
-    } catch (err) {
-      console.error('Delete failed:', err)
-      alert('Failed to delete project.')
-    } finally {
-      setIsDeleting(false)
-    }
+    setConfirm({
+      isOpen: true,
+      title: 'EXTREME WARNING',
+      message: 'PERMANENTLY DELETE the entire project, all data, and all files. This CANNOT BE REVERSED.',
+      confirmLabel: 'Delete Forever',
+      confirmText: 'DELETE',
+      type: 'danger',
+      onConfirm: async () => {
+        try {
+          setPurging(true)
+          await deleteProject(project.id)
+          window.location.reload()
+        } catch (err) {
+          console.error('Delete failed:', err)
+          alert('Failed to delete project.')
+        } finally {
+          setPurging(false)
+        }
+      }
+    })
   }
 
   const initials = (name) => name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
@@ -552,26 +618,11 @@ export default function Settings({ project, onProjectUpdated, activeUserRole }) 
                   </div>
                   <button 
                     className="btn btn-ghost btn-sm" 
-                    style={{ color: 'var(--s-rejected)', borderColor: 'rgba(239, 68, 68, 0.2)' }}
-                    onClick={handlePurge}
-                    disabled={purging}
-                  >
-                    {purging ? 'Purging...' : 'Delete All Files'}
-                  </button>
-                </div>
-
-                <div style={{ marginTop: 24, paddingTop: 24, borderTop: '1px solid rgba(239, 68, 68, 0.1)' }}>
-                  <button 
-                    className="btn btn-ghost btn-sm" 
                     style={{ color: 'var(--s-rejected)', borderColor: 'rgba(239, 68, 68, 0.2)', width: '100%', justifyContent: 'center' }}
-                    onClick={() => setShowDeleteModal(true)}
+                    onClick={handleDeleteProject}
                   >
                     <Trash2 size={12} /> Delete Project Permanently
                   </button>
-                </div>
-                
-                <div style={{ marginTop: 40, textAlign: 'center', opacity: 0.2, fontSize: 9, fontFamily: 'monospace' }}>
-                  DEBUG ID: {project?.id}
                 </div>
               </div>
             </div>
@@ -579,66 +630,10 @@ export default function Settings({ project, onProjectUpdated, activeUserRole }) 
         )}
       </div>
 
-      {/* ── Delete Modal ─────────────────────────────────────── */}
-      {showDeleteModal && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 10000, padding: 20
-        }}>
-          <div className="card-glow" style={{ 
-            maxWidth: 400, width: '100%', background: 'var(--bg-card)', 
-            border: '1px solid rgba(239, 68, 68, 0.3)', padding: 32, borderRadius: 16
-          }}>
-            <div style={{ color: 'var(--s-rejected)', marginBottom: 16 }}>
-              <AlertTriangle size={48} strokeWidth={1.5} />
-            </div>
-            <h2 style={{ fontSize: 20, fontWeight: 900, color: 'var(--text)', marginBottom: 12 }}>
-              Extreme Warning
-            </h2>
-            <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 24 }}>
-              This will <strong style={{ color: 'var(--s-rejected)' }}>PERMANENTLY DELETE</strong> the entire project, all spec sections, and all submittal data. This action cannot be reversed.
-            </p>
-            
-            <div className="form-group" style={{ marginBottom: 24 }}>
-              <label className="form-label" style={{ color: 'var(--s-rejected)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>
-                Type <span style={{ color: 'var(--text)' }}>DELETE</span> to confirm
-              </label>
-              <input 
-                className="form-input"
-                style={{ 
-                  textAlign: 'center', fontSize: 18, fontWeight: 900, 
-                  letterSpacing: 2, background: 'rgba(0,0,0,0.2)',
-                  borderColor: deleteConfirmInput === 'DELETE' ? 'var(--s-rejected)' : 'var(--border)'
-                }}
-                placeholder="---"
-                value={deleteConfirmInput}
-                onChange={e => setDeleteConfirmInput(e.target.value.toUpperCase())}
-                autoFocus
-              />
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <button 
-                className="btn btn-ghost" 
-                onClick={() => { setShowDeleteModal(false); setDeleteConfirmInput('') }}
-                disabled={isDeleting}
-              >
-                Cancel
-              </button>
-              <button 
-                className="btn btn-primary"
-                style={{ background: 'var(--s-rejected)', color: 'white', border: 'none' }}
-                onClick={handleDeleteProject}
-                disabled={deleteConfirmInput !== 'DELETE' || isDeleting}
-              >
-                {isDeleting ? 'Deleting...' : 'Delete Forever'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmModal
+        {...confirm}
+        onCancel={() => setConfirm(c => ({ ...c, isOpen: false }))}
+      />
     </>
   )
 }

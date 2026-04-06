@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { ArrowLeft, Plus, ChevronRight, Layers, Trash2, AlertTriangle, List, Search, X, BookOpen, ExternalLink, FileDown, Printer } from 'lucide-react'
+import ConfirmModal from '../components/ConfirmModal'
 import { generateProjectReport } from '../services/reports'
 import { StatusBadge, BicChip, PriorityChip } from '../components/StatusBadge'
 import SubmittalDetailPanel from '../components/SubmittalDetailPanel'
@@ -30,7 +31,7 @@ const STATUS_LABELS = {
 
 // Export logic is moving inside the component for direct URL management
 
-export default function ProjectView({ project, onBack, activeUser, onSpecIntel }) {
+export default function ProjectView({ project, onBack, activeUser, onSpecIntel, activeUserRole }) {
   const [submittals, setSubmittals] = useState([])
   const [omMap, setOmMap] = useState({}) // submittal_id → [attachments]
   const [activityLogs, setActivityLogs] = useState([])
@@ -42,6 +43,16 @@ export default function ProjectView({ project, onBack, activeUser, onSpecIntel }
   const [sortField, setSortField] = useState(null)
   const [sortDir, setSortDir] = useState('asc')
   const [csvUrl, setCsvUrl] = useState('')
+
+  // Universal Confirmation Modal State
+  const [confirm, setConfirm] = useState({ 
+    isOpen: false, 
+    title: '', 
+    message: '', 
+    onConfirm: () => {}, 
+    type: 'danger', 
+    confirmLabel: 'Confirm'
+  })
 
   const handleDownloadReport = () => {
     const doc = generateProjectReport(project, submittals)
@@ -80,10 +91,17 @@ export default function ProjectView({ project, onBack, activeUser, onSpecIntel }
 
   const handleDeleteSubmittal = async (id, e) => {
     e.stopPropagation()
-    if (!confirm('Delete this submittal?')) return
-    await deleteSubmittal(id)
-    if (selectedSubmittal?.id === id) setSelectedSubmittal(null)
-    setSubmittals(ss => ss.filter(s => s.id !== id))
+    setConfirm({
+      isOpen: true,
+      title: 'Delete Submittal?',
+      message: 'This will permanently remove this item and all its revisions. This cannot be undone.',
+      confirmLabel: 'Delete Submittal',
+      onConfirm: async () => {
+        await deleteSubmittal(id)
+        if (selectedSubmittal?.id === id) setSelectedSubmittal(null)
+        setSubmittals(ss => ss.filter(s => s.id !== id))
+      }
+    })
   }
 
   const handleSubmittalUpdated = (updated) => {
@@ -283,6 +301,7 @@ export default function ProjectView({ project, onBack, activeUser, onSpecIntel }
             submittal={selectedSubmittal}
             projectId={project.id}
             activeUser={activeUser}
+            activeUserRole={activeUserRole}
             onClose={() => setSelectedSubmittal(null)}
             onUpdated={handleSubmittalUpdated}
           />
@@ -302,6 +321,11 @@ export default function ProjectView({ project, onBack, activeUser, onSpecIntel }
         submittals={submittals}
         activityLogs={activityLogs}
         projectName={project.name}
+      />
+
+      <ConfirmModal
+        {...confirm}
+        onCancel={() => setConfirm(c => ({ ...c, isOpen: false }))}
       />
     </>
   )

@@ -66,8 +66,8 @@ export default function App() {
   const activeUserRole = currentProject?.project_members?.[0]?.role || 'viewer'
 
   const handleProjectUpdated = (updated) => {
-    setCurrentProject(updated)
-    setProjects(ps => ps.map(p => p.id === updated.id ? updated : p))
+    setCurrentProject(prev => prev ? { ...prev, ...updated } : updated)
+    setProjects(ps => ps.map(p => p.id === updated.id ? { ...p, ...updated } : p))
   }
 
   const handleLogout = async () => {
@@ -121,7 +121,7 @@ export default function App() {
         {view === 'settings' && currentProject && (
           <Settings 
             project={currentProject} 
-            onUpdate={handleProjectUpdated}
+            onProjectUpdated={handleProjectUpdated}
             activeUserRole={activeUserRole}
           />
         )}

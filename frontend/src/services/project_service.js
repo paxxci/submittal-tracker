@@ -19,7 +19,11 @@ export const getProjects = async (includeArchived = false) => {
     if (error) {
       // Fallback if join fails (e.g. initial setup)
       console.warn('Membership filter failed, trying primary fetch.', error)
-      const { data: all } = await supabase.from('projects').select('*')
+      let fallbackQuery = supabase.from('projects').select('*')
+      if (!includeArchived) {
+        fallbackQuery = fallbackQuery.eq('is_archived', false)
+      }
+      const { data: all } = await fallbackQuery
       return all || []
     }
     return data || []
