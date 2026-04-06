@@ -6,7 +6,7 @@ import SpecView from './views/SpecView'
 import Settings from './views/Settings'
 import AccountSecurity from './views/AccountSecurity'
 import Login from './views/Login'
-import { getProjects } from './services/api'
+import { getProjects } from './services/project_service'
 import { supabase } from './supabase_client'
 
 export default function App() {

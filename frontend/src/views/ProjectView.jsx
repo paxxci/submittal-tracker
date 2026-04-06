@@ -5,8 +5,12 @@ import { StatusBadge, BicChip, PriorityChip } from '../components/StatusBadge'
 import SubmittalDetailPanel from '../components/SubmittalDetailPanel'
 import AddSubmittalModal from '../components/AddSubmittalModal'
 import SubmittalChat from '../components/SubmittalChat'
-import { Sparkles } from 'lucide-react'
-import { getSubmittals, deleteSubmittal, getOmAttachmentsForSubmittals, getAllActivityLogs } from '../services/api'
+import SubmittalRow from '../components/SubmittalRow'
+import OmSubRow from '../components/OmSubRow'
+import SortTh from '../components/SortHeader'
+import { getSubmittals, deleteSubmittal } from '../services/submittal_service'
+import { getOmAttachmentsForSubmittals } from '../services/attachment_service'
+import { getAllActivityLogs } from '../services/activity_service'
 
 const ALL_STATUSES = [
   { value: 'not_started',     label: 'Not Started' },
@@ -247,7 +251,7 @@ export default function ProjectView({ project, onBack, activeUser, onSpecIntel }
                     <SortTh label="Description"    field="name"     sortField={sortField} sortDir={sortDir} onSort={handleSort} />
                     <SortTh label="Status"          field="status"   sortField={sortField} sortDir={sortDir} onSort={handleSort} />
                     <th>Ball In Court</th>
-                    <SortTh label="Due Date"        field="due"      sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                    <SortTh label="Expected Date"        field="expected"      sortField={sortField} sortDir={sortDir} onSort={handleSort} />
                     <SortTh label="Submitted"       field="submitted" sortField={sortField} sortDir={sortDir} onSort={handleSort} />
                     <th style={{ textAlign: 'center', width: 80 }}>Revision</th>
                     <th style={{ width: 48 }} />
@@ -300,121 +304,5 @@ export default function ProjectView({ project, onBack, activeUser, onSpecIntel }
         projectName={project.name}
       />
     </>
-  )
-}
-
-function SortTh({ label, field, sortField, sortDir, onSort, style }) {
-  const active = sortField === field
-  return (
-    <th
-      onClick={() => onSort(field)}
-      style={{
-        cursor: 'pointer', userSelect: 'none',
-        color: active ? 'var(--accent)' : undefined,
-        ...style,
-      }}
-    >
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
-        {label}
-        <span style={{ fontSize: 9, opacity: active ? 1 : 0.3 }}>
-          {active ? (sortDir === 'asc' ? '↑' : '↓') : '↕'}
-        </span>
-      </span>
-    </th>
-  )
-}
-
-function SubmittalRow({ sub, today, selected, onClick, onDelete }) {
-  const isOverdue = sub.due_date && sub.due_date < today && !['approved', 'rejected'].includes(sub.status)
-  const isApproved = sub.status === 'approved'
-  const rowClass = [selected ? 'selected' : '', isApproved ? 'row-approved' : ''].filter(Boolean).join(' ')
-  return (
-    <tr className={rowClass} onClick={onClick} id={`row-${sub.id}`}>
-      <td style={{ width: 28, textAlign: 'center', padding: '0 4px' }}>
-        <PriorityChip priority={sub.priority} />
-      </td>
-      <td style={{ width: 100 }}>
-        <span style={{
-          fontSize: 11, fontWeight: 700,
-          color: isApproved ? 'var(--s-approved)' : 'var(--accent)',
-          letterSpacing: '0.3px'
-        }}>
-          {sub.spec_sections?.csi_code || '—'}
-        </span>
-      </td>
-      <td className="td-name">
-        <div>{sub.item_name}</div>
-        {sub.next_action && (
-          <div className="td-name-sub" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <ChevronRight size={9} />
-            {sub.next_action}
-          </div>
-        )}
-      </td>
-      <td><StatusBadge status={sub.status} /></td>
-      <td><BicChip bic={sub.bic} /></td>
-      <td className={`td-date ${isOverdue ? 'overdue' : ''}`}>
-        {isOverdue && <AlertTriangle size={10} style={{ marginRight: 4, display: 'inline' }} />}
-        {sub.due_date
-          ? new Date(sub.due_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-          : '—'}
-      </td>
-      <td className="td-date">
-        {sub.submitted_date
-          ? new Date(sub.submitted_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-          : <span style={{ color: 'var(--text-dim)' }}>—</span>}
-      </td>
-      <td style={{ textAlign: 'center' }}>
-        {sub.round > 1
-          ? <span style={{ color: 'var(--s-revise)', fontWeight: 700, fontSize: 11 }}>Rev {sub.round}</span>
-          : <span style={{ color: 'var(--text-dim)', fontSize: 11 }}>—</span>}
-      </td>
-      <td>
-        <div className="row-actions">
-          <button
-            className="btn btn-icon btn-sm"
-            style={{ color: 'var(--s-rejected)', border: 'none' }}
-            onClick={e => onDelete(sub.id, e)}
-            title="Delete"
-          >
-            <Trash2 size={12} />
-          </button>
-        </div>
-      </td>
-    </tr>
-  )
-}
-
-function OmSubRow({ om }) {
-  const fmt = (ts) => ts
-    ? new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-    : ''
-  return (
-    <tr className="om-sub-row" id={`om-row-${om.id}`}>
-      <td style={{ width: 28, padding: 0 }} />
-      <td style={{ width: 100, paddingLeft: 20, paddingRight: 4, color: 'var(--text-muted)', fontSize: 12 }}>└─</td>
-      <td colSpan={4} style={{ paddingLeft: 4 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <BookOpen size={11} style={{ color: 'var(--s-approved)', flexShrink: 0 }} />
-          <span style={{ fontSize: 11, color: 'var(--text-sub)' }}>{om.file_name}</span>
-          <span style={{
-            fontSize: 9, fontWeight: 700, letterSpacing: '0.5px',
-            color: 'var(--s-approved)', background: 'rgba(16,185,129,0.1)',
-            padding: '1px 5px', borderRadius: 3,
-          }}>O&amp;M</span>
-          {fmt(om.uploaded_at) && (
-            <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>· {fmt(om.uploaded_at)}</span>
-          )}
-        </div>
-      </td>
-      <td style={{ textAlign: 'center' }} />
-      <td>
-        <a href={om.file_url} target="_blank" rel="noopener noreferrer"
-          className="btn btn-icon btn-sm" title="Open file" style={{ border: 'none' }}
-          onClick={e => e.stopPropagation()}>
-          <ExternalLink size={11} style={{ color: 'var(--s-approved)' }} />
-        </a>
-      </td>
-    </tr>
   )
 }

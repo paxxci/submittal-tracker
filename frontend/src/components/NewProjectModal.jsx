@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { X } from 'lucide-react'
-import { createProject } from '../services/api'
+import { createProject } from '../services/project_service'
 
 export default function NewProjectModal({ onClose, onCreated }) {
   const [form, setForm] = useState({ name: '', number: '', client: '', address: '' })

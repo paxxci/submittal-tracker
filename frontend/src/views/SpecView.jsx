@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { Upload, FileText, ChevronRight, Check, Loader2, Sparkles, AlertCircle, Search, X, Import } from 'lucide-react'
 import * as pdfjsLib from 'pdfjs-dist'
-import { getSpecSections, createSpecSection, resolveSpecSectionId, createSubmittal } from '../services/api'
+import { getSpecSections, createSpecSection, resolveSpecSectionId } from '../services/spec_service'
+import { createSubmittal } from '../services/submittal_service'
 import { callAI } from '../services/ai'
 
 const ArrowLeft = ({ size }) => (

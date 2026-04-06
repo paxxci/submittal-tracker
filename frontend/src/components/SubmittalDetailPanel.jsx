@@ -1,22 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { X, Send, Upload, FileText, Trash2, ExternalLink, BookOpen } from 'lucide-react'
 import { StatusBadge, BicChip, STATUS_OPTIONS, BIC_OPTIONS } from './StatusBadge'
-import {
-  getActivityLog, addActivity,
-  getAttachments, uploadAttachment, deleteAttachment,
-  updateSubmittal, getContacts
-} from '../services/api'
+import { getActivityLog, addActivity } from '../services/activity_service'
+import { getAttachments, uploadAttachment, deleteAttachment } from '../services/attachment_service'
+import { updateSubmittal } from '../services/submittal_service'
+import { getContacts } from '../services/contact_service'
+import { formatDate, calculateExpectedDate, isSubmittalOverdue } from '../logic/date_engine'
 import { extractSubmittalMetadata } from '../services/ai'
 import * as pdfjsLib from 'pdfjs-dist'
 
 const fmt = (ts) => {
   if (!ts) return ''
-  const d = new Date(ts)
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) +
-    ' · ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+  return formatDate(ts, { month: 'short', day: 'numeric' }) +
+    ' · ' + new Date(ts).toLocaleDateString('en-US', { hour: 'numeric', minute: '2-digit' })
 }
-
-const fmtDate = (d) => d ? new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'
 
 export default function SubmittalDetailPanel({ submittal, projectId, activeUser, onClose, onUpdated }) {
   const [form, setForm] = useState({
@@ -28,6 +25,7 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
     next_action: submittal?.next_action || '',
     due_date: submittal?.due_date || '',
     submitted_date: submittal?.submitted_date || '',
+    review_duration: submittal?.review_duration || 15,
   })
   const [log, setLog] = useState([])
   const [attachments, setAttachments] = useState([])
@@ -55,6 +53,7 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
       next_action: submittal.next_action || '',
       due_date: submittal.due_date || '',
       submitted_date: submittal.submitted_date || '',
+      review_duration: submittal.review_duration || 15,
     })
     loadLog()
     loadAttachments()
@@ -209,9 +208,8 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
     } catch {}
   }
 
-  const today = new Date().toISOString().split('T')[0]
-  const isOverdue = form.due_date && form.due_date < today &&
-    !['approved', 'rejected'].includes(form.status)
+  const expectedDateStr = calculateExpectedDate(form.submitted_date, form.review_duration)
+  const isOverdue = isSubmittalOverdue(expectedDateStr, form.status)
 
   return (
     <div className={`detail-panel open`} id="detail-panel">
@@ -291,14 +289,35 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
               </select>
             </div>
             <div className="field-row">
-              <label className="field-label">Due Date</label>
-              <input className="field-input" type="date" value={form.due_date} onChange={set('due_date')} id="detail-due-date" />
+              <label className="field-label">Review Duration</label>
+              <div style={{ position: 'relative' }}>
+                <input 
+                  className="field-input" 
+                  type="number" 
+                  min="1" 
+                  max="90" 
+                  value={form.review_duration || 15} 
+                  onChange={set('review_duration')} 
+                  style={{ paddingRight: 45 }}
+                />
+                <span style={{ 
+                  position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', 
+                  fontSize: 9, fontWeight: 700, color: 'var(--text-muted)', 
+                  pointerEvents: 'none', letterSpacing: '0.5px' 
+                }}>DAYS</span>
+              </div>
             </div>
           </div>
 
-          <div className="field-row">
-            <label className="field-label">Submitted Date</label>
-            <input className="field-input" type="date" value={form.submitted_date} onChange={set('submitted_date')} id="detail-submitted-date" />
+          <div className="field-row-2">
+            <div className="field-row">
+              <label className="field-label">Submitted</label>
+              <input className="field-input" type="date" value={form.submitted_date} onChange={set('submitted_date')} id="detail-submitted-date" />
+            </div>
+            <div className="field-row">
+              <label className="field-label">Expected</label>
+              <input className="field-input" type="date" disabled value={expectedDateStr || ''} />
+            </div>
           </div>
 
           <div className="field-row">

@@ -2,22 +2,18 @@ import React, { useState, useEffect } from 'react'
 import { Plus, Trash2, Save, Users, Archive, Package, AlertTriangle, RefreshCw, X, Shield, Printer, Link, Check } from 'lucide-react'
 import JSZip from 'jszip'
 import { saveAs } from 'file-saver'
+import { getContacts, createContact, deleteContact } from '../services/contact_service'
 import { 
-  getContacts, 
-  createContact, 
-  deleteContact, 
   updateProject, 
   archiveProject, 
   restoreProject, 
-  purgeProjectFiles,
-  deleteProject,
-  getProjectMembers,
-  addProjectMember,
-  removeProjectMember,
-  getSubmittals,
-  getAttachments,
-  purgeProjectArchive
-} from '../services/api'
+  purgeProjectFiles, 
+  deleteProject, 
+  purgeProjectArchive 
+} from '../services/project_service'
+import { getProjectMembers, addProjectMember, removeProjectMember } from '../services/member_service'
+import { getSubmittals } from '../services/submittal_service'
+import { getAttachments } from '../services/attachment_service'
 import { generateProjectReport } from '../services/reports'
 
 const ROLE_CONFIG = {

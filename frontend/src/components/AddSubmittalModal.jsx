@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { X } from 'lucide-react'
-import { createSubmittal, getContacts, resolveSpecSectionId } from '../services/api'
+import { createSubmittal } from '../services/submittal_service'
+import { getContacts } from '../services/contact_service'
+import { resolveSpecSectionId } from '../services/spec_service'
 import { STATUS_OPTIONS, BIC_OPTIONS } from './StatusBadge'
 
 const DIVIDER = '──────────────'
