@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { X, Send, Bot, Sparkles, MessageSquare, ChevronRight, MessageCircle } from 'lucide-react'
 import { getChatCompletion } from '../services/ai'
 
-export default function SubmittalChat({ submittals = [], activityLogs = [], projectName, activeUserRole }) {
+export default function SubmittalChat({ submittals = [], activityLogs = [], projectName, activeUserRole, isShifted }) {
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
@@ -80,7 +80,7 @@ export default function SubmittalChat({ submittals = [], activityLogs = [], proj
   }, [input, submittals, activityLogs, messages, projectName])
 
   return (
-    <div className="floating-chat-container">
+    <div className={`floating-chat-container ${isShifted ? 'shifted' : ''}`}>
       {isOpen ? (
         <div className="chat-window animate-pop-up">
           <div className="detail-header" style={{ background: 'var(--bg-elevated)', borderBottom: '1px solid var(--border)', padding: '12px 16px' }}>
@@ -157,7 +157,8 @@ export default function SubmittalChat({ submittals = [], activityLogs = [], proj
       )}
 
       <style>{`
-        .floating-chat-container { position: fixed; bottom: 30px; right: 30px; z-index: 9999; pointer-events: auto; font-family: inherit; }
+        .floating-chat-container { position: fixed; bottom: 30px; right: 30px; z-index: 9999; pointer-events: auto; font-family: inherit; transition: right var(--t-med); }
+        .floating-chat-container.shifted { right: calc(30px + var(--panel-w)); }
         
         .chat-fab-button {
           width: auto; height: 60px; padding: 0 24px; background: linear-gradient(135deg, var(--accent), #ff8c00);

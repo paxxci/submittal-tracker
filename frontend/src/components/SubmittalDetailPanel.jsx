@@ -129,10 +129,13 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
     if (!note.trim()) return
     try {
       setSavingNote(true)
-      await addActivity(submittal.id, note.trim(), activeUser)
+      const userDisplay = activeUser.user_metadata?.full_name || activeUser.email || 'User'
+      await addActivity(submittal.id, note.trim(), userDisplay)
       setNote('')
       setLog(await getActivityLog(submittal.id))
-    } catch {}
+    } catch (err) {
+      console.error('Failed to add note:', err)
+    }
     finally { setSavingNote(false) }
   }
 
@@ -171,7 +174,8 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
               return next
             })
             setAiFields(newFields)
-            await addActivity(submittal.id, `🤖 AI Intel: Analyzed "${file.name}" and extracted metadata.`, activeUser)
+            const userDisplay = activeUser.user_metadata?.full_name || activeUser.email || 'User'
+            await addActivity(submittal.id, `🤖 AI Intel: Analyzed "${file.name}" and extracted metadata.`, 'AI Assistant')
           }
         } catch (aiErr) {
           console.error('AI Intel failed:', aiErr)
@@ -182,7 +186,8 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
       
       await uploadAttachment(submittal.id, file, type)
       await loadAttachments()
-      await addActivity(submittal.id, `${isOM ? 'O&M document' : 'Attachment'} uploaded: "${file.name}"`, activeUser)
+      const userDisplay = activeUser.user_metadata?.full_name || activeUser.email || 'User'
+      await addActivity(submittal.id, `${isOM ? 'O&M document' : 'Attachment'} uploaded: "${file.name}"`, userDisplay)
       setLog(await getActivityLog(submittal.id))
     } catch (err) {
       console.error('Upload failed:', err)
@@ -213,7 +218,8 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
 
       const updated = await updateSubmittal(submittal.id, cleanForm, activeUserRole || 'PM')
       setForm(next)
-      await addActivity(submittal.id, `📤 OFFICIAL SUBMISSION FILED`, activeUser)
+      const userDisplay = activeUser.user_metadata?.full_name || activeUser.email || 'User'
+      await addActivity(submittal.id, `📤 OFFICIAL SUBMISSION FILED`, userDisplay)
       setLog(await getActivityLog(submittal.id))
       onUpdated(updated)
     } catch (err) {
@@ -383,20 +389,39 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
                 No activity yet. Add a note below.
               </div>
             )}
-            {log.map(entry => (
-              <div key={entry.id} className="activity-entry">
-                <div className="activity-meta">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span className={`role-pill role-pill-${(entry.author || 'system').toLowerCase()}`}>
-                      {entry.author || 'System'}
-                    </span>
-                    <span className="activity-author-name">{entry.author_name || 'System Auto'}</span>
+            {log.map(entry => {
+              const role = (entry.author === 'AI Assistant' || entry.author === 'System') ? 'system' : (activeUserRole || 'pm')
+              
+              // Robust Self-Healing for legacy data (Converts JSON dumps into clean text)
+              const clean = (val) => {
+                if (typeof val !== 'string' || !val.trim().startsWith('{')) return val
+                try {
+                  const p = JSON.parse(val)
+                  if (p.email) return p.user_metadata?.full_name || p.email
+                  if (p.user_metadata) return p.user_metadata.full_name || 'User'
+                  if (p.id) return `System Action [${p.id.slice(0,8)}]`
+                  return '[Archive Data]'
+                } catch { return val }
+              }
+
+              const displayAuthor = clean(entry.author || 'System Auto')
+              const displayMsg = clean(entry.message)
+
+              return (
+                <div key={entry.id} className="activity-entry">
+                  <div className="activity-meta">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span className={`role-pill role-pill-${role.toLowerCase()}`}>
+                        {role}
+                      </span>
+                      <span className="activity-author-name">{displayAuthor}</span>
+                    </div>
+                    <span className="activity-time">{fmt(entry.created_at)}</span>
                   </div>
-                  <span className="activity-time">{fmt(entry.created_at)}</span>
+                  <div className="activity-msg">{displayMsg}</div>
                 </div>
-                <div className="activity-msg">{entry.message}</div>
-              </div>
-            ))}
+              )
+            })}
           </div>
           <div className="activity-add">
             <textarea

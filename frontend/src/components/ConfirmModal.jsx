@@ -12,6 +12,12 @@ import { AlertTriangle, Trash2, X, ShieldAlert } from 'lucide-react'
  * @param {function} onConfirm - Success callback
  * @param {function} onCancel - Cancel callback
  */
+const THEMES = {
+  danger: { main: 'var(--s-rejected)', bg: 'rgba(239, 68, 68, 0.1)', icon: <Trash2 size={24} /> },
+  alert: { main: 'var(--s-revise)', bg: 'rgba(249, 115, 22, 0.1)', icon: <AlertTriangle size={24} /> },
+  info: { main: 'var(--accent)', bg: 'rgba(0, 186, 198, 0.1)', icon: <ShieldAlert size={24} /> },
+}
+
 export default function ConfirmModal({
   isOpen,
   title = 'Are you sure?',
@@ -24,11 +30,13 @@ export default function ConfirmModal({
 }) {
   const [userInput, setUserInput] = useState('')
   const [isAnimating, setIsAnimating] = useState(false)
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     if (isOpen) {
       setUserInput('')
       setIsAnimating(true)
+      setLoading(false)
     } else {
       setIsAnimating(false)
     }
@@ -39,30 +47,34 @@ export default function ConfirmModal({
   const isExtreme = !!confirmText
   const canConfirm = isExtreme ? userInput.trim() === confirmText : true
 
-  const handleConfirm = () => {
-    if (canConfirm) {
-      onConfirm()
-      onCancel() // Close
+  const handleConfirm = async () => {
+    if (canConfirm && !loading) {
+      try {
+        setLoading(true)
+        await onConfirm()
+        // Success! Modal cleanup usually handled by parent's state change, 
+        // but we ensure loading is cleared if onConfirm doesn't trigger a full navigate.
+      } catch (err) {
+        setLoading(false)
+        console.error('Confirmation action failed:', err)
+      }
     }
   }
 
-  const colors = {
-    danger: { main: 'var(--s-rejected)', bg: 'rgba(239, 68, 68, 0.1)', icon: <Trash2 size={24} /> },
-    alert: { main: 'var(--s-revise)', bg: 'rgba(249, 115, 22, 0.1)', icon: <AlertTriangle size={24} /> },
-    info: { main: 'var(--accent)', bg: 'rgba(0, 186, 198, 0.1)', icon: <ShieldAlert size={24} /> },
-  }[type] || colors.danger
+  const colors = THEMES[type] || THEMES.danger
 
   return (
     <div className={`modal-backdrop ${isAnimating ? 'animate-in' : ''}`} 
       style={{ zIndex: 10000 }}
-      onClick={(e) => e.target === e.currentTarget && onCancel()}>
+      onClick={(e) => e.target === e.currentTarget && !loading && onCancel()}>
       
       <div className="modal" style={{ 
         maxWidth: 420, 
         textAlign: 'center', 
         padding: '36px 32px',
-        border: `1px solid ${colors.main}30`,
-        boxShadow: `0 24px 48px -12px rgba(0,0,0,0.5), 0 0 20px ${colors.main}10`
+        border: `1px solid ${colors.main}`,
+        borderOpacity: 0.2,
+        boxShadow: `0 24px 48px -12px rgba(0,0,0,0.5), 0 0 20px ${colors.main}`
       }}>
         {/* Close Button */}
         <button 
@@ -111,6 +123,12 @@ export default function ConfirmModal({
               placeholder="---"
               value={userInput}
               onChange={e => setUserInput(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && canConfirm && !loading) {
+                  e.preventDefault()
+                  handleConfirm()
+                }
+              }}
               autoFocus
             />
           </div>
@@ -138,7 +156,7 @@ export default function ConfirmModal({
             onClick={handleConfirm}
             disabled={!canConfirm}
           >
-            {confirmLabel}
+            {loading ? 'Confirming...' : confirmLabel}
           </button>
         </div>
       </div>

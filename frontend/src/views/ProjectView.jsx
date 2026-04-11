@@ -321,6 +321,7 @@ export default function ProjectView({ project, onBack, activeUser, onSpecIntel, 
         submittals={submittals}
         activityLogs={activityLogs}
         projectName={project.name}
+        isShifted={!!selectedSubmittal}
       />
 
       <ConfirmModal

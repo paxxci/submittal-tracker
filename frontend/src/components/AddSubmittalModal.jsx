@@ -42,7 +42,7 @@ export default function AddSubmittalModal({ projectId, activeUser, onClose, onCr
         project_id: projectId, 
         spec_section_id,
         round: Number(form.round) 
-      }, activeUser)
+      }, activeUser?.user_metadata?.full_name || activeUser?.email || 'User')
       onCreated()
     } catch (err) {
       setError(err.message || 'Failed to create submittal.')

@@ -156,7 +156,7 @@ export default function SpecView({ project, onBack, activeUser }) {
           bic: 'you',
           priority: 'medium',
           next_action: 'Initial extraction from Spec Intel'
-        }, activeUser)
+        }, activeUser?.user_metadata?.full_name || activeUser?.email || 'User')
       }
       
       setStep(4)

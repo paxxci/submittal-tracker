@@ -65,8 +65,38 @@ export const updateProject = async (id, { name, number, client, address }) => {
 }
 
 export const deleteProject = async (id) => {
-  const { error } = await supabase.from('projects').delete().eq('id', id)
-  if (error) throw error
+  // 1. Cleanup children first (Submittals, Logs, Attachments)
+  const { data: subs, error: subErr } = await supabase.from('submittals').select('id').eq('project_id', id)
+  if (subErr) throw new Error('Failed to fetch submittals for deletion.');
+
+  if (subs?.length) {
+    const subIds = subs.map(s => s.id)
+    await purgeProjectFiles(id) // Storage cleanup
+    const { error: alErr } = await supabase.from('activity_log').delete().in('submittal_id', subIds)
+    if (alErr) throw new Error('Failed to delete activity logs: ' + alErr.message)
+    const { error: sdErr } = await supabase.from('submittals').delete().in('id', subIds)
+    if (sdErr) throw new Error('Failed to delete submittals: ' + sdErr.message)
+  }
+
+  // 2. Delete contacts and spec sections
+  const { error: cErr } = await supabase.from('contacts').delete().eq('project_id', id)
+  if (cErr) throw new Error('Failed to delete contacts: ' + cErr.message)
+
+  const { error: ssErr } = await supabase.from('spec_sections').delete().eq('project_id', id)
+  if (ssErr) throw new Error('Failed to delete spec sections: ' + ssErr.message)
+
+  // 3. Delete the project record FIRST (while user still has membership permissions)
+  const { error: pErr } = await supabase.from('projects').delete().eq('id', id)
+  if (pErr) throw new Error('Failed to delete project: ' + pErr.message)
+
+  // 3b. Verify it actually deleted (since missing RLS DELETE policies silently drop operations)
+  const { data: survivalCheck } = await supabase.from('projects').select('id').eq('id', id)
+  if (survivalCheck && survivalCheck.length > 0) {
+    throw new Error('Supabase RLS Blocked Deletion. You need to enable DELETE policies in the Supabase Dashboard.')
+  }
+
+  // 4. Finally, cleanup memberships (this may be redundant if ON DELETE CASCADE exists, but harmless)
+  await supabase.from('project_members').delete().eq('project_id', id)
 }
 
 export const archiveProject = async (id) => {

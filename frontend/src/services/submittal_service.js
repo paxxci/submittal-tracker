@@ -26,7 +26,11 @@ const cleanDates = (obj) => {
   return cleaned
 }
 
-export const createSubmittal = async (fields, authorRole = 'PM') => {
+export const createSubmittal = async (fields, authorRoleOrUser = 'PM') => {
+  const authorRole = typeof authorRoleOrUser === 'string' 
+    ? authorRoleOrUser 
+    : (authorRoleOrUser?.user_metadata?.full_name || authorRoleOrUser?.email || 'User')
+
   const { data, error } = await supabase
     .from('submittals')
     .insert([cleanDates(fields)])
@@ -40,7 +44,11 @@ export const createSubmittal = async (fields, authorRole = 'PM') => {
   return data
 }
 
-export const updateSubmittal = async (id, updates, authorRole = 'PM') => {
+export const updateSubmittal = async (id, updates, authorRoleOrUser = 'PM') => {
+  const authorRole = typeof authorRoleOrUser === 'string' 
+    ? authorRoleOrUser 
+    : (authorRoleOrUser?.user_metadata?.full_name || authorRoleOrUser?.email || 'User')
+
   // Fetch current for comparison to log changes
   const { data: current } = await supabase.from('submittals').select('*').eq('id', id).single()
   

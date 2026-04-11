@@ -20,12 +20,26 @@ export default function App() {
   const [recoveryFlow, setRecoveryFlow] = useState(false)
 
   useEffect(() => {
-    // Get initial session
+    // 0. E2E Test Bypass
+    if (localStorage.getItem('sb-test-mode') === 'true') {
+      setSession({
+        user: { 
+          id: 'test-user-id', 
+          email: 'paxtonmike11@gmail.com',
+          user_metadata: { full_name: 'Audit Administrator' }
+        },
+        access_token: 'fake-token'
+      })
+      setLoading(false)
+      return
+    }
+
+    // 1. Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
     })
 
-    // Listen for changes
+    // 2. Listen for changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session)
       if (event === 'PASSWORD_RECOVERY') {

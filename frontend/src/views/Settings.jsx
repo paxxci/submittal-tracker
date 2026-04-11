@@ -316,10 +316,10 @@ export default function Settings({ project, onProjectUpdated, activeUserRole }) 
         try {
           setPurging(true)
           await deleteProject(project.id)
-          window.location.reload()
+          window.location.href = '/'
         } catch (err) {
           console.error('Delete failed:', err)
-          alert('Failed to delete project.')
+          alert(`Failed to delete project: ${err.message || err }`)
         } finally {
           setPurging(false)
         }
@@ -558,74 +558,77 @@ export default function Settings({ project, onProjectUpdated, activeUserRole }) 
             </div>
 
             {/* ── Project Closeout ─────────────────────────────────── */}
-            <div className="settings-section" style={{ border: '1px solid var(--s-rejected)', background: 'rgba(239, 68, 68, 0.03)', marginTop: 40 }}>
-              <div className="settings-section-title" style={{ color: 'var(--s-rejected)', display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Archive size={14} /> Project Closeout & Archiving
-              </div>
-              <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 16 }}>
-                Once a project is complete, use these tools to package your records and manage storage space.
-              </p>
+            {isAdmin && (
+              <div className="settings-section" style={{ border: '1px solid var(--s-rejected)', background: 'rgba(239, 68, 68, 0.03)', marginTop: 40 }}>
+                <div className="settings-section-title" style={{ color: 'var(--s-rejected)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Archive size={14} /> Project Closeout & Archiving
+                </div>
+                <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 16 }}>
+                  Once a project is complete, use these tools to package your records and manage storage space.
+                </p>
 
-              <div style={{ display: 'grid', gap: 12 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 12, background: 'var(--bg-overlay)', borderRadius: 8, border: '1px solid var(--border)' }}>
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-sub)', marginBottom: 2 }}>Export Approved Package</div>
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Bundle all approved documents + digital log into a single ZIP.</div>
+                <div style={{ display: 'grid', gap: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 12, background: 'var(--bg-overlay)', borderRadius: 8, border: '1px solid var(--border)' }}>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-sub)', marginBottom: 2 }}>Export Approved Package</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Bundle all approved documents + digital log into a single ZIP.</div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button 
+                        className="btn btn-ghost btn-sm" 
+                        onClick={handleDownloadReport}
+                        title="Download Log PDF"
+                      >
+                        <Printer size={12} /> Log PDF
+                      </button>
+                      <button 
+                        className="btn btn-ghost btn-sm" 
+                        onClick={handleDownloadPackage} 
+                        disabled={zipping}
+                      >
+                        {zipping ? <RefreshCw size={12} className="animate-spin" /> : <Package size={12} />} 
+                        {zipping ? 'Bundling...' : 'Download ZIP'}
+                      </button>
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', gap: 8 }}>
+
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 12, background: 'var(--bg-overlay)', borderRadius: 8, border: '1px solid var(--border)' }}>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-sub)', marginBottom: 2 }}>
+                        {project?.is_archived ? 'Restore Project' : 'Archive Project'}
+                      </div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                        {project?.is_archived ? 'Move project back to the active dashboard.' : 'Hide this project from the active dashboard.'}
+                      </div>
+                    </div>
                     <button 
                       className="btn btn-ghost btn-sm" 
-                      onClick={handleDownloadReport}
-                      title="Download Log PDF"
+                      onClick={handleToggleArchive}
+                      disabled={archiving}
                     >
-                      <Printer size={12} /> Log PDF
+                      <Archive size={12} /> {archiving ? 'Saving...' : project?.is_archived ? 'Restore' : 'Archive'}
                     </button>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 12, background: 'rgba(239, 68, 68, 0.05)', borderRadius: 8, border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--s-rejected)', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <AlertTriangle size={12} /> Purge Storage
+                      </div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Permanently delete all PDFs in this project to save cloud space.</div>
+                    </div>
                     <button 
                       className="btn btn-ghost btn-sm" 
-                      onClick={handleDownloadPackage} 
-                      disabled={zipping}
+                      style={{ color: 'var(--s-rejected)', borderColor: 'rgba(239, 68, 68, 0.2)', width: '100%', justifyContent: 'center' }}
+                      onClick={handleDeleteProject}
                     >
-                      {zipping ? <RefreshCw size={12} className="animate-spin" /> : <Package size={12} />} 
-                      {zipping ? 'Bundling...' : 'Download ZIP'}
+                      <Trash2 size={12} /> Delete Project Permanently
                     </button>
                   </div>
                 </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 12, background: 'var(--bg-overlay)', borderRadius: 8, border: '1px solid var(--border)' }}>
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-sub)', marginBottom: 2 }}>
-                      {project?.is_archived ? 'Restore Project' : 'Archive Project'}
-                    </div>
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                      {project?.is_archived ? 'Move project back to the active dashboard.' : 'Hide this project from the active dashboard.'}
-                    </div>
-                  </div>
-                  <button 
-                    className="btn btn-ghost btn-sm" 
-                    onClick={handleToggleArchive}
-                    disabled={archiving}
-                  >
-                    <Archive size={12} /> {archiving ? 'Saving...' : project?.is_archived ? 'Restore' : 'Archive'}
-                  </button>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 12, background: 'rgba(239, 68, 68, 0.05)', borderRadius: 8, border: '1px solid rgba(239, 68, 68, 0.2)' }}>
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--s-rejected)', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <AlertTriangle size={12} /> Purge Storage
-                    </div>
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Permanently delete all PDFs in this project to save cloud space.</div>
-                  </div>
-                  <button 
-                    className="btn btn-ghost btn-sm" 
-                    style={{ color: 'var(--s-rejected)', borderColor: 'rgba(239, 68, 68, 0.2)', width: '100%', justifyContent: 'center' }}
-                    onClick={handleDeleteProject}
-                  >
-                    <Trash2 size={12} /> Delete Project Permanently
-                  </button>
-                </div>
               </div>
-            </div>
+            )}
+
           </>
         )}
       </div>
