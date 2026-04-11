@@ -240,6 +240,7 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
           await deleteAttachment(att.id, att.file_url)
           setAttachments(a => a.filter(x => x.id !== att.id))
           setOmAttachments(a => a.filter(x => x.id !== att.id))
+          setConfirm(c => ({ ...c, isOpen: false }))
         } catch (err) {
           console.error('Delete failed:', err)
         }
