@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { X, Send, Bot, Sparkles, MessageSquare, ChevronRight, MessageCircle } from 'lucide-react'
+import ReactMarkdown from 'react-markdown'
 import { getChatCompletion } from '../services/ai'
 
 export default function SubmittalChat({ submittals = [], activityLogs = [], projectName, activeUserRole, isShifted }) {
@@ -102,8 +103,8 @@ export default function SubmittalChat({ submittals = [], activityLogs = [], proj
           <div className="chat-messages" ref={scrollRef}>
             {messages.map(m => (
               <div key={m.id} className={`chat-bubble-wrap ${m.role}`}>
-                <div className={`chat-bubble ${m.role}`}>
-                  {m.content}
+                <div className={`chat-bubble ${m.role} markdown-body`}>
+                  <ReactMarkdown>{m.content}</ReactMarkdown>
                 </div>
               </div>
             ))}
@@ -185,6 +186,10 @@ export default function SubmittalChat({ submittals = [], activityLogs = [], proj
         .chat-bubble { max-width: 85%; padding: 10px 14px; border-radius: 14px; font-size: 13px; line-height: 1.5; position: relative; }
         .chat-bubble.assistant { background: var(--bg-elevated); color: var(--text); border-bottom-left-radius: 2px; border: 1px solid var(--border); }
         .chat-bubble.user { background: var(--accent); color: white; border-bottom-right-radius: 2px; }
+        .markdown-body p { margin-top: 0; margin-bottom: 8px; }
+        .markdown-body p:last-child { margin-bottom: 0; }
+        .markdown-body ul, .markdown-body ol { margin-top: 4px; margin-bottom: 8px; padding-left: 20px; }
+        .markdown-body li { margin-bottom: 4px; }
         
         .chat-input-wrap { padding: 16px; border-top: 1px solid var(--border); background: var(--bg-elevated); }
         .chat-suggestions { display: flex; gap: 6px; margin-bottom: 12px; overflow-x: auto; padding-bottom: 4px; }
