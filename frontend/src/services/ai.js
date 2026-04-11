@@ -9,11 +9,12 @@ export async function getChatCompletion(messages, submittals, activityLogs, proj
   // Prepare data context for the AI
   const submittalContext = submittals.map(s => `
 - Item: ${s.item_name}
-  Spec Section: ${s.spec_section || 'N/A'}
+  Spec Section: ${s.spec_sections?.csi_code || 'N/A'}
   Status: ${s.status}
   Ball In Court (BIC): ${s.bic || 'N/A'}
   Priority: ${s.priority}
-  Due Date: ${s.due_date || 'N/A'}
+  Submitted Date: ${s.submitted_date || 'Not Submitted'}
+  Expected Return: ${s.due_date || 'N/A'}
   Next Action: ${s.next_action || 'None'}
   Revision: ${s.round || 1}
 `).join('\n');
