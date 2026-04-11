@@ -100,6 +100,7 @@ export default function ProjectView({ project, onBack, activeUser, onSpecIntel, 
         await deleteSubmittal(id)
         if (selectedSubmittal?.id === id) setSelectedSubmittal(null)
         setSubmittals(ss => ss.filter(s => s.id !== id))
+        setConfirm(c => ({ ...c, isOpen: false }))
       }
     })
   }
