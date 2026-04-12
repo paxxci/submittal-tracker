@@ -13,8 +13,10 @@ import * as pdfjsLib from 'pdfjs-dist'
 
 const fmt = (ts) => {
   if (!ts) return ''
+  const d = new Date(ts)
+  if (isNaN(d.valueOf())) return 'Unknown Date'
   return formatDate(ts, { month: 'short', day: 'numeric' }) +
-    ' · ' + new Date(ts).toLocaleDateString('en-US', { hour: 'numeric', minute: '2-digit' })
+    ' · ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
 }
 
 const AVATAR_COLORS = [
@@ -601,15 +603,29 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
                 if (typeof val !== 'string' || !val.trim().startsWith('{')) return val
                 try {
                   const p = JSON.parse(val)
-                  if (p.email) return p.user_metadata?.full_name || p.email
+                  if (p.email) return p.user_metadata?.full_name || p.email.split('@')[0]
                   if (p.user_metadata) return p.user_metadata.full_name || 'User'
                   if (p.id) return `System Action [${p.id.slice(0,8)}]`
                   return '[Archive Data]'
                 } catch { return val }
               }
 
-              const displayAuthor = clean(entry.author || 'System Auto')
-              const displayMsg = clean(entry.message)
+              let displayAuthor = clean(entry.author || 'System Auto')
+              if (displayAuthor && displayAuthor.includes('@')) {
+                displayAuthor = displayAuthor.split('@')[0]
+              }
+              
+              let displayMsg = clean(entry.message)
+              displayMsg = displayMsg.replace(/\[R\d+\] Submittal Document uploaded: ".+?"/, '📎 Uploaded Document')
+              displayMsg = displayMsg.replace(/O&M Document uploaded: ".+?"/, '📕 Uploaded O&M Document')
+              displayMsg = displayMsg.replace(/Reference File uploaded: ".+?"/, '🔗 Uploaded Reference File')
+              displayMsg = displayMsg.replace(/🔄 Re-classified ".+?" to Revision (\d+)/, '🔄 Changed to Revision $1')
+              displayMsg = displayMsg.replace(/📤 OFFICIAL SUBMISSION FILED/, '📤 Marked as Official Submission')
+              displayMsg = displayMsg.replace(/✅ Stamped .+? as Officially Approved Version/, '✅ Approved')
+              displayMsg = displayMsg.replace(/⏪ Revoked Approval Stamp from .+?/, '⏪ Revoked Approval')
+              displayMsg = displayMsg.replace(/🗑️ Deleted Document: ".+?"/, '🗑️ Deleted Document')
+              displayMsg = displayMsg.replace(/🚀 Submittal Bumped to Revision \d+/, '🚀 Bumped Revision')
+              displayMsg = displayMsg.replace(/Created submittal: .+/, '🆕 Created Submittal')
               const bgColor = getAvatarColor(displayAuthor)
               const initials = getInitials(displayAuthor)
 
