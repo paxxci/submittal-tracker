@@ -458,7 +458,7 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
         </div>
 
         {/* Tab Content Canvas */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ flex: 1, overflowY: activeTab === 'activity' ? 'hidden' : 'auto', padding: '20px', display: 'flex', flexDirection: 'column' }}>
 
         {/* --- DETAILS TAB --- */}
         {activeTab === 'details' && (
@@ -595,7 +595,7 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
               <Printer size={14} />
             </button>
           </div>
-          <div className="activity-messages" ref={feedRef}>
+          <div className="activity-messages" ref={feedRef} style={{ flex: 1, overflowY: 'auto', paddingRight: '8px', display: 'flex', flexDirection: 'column' }}>
             {log.length === 0 && (
               <div style={{ color: 'var(--text-muted)', fontSize: 11, textAlign: 'center', padding: '12px 0' }}>
                 No activity yet. Add a note below.
@@ -656,7 +656,7 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
               )
             })}
           </div>
-          <div className="activity-add">
+          <div className="activity-add" style={{ marginTop: '16px', flexShrink: 0, display: 'flex', gap: '8px' }}>
             <textarea
               value={note}
               onChange={e => setNote(e.target.value)}
