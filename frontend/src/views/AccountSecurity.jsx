@@ -3,6 +3,7 @@ import { Shield, Lock, CheckCircle2, AlertCircle, ArrowRight, RefreshCw } from '
 import { supabase } from '../supabase_client'
 
 export default function AccountSecurity() {
+  const [currentPassword, setCurrentPassword] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [loading, setLoading] = useState(false)
@@ -23,9 +24,25 @@ export default function AccountSecurity() {
     setSuccess(false)
 
     try {
+      // 1. Get current logged in user email
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      if (userError) throw userError
+
+      // 2. Validate current password
+      const { error: verifyError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: currentPassword
+      })
+      if (verifyError) {
+        throw new Error("Current password is incorrect.")
+      }
+
+      // 3. Update to new password
       const { error } = await supabase.auth.updateUser({ password })
       if (error) throw error
+
       setSuccess(true)
+      setCurrentPassword('')
       setPassword('')
       setConfirm('')
     } catch (err) {
@@ -80,6 +97,22 @@ export default function AccountSecurity() {
                 Password updated successfully!
               </div>
             )}
+
+            <div className="form-group" style={{ marginBottom: 24, paddingBottom: 24, borderBottom: '1px solid var(--border)' }}>
+              <label className="form-label">Current Password</label>
+              <div style={{ position: 'relative' }}>
+                <Lock size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                <input 
+                  type="password" 
+                  className="form-input" 
+                  style={{ paddingLeft: 38 }}
+                  placeholder="••••••••"
+                  value={currentPassword}
+                  onChange={e => setCurrentPassword(e.target.value)}
+                  required 
+                />
+              </div>
+            </div>
 
             <div className="form-group" style={{ marginBottom: 16 }}>
               <label className="form-label">New Password</label>
