@@ -43,11 +43,20 @@ export default function Login({ initialMode = MODE_LOGIN, onComplete }) {
     }
 
     // 2. Listen for Password Recovery events from Supabase links
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        setMode(MODE_RESET)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'PASSWORD_RECOVERY' || event === 'USER_UPDATED') {
+        const hash = window.location.hash
+        if (hash.includes('type=recovery') || hash.includes('type=invite')) {
+          setMode(MODE_RESET)
+        }
       }
     })
+    
+    // 3. One-time hash check for direct redirection
+    if (window.location.hash.includes('type=recovery') || window.location.hash.includes('type=invite')) {
+      setMode(MODE_RESET)
+    }
+    
     return () => subscription.unsubscribe()
   }, [initialMode])
 
