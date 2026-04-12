@@ -19,8 +19,8 @@ export async function getChatCompletion(messages, submittals, activityLogs, proj
   Revision: ${s.round || 1}
 `).join('\n');
 
-  // Prepare recent activity context (last 50 logs for token efficiency)
-  const logContext = activityLogs.slice(-50).map(l => {
+  // Prepare recent activity context (Leveraging Gemini 2.0 Flash's massive context window)
+  const logContext = activityLogs.slice(-5000).map(l => {
     const sub = submittals.find(s => s.id === l.submittal_id);
     return `[${new Date(l.created_at).toLocaleDateString()}] ${sub ? sub.item_name : 'System'}: ${l.message}`;
   }).join('\n');
