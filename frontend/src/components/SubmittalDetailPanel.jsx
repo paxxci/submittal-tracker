@@ -133,7 +133,8 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
     setForm(f => {
       const next = { ...f, [field]: value }
       if (field === 'status' && value === 'submitted' && !f.submitted_date) {
-        next.submitted_date = new Date().toISOString().split('T')[0]
+        const d = new Date()
+        next.submitted_date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
       }
       return next
     })
@@ -231,8 +232,9 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
   }
 
   const handleOfficialSubmission = async () => {
-    const today = new Date().toISOString().split('T')[0]
-    const next = { ...form, status: 'submitted', submitted_date: today }
+    const d = new Date()
+    const localToday = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    const next = { ...form, status: 'submitted', submitted_date: localToday }
     
     // Suggest BIC
     const suggestedBic = contacts.find(c =>
