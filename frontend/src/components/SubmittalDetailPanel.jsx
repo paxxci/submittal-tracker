@@ -553,7 +553,7 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
               <input className="field-input" type="date" value={form.submitted_date} onChange={set('submitted_date')} id="detail-submitted-date" />
             </div>
             <div className="field-row">
-              <label className="field-label">Expected</label>
+              <label className="field-label">Expected Return Date</label>
               <input className="field-input" type="date" disabled value={expectedDateStr || ''} />
             </div>
           </div>
