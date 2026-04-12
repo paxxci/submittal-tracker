@@ -4,6 +4,7 @@ import * as pdfjsLib from 'pdfjs-dist'
 import { getSpecSections, createSpecSection, resolveSpecSectionId } from '../services/spec_service'
 import { createSubmittal } from '../services/submittal_service'
 import { callAI } from '../services/ai'
+import * as XLSX from 'xlsx'
 
 const ArrowLeft = ({ size }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -18,9 +19,8 @@ const FileSearch = ({ className }) => (
   </svg>
 )
 
-// Set worker source (using local bundle for Vite compatibility)
-import pdfWorker from 'pdfjs-dist/build/pdf.worker.mjs?url'
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker
+// Set worker source using the local public path for 100% reliability
+pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.mjs'
 
 export default function SpecView({ project, onBack, activeUser }) {
   const [file, setFile] = useState(null)
@@ -32,6 +32,84 @@ export default function SpecView({ project, onBack, activeUser }) {
   const [error, setError] = useState(null)
   
   const fileInputRef = useRef()
+  const csvInputRef = useRef()
+
+  const handleFileImport = (e) => {
+    const f = e.target.files?.[0]
+    if (!f) return
+    
+    setLoading(true)
+    setError(null)
+
+    const isExcel = f.name.endsWith('.xlsx') || f.name.endsWith('.xls')
+    const isCSV = f.name.endsWith('.csv')
+
+    if (isExcel || isCSV) {
+      const reader = new FileReader()
+      reader.onload = async (event) => {
+        try {
+          setStep(2)
+          let rows = []
+          
+          if (isExcel) {
+            const data = new Uint8Array(event.target.result)
+            const workbook = XLSX.read(data, { type: 'array' })
+            const sheet = workbook.Sheets[workbook.SheetNames[0]]
+            rows = XLSX.utils.sheet_to_json(sheet, { header: 1 })
+          } else {
+            const text = event.target.result
+            rows = text.split('\n').filter(r => r.trim()).map(r => r.split(','))
+          }
+          
+          processDiscoveryRows(rows)
+        } catch (err) {
+          setError(`Failed to parse file: ${err.message}`)
+          setStep(1)
+        } finally {
+          setLoading(false)
+        }
+      }
+      
+      if (isExcel) reader.readAsArrayBuffer(f)
+      else reader.readAsText(f)
+    } else {
+      setError('Please upload a .csv, .xlsx, or .xls file.')
+      setLoading(false)
+    }
+  }
+
+  const processDiscoveryRows = (rows) => {
+    if (!rows || rows.length === 0) return
+
+    // Advanced Heuristic: Support more keywords (including typos like 'desciption')
+    const headers = rows[0].map(h => String(h || '').trim().toLowerCase())
+    let codeIndex = headers.findIndex(h => h.includes('code') || h.includes('csi') || h.includes('section') || h.includes('number') || h.includes('no.'))
+    let titleIndex = headers.findIndex(h => h.includes('title') || h.includes('item') || h.includes('desc'))
+
+    // If no headers match, assume Column 0 is Code and Column 1 is Title
+    const hasHeaders = codeIndex !== -1 || titleIndex !== -1
+    if (codeIndex === -1) codeIndex = 0
+    if (titleIndex === -1 && rows[0].length > 1) titleIndex = 1
+    
+    const startRow = hasHeaders ? 1 : 0
+    const dataRows = rows.slice(startRow)
+    
+    // Filter out rows that are entirely empty or just have whitespace
+    const validRows = dataRows.filter(row => {
+      const code = String(row[codeIndex] || '').trim()
+      const title = String(row[titleIndex] || '').trim()
+      return code !== '' || title !== ''
+    })
+
+    const sections = validRows.map(row => ({
+      division: String(row[codeIndex] || '').trim().substring(0, 2) || '00',
+      code: String(row[codeIndex] || '').trim() || 'GENERAL',
+      title: String(row[titleIndex] || '').trim() || 'Imported Item'
+    }))
+
+    setDiscoveredSections(sections)
+    setStep(3)
+  }
 
   const handleFileChange = (e) => {
     const f = e.target.files?.[0]
@@ -52,16 +130,16 @@ export default function SpecView({ project, onBack, activeUser }) {
       const arrayBuffer = await file.arrayBuffer()
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
       
-      // ADAPTIVE SCANNING: For larger files, search up to 30 pages
-      const isLargeFile = file.size > 5 * 1024 * 1024 // 5MB
-      const scanLimit = isLargeFile ? 40 : 15
+      // DEEP SCAN: For municipal bid sets, the TOC can be buried deep.
+      const isLargeFile = file.size > 2 * 1024 * 1024 // 2MB
+      const scanLimit = isLargeFile ? 100 : 30
       const maxPages = Math.min(pdf.numPages, scanLimit)
       
       let tocText = ''
       let detectedPages = []
 
-      // PHASE 1: KEYWORD SEARCH - Look for 'Table of Contents' or 'Division 26'
-      console.log(`Starting adaptive scan of ${maxPages} pages...`)
+      // PHASE 1: BROAD KEYWORD SEARCH
+      console.log(`Starting Deep Scan of ${maxPages} pages...`)
       
       for (let i = 1; i <= maxPages; i++) {
         const page = await pdf.getPage(i)
@@ -69,14 +147,17 @@ export default function SpecView({ project, onBack, activeUser }) {
         const strings = textContent.items.map(item => item.str)
         const pageText = strings.join(' ')
         
-        const hasTOC = /table\s+of\s+contents|project\s+manual\s+index|division\s+26/i.test(pageText)
-        if (hasTOC || i <= 5) {
+        // Loosened keyword net: Look for Index, Contents, Sections, or Division patterns
+        const hasTOC = /table\s+of\s+contents|project\s+manual|section\s+index|division\s+\d+|index\s+of\s+sections/i.test(pageText)
+        
+        // Grab page if it looks like an index, OR if it's in the first 10 pages (safety buffer)
+        if (hasTOC || i <= 10) {
           tocText += `--- PAGE ${i} ---\n${pageText}\n`
           detectedPages.push(i)
         }
         
-        // Stop early if we have enough TOC data (e.g. 15 solid pages)
-        if (detectedPages.length >= 20) break 
+        // Cap the data we send to AI to keep it fast, but allow up to 30 pages of "hits"
+        if (detectedPages.length >= 30) break 
       }
 
       console.log(`Extracted text from ${detectedPages.length} smart-sampled pages. Sending to AI...`)
@@ -203,6 +284,9 @@ export default function SpecView({ project, onBack, activeUser }) {
               className="spec-dropzone" 
               onClick={() => fileInputRef.current?.click()}
             >
+              <div className="spec-tag" style={{ position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)', background: 'var(--accent)', color: 'white', fontSize: 10, padding: '4px 12px', borderRadius: 100, fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1 }}>
+                PDF AI Parser
+              </div>
               <FileSearch className="spec-dropzone-icon" />
               <div style={{ fontWeight: 600 }}>Click to upload Project Specs</div>
               <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>PDF up to 100MB supported</div>
@@ -212,6 +296,54 @@ export default function SpecView({ project, onBack, activeUser }) {
                 hidden 
                 accept=".pdf" 
                 onChange={handleFileChange} 
+              />
+            </div>
+
+            <div style={{ margin: '40px auto', display: 'flex', alignItems: 'center', gap: 20, maxWidth: 480 }}>
+              <div style={{ flex: 1, height: 1, background: 'var(--border)' }}></div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>OR</div>
+              <div style={{ flex: 1, height: 1, background: 'var(--border)' }}></div>
+            </div>
+
+            <div 
+              className="spec-dropzone" 
+              style={{ padding: '32px', borderStyle: 'solid', borderColor: 'var(--border)', background: 'rgba(255,255,255,0.02)' }}
+              onClick={() => csvInputRef.current?.click()}
+            >
+              <div className="spec-tag" style={{ position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)', background: 'var(--text-muted)', color: 'white', fontSize: 10, padding: '4px 12px', borderRadius: 100, fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1 }}>
+                Bulk Register Lane
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'center' }}>
+                <div style={{ width: 40, height: 40, background: 'rgba(34, 197, 94, 0.1)', color: '#22c55e', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <FileText size={20} />
+                </div>
+                <div style={{ textAlign: 'left' }}>
+                  <div style={{ fontWeight: 600 }}>Import from Excel / CSV</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>Best for large submittal registers</div>
+                  <div style={{ 
+                    fontSize: 9, 
+                    display: 'inline-flex', 
+                    alignItems: 'center', 
+                    gap: 4, 
+                    padding: '2px 8px', 
+                    background: 'rgba(255,255,255,0.05)', 
+                    borderRadius: 4, 
+                    color: 'var(--accent)',
+                    border: '1px solid var(--accent-dim)' 
+                  }}>
+                    <span>💡 Use headers like:</span>
+                    <strong style={{ opacity: 0.8 }}>"Number"</strong>
+                    <span>&</span>
+                    <strong style={{ opacity: 0.8 }}>"Description"</strong>
+                  </div>
+                </div>
+              </div>
+              <input 
+                ref={csvInputRef} 
+                type="file" 
+                hidden 
+                accept=".csv, .xlsx, .xls" 
+                onChange={handleFileImport} 
               />
             </div>
 
@@ -229,8 +361,12 @@ export default function SpecView({ project, onBack, activeUser }) {
             <div className="skeleton-circle" style={{ width: 80, height: 80, margin: '0 auto 24px', background: 'var(--accent-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Loader2 size={40} className="spin" style={{ color: 'var(--accent)' }} />
             </div>
-            <h2 style={{ fontSize: 24, fontWeight: 800 }}>Analyzing Table of Contents</h2>
-            <p style={{ color: 'var(--text-muted)', marginTop: 8 }}>Mining PDF data for project structure...</p>
+            <h2 style={{ fontSize: 24, fontWeight: 800 }}>
+              {file?.type === 'application/pdf' ? 'Analyzing Table of Contents' : 'Processing Data Register'}
+            </h2>
+            <p style={{ color: 'var(--text-muted)', marginTop: 8 }}>
+              {file?.type === 'application/pdf' ? 'Mining PDF data for project structure...' : 'Organizing your submittal list...'}
+            </p>
           </div>
         )}
 

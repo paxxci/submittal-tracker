@@ -1,4 +1,5 @@
 import { supabase } from '../supabase_client'
+import { addActivity } from './activity_service'
 
 export const getAttachments = async (submittalId, type = null) => {
   let query = supabase
@@ -24,7 +25,7 @@ export const getOmAttachmentsForSubmittals = async (submittalIds) => {
   return data
 }
 
-export const uploadAttachment = async (submittalId, file, type = 'submittal', round = 1) => {
+export const uploadAttachment = async (submittalId, file, type = 'submittal', round = 1, author = 'User') => {
   const path = `${submittalId}/${Date.now()}_${file.name}`
   const { error: uploadError } = await supabase.storage
     .from('attachments')
@@ -47,6 +48,17 @@ export const uploadAttachment = async (submittalId, file, type = 'submittal', ro
     .select()
     .single()
   if (error) throw error
+
+  // Log the upload in the activity feed
+  const logMessage = type === 'om' 
+    ? `Uploaded O&M Document: ${file.name}`
+    : `Submitted Round ${round}: ${file.name}`
+    
+  await addActivity(submittalId, logMessage, author, { 
+    attachmentId: data.id, 
+    round: parseInt(round) 
+  })
+
   return data
 }
 

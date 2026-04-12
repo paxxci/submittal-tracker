@@ -52,15 +52,25 @@ export const updateSubmittal = async (id, updates, authorRoleOrUser = 'PM') => {
   // Fetch current for comparison to log changes
   const { data: current } = await supabase.from('submittals').select('*').eq('id', id).single()
   
+  const cleaned = cleanDates(updates)
   const { data, error } = await supabase
     .from('submittals')
-    .update(cleanDates(updates))
+    .update(cleaned)
     .eq('id', id)
     .select(`*, spec_sections(csi_code, title)`)
     .single()
   if (error) throw error
 
-
+  // Log status/BIC changes
+  if (current) {
+    if (cleaned.status && cleaned.status !== current.status) {
+      const statusLabel = cleaned.status.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+      await addActivity(id, `Status changed to: ${statusLabel}`, authorRole, { round: data.round })
+    }
+    if (cleaned.bic && cleaned.bic !== current.bic) {
+      await addActivity(id, `BIC changed to: ${cleaned.bic.toUpperCase()}`, authorRole, { round: data.round })
+    }
+  }
 
   return data
 }

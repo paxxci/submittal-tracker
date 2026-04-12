@@ -21,10 +21,16 @@ export const getAllActivityLogs = async (submittalIds) => {
   return data
 }
 
-export const addActivity = async (submittalId, message, author = 'You') => {
+export const addActivity = async (submittalId, message, author = 'You', { attachmentId = null, round = null } = {}) => {
   const { data, error } = await supabase
     .from('activity_log')
-    .insert([{ submittal_id: submittalId, message, author }])
+    .insert([{ 
+      submittal_id: submittalId, 
+      message, 
+      author,
+      attachment_id: attachmentId,
+      round: round
+    }])
     .select()
     .single()
   if (error) throw error
