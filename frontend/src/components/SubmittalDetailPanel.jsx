@@ -3,7 +3,7 @@ import { X, Send, Upload, FileText, Trash2, ExternalLink, BookOpen, Star, Paperc
 import { StatusBadge, BicChip, STATUS_OPTIONS, BIC_OPTIONS } from './StatusBadge'
 import ConfirmModal from './ConfirmModal'
 import { getActivityLog, addActivity } from '../services/activity_service'
-import { getAttachments, uploadAttachment, deleteAttachment, markAttachmentApproved } from '../services/attachment_service'
+import { getAttachments, uploadAttachment, deleteAttachment, toggleAttachmentApproval } from '../services/attachment_service'
 import { updateSubmittal } from '../services/submittal_service'
 import { getContacts } from '../services/contact_service'
 import { formatDate, calculateExpectedDate, isSubmittalOverdue } from '../logic/date_engine'
@@ -246,16 +246,25 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
     }
   }
 
-  const handleApproveAttachment = async (att) => {
+  const handleApproveAttachment = async (att, setApproved) => {
     try {
       setSaving(true)
-      await markAttachmentApproved(submittal.id, att.id)
+      await toggleAttachmentApproval(submittal.id, att.id, setApproved)
       await loadAttachments()
       const userDisplay = activeUser.user_metadata?.full_name || activeUser.email || 'User'
-      await addActivity(submittal.id, `✅ Stamped [R${att.round || 1}] "${att.file_name}" as Officially Approved Version`, userDisplay)
       
-      const updated = await updateSubmittal(submittal.id, { status: 'approved' }, activeUserRole || 'PM')
-      setForm(f => ({ ...f, status: 'approved' }))
+      let updatedStatus = form.status
+      if (setApproved) {
+        await addActivity(submittal.id, `✅ Stamped [R${att.round || 1}] "${att.file_name}" as Officially Approved Version`, userDisplay)
+        updatedStatus = 'approved'
+      } else {
+        await addActivity(submittal.id, `⏪ Revoked Approval Stamp from [R${att.round || 1}] "${att.file_name}"`, userDisplay)
+        // Auto-revert status to pending or working if we just revoked the only approval
+        if (form.status === 'approved') updatedStatus = 'working'
+      }
+
+      const updated = await updateSubmittal(submittal.id, { status: updatedStatus }, activeUserRole || 'PM')
+      setForm(f => ({ ...f, status: updatedStatus }))
       setLog(await getActivityLog(submittal.id))
       onUpdated(updated)
     } catch (err) {
@@ -649,12 +658,12 @@ function AttachmentSection({ title, files, uploading, fileRef, onUpload, onDelet
                 <ExternalLink size={12} />
               </a>
 
-              {onApprove && !att.is_approved_version && (
+              {onApprove && (
                 <button className="btn btn-icon btn-sm"
-                  onClick={() => onApprove(att)}
-                  title="Mark as Final Approved Version"
-                  style={{ border: 'none', color: 'var(--text-muted)' }}>
-                  <Star size={12} />
+                  onClick={() => onApprove(att, !att.is_approved_version)}
+                  title={att.is_approved_version ? "Revoke Final Approval" : "Mark as Final Approved Version"}
+                  style={{ border: 'none', color: att.is_approved_version ? 'var(--s-rejected)' : 'var(--text-muted)' }}>
+                  {att.is_approved_version ? <X size={12} /> : <Star size={12} />}
                 </button>
               )}
 

@@ -50,22 +50,33 @@ export const uploadAttachment = async (submittalId, file, type = 'submittal', ro
   return data
 }
 
-export const markAttachmentApproved = async (submittalId, attachmentId) => {
-  // Reset all for this submittal
-  await supabase
-    .from('attachments')
-    .update({ is_approved_version: false })
-    .eq('submittal_id', submittalId)
+export const toggleAttachmentApproval = async (submittalId, attachmentId, setApproved) => {
+  if (setApproved) {
+    // Reset all for this submittal
+    await supabase
+      .from('attachments')
+      .update({ is_approved_version: false })
+      .eq('submittal_id', submittalId)
 
-  // Mark this one
-  const { data, error } = await supabase
-    .from('attachments')
-    .update({ is_approved_version: true })
-    .eq('id', attachmentId)
-    .select()
-    .single()
-  if (error) throw error
-  return data
+    // Mark this one
+    const { data, error } = await supabase
+      .from('attachments')
+      .update({ is_approved_version: true })
+      .eq('id', attachmentId)
+      .select()
+      .single()
+    if (error) throw error
+    return data
+  } else {
+    const { data, error } = await supabase
+      .from('attachments')
+      .update({ is_approved_version: false })
+      .eq('id', attachmentId)
+      .select()
+      .single()
+    if (error) throw error
+    return data
+  }
 }
 
 export const deleteAttachment = async (id, fileUrl) => {
