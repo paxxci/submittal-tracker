@@ -130,6 +130,7 @@ export default function Settings({ project, onProjectUpdated, activeUserRole }) 
         try {
           await deleteContact(id)
           setContacts(prev => prev.filter(x => x.id !== id))
+          setConfirm(c => ({ ...c, isOpen: false }))
         } catch (err) {
           console.error('Failed to delete contact:', err)
           alert('Failed to remove contact.')
@@ -166,6 +167,7 @@ export default function Settings({ project, onProjectUpdated, activeUserRole }) 
         try {
           await removeProjectMember(id)
           setMembers(m => m.filter(x => x.id !== id))
+          setConfirm(c => ({ ...c, isOpen: false }))
         } catch {}
       }
     })
@@ -255,6 +257,7 @@ export default function Settings({ project, onProjectUpdated, activeUserRole }) 
         try {
           setPurging(true)
           await purgeProjectArchive(project.id)
+          setConfirm(c => ({ ...c, isOpen: false }))
         } finally { setPurging(false) }
       }
     })
@@ -283,6 +286,7 @@ export default function Settings({ project, onProjectUpdated, activeUserRole }) 
           setArchiving(true)
           const updated = await archiveProject(project.id)
           if (onProjectUpdated) onProjectUpdated(updated)
+          setConfirm(c => ({ ...c, isOpen: false }))
         } finally { setArchiving(false) }
       }
     })
@@ -299,6 +303,7 @@ export default function Settings({ project, onProjectUpdated, activeUserRole }) 
         try {
           setPurging(true)
           await purgeProjectFiles(project.id)
+          setConfirm(c => ({ ...c, isOpen: false }))
         } finally { setPurging(false) }
       }
     })
