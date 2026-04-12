@@ -121,3 +121,100 @@ export const generateProjectReport = (project, submittals) => {
 
   return doc
 }
+
+/**
+ * Generates a branded PDF report for a submittal's Activity Log.
+ */
+export const generateActivityLogReport = (submittal, logData) => {
+  const doc = new jsPDF()
+  const now = new Date().toLocaleDateString()
+
+  // Header 
+  doc.setFontSize(22)
+  doc.setTextColor(7, 13, 26)
+  doc.text('ACTIVITY LOG', 14, 22)
+
+  doc.setFontSize(9)
+  doc.setTextColor(148, 163, 184)
+  doc.text(`GENERATED: ${now}`, 14, 28)
+
+  doc.setFontSize(14)
+  doc.setTextColor(0)
+  doc.text(submittal?.item_name || 'Unnamed Submittal', 14, 42)
+  
+  doc.setFontSize(9)
+  doc.setTextColor(71, 85, 105)
+  doc.text(`Spec Section: ${submittal?.spec_section || 'N/A'}`, 14, 48)
+
+  const tableData = logData.map(entry => {
+     const dt = new Date(entry.created_at).toLocaleString()
+     
+     const clean = (val) => {
+       if (typeof val !== 'string' || !val.trim().startsWith('{')) return val
+       try {
+         const p = JSON.parse(val)
+         if (p.email) return p.user_metadata?.full_name || p.email
+         if (p.user_metadata) return p.user_metadata.full_name || 'User'
+         if (p.id) return `System Action [${p.id.slice(0,8)}]`
+         return '[Archive Data]'
+       } catch { return val }
+     }
+
+     return [
+       dt,
+       clean(entry.author || 'System'),
+       clean(entry.message).replace(/\n/g, ' ')
+     ]
+  })
+
+  // Table Config
+  const options = {
+    startY: 55,
+    head: [['DATE / TIME', 'USER', 'MESSAGE']],
+    body: tableData,
+    theme: 'grid',
+    headStyles: { 
+      fillColor: [7, 13, 26],
+      textColor: 255, 
+      fontSize: 8, 
+      fontStyle: 'bold' 
+    },
+    bodyStyles: { 
+      fontSize: 8, 
+      textColor: 50 
+    },
+    columnStyles: {
+      0: { cellWidth: 35 },
+      1: { cellWidth: 40 },
+      2: { cellWidth: 'auto' }
+    },
+    styles: { 
+      overflow: 'linebreak',
+      cellPadding: 4
+    }
+  }
+
+  if (typeof autoTable === 'function') {
+    autoTable(doc, options)
+  } else if (doc.autoTable) {
+    doc.autoTable(options)
+  } else {
+    console.warn('PDF autoTable plugin not found')
+  }
+
+  // Footer (Page Numbers)
+  const pageCount = doc.internal.getNumberOfPages()
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i)
+    doc.setFontSize(8)
+    doc.setTextColor(150)
+    doc.text(
+      `Page ${i} of ${pageCount}`, 
+      doc.internal.pageSize.width / 2, 
+      doc.internal.pageSize.height - 10, 
+      { align: 'center' }
+    )
+  }
+
+  return doc
+}
