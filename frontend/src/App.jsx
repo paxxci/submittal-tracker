@@ -37,12 +37,18 @@ export default function App() {
     // 1. Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
+      // Check for recovery/invite in hash on initial load
+      const hash = window.location.hash
+      if (hash.includes('type=recovery') || hash.includes('type=invite')) {
+        setRecoveryFlow(true)
+      }
     })
 
     // 2. Listen for changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session)
-      if (event === 'PASSWORD_RECOVERY') {
+      const hash = window.location.hash
+      if (event === 'PASSWORD_RECOVERY' || hash.includes('type=recovery') || hash.includes('type=invite')) {
         setRecoveryFlow(true)
       }
     })
