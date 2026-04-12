@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { X, Send, Upload, FileText, Trash2, ExternalLink, BookOpen, Star, Paperclip } from 'lucide-react'
+import { X, Send, Upload, FileText, Trash2, ExternalLink, BookOpen, Star, Paperclip, Printer } from 'lucide-react'
 import { StatusBadge, BicChip, STATUS_OPTIONS, BIC_OPTIONS } from './StatusBadge'
 import ConfirmModal from './ConfirmModal'
 import { getActivityLog, addActivity } from '../services/activity_service'
@@ -337,6 +337,39 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
     }
   }
 
+  const handlePrintLog = () => {
+    const printWindow = window.open('', '', 'height=800,width=800')
+    let html = `<html><head><title>Activity Log - ${submittal.item_name}</title>`
+    html += `<style>
+      body { font-family: 'Inter', sans-serif; padding: 40px; color: #111; max-width: 800px; margin: 0 auto; }
+      h1 { font-size: 20px; border-bottom: 2px solid #ddd; padding-bottom: 10px; margin-bottom: 30px; font-weight: 800; }
+      .activity-item { margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+      .meta { font-size: 11px; color: #666; margin-bottom: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+      .msg { font-size: 13px; line-height: 1.5; font-weight: 500; }
+      @media print { body { padding: 0; } }
+    </style></head><body>`
+    html += `<h1>Submittal Activity Log<br/><span style="color: #666; font-size: 14px; font-weight: 600;">[${submittal.spec_section}] ${submittal.item_name}</span></h1>`
+    
+    log.forEach(item => {
+      const dt = new Date(item.created_at).toLocaleString()
+      html += `
+        <div class="activity-item">
+          <div class="meta">${dt} &nbsp;&bull;&nbsp; ${item.user_email || 'System'}</div>
+          <div class="msg">
+            ${item.message.replace(/\n/g, '<br/>')}
+          </div>
+        </div>
+      `
+    })
+    
+    html += `</body></html>`
+    printWindow.document.write(html)
+    printWindow.document.close()
+    printWindow.setTimeout(() => {
+      printWindow.print()
+    }, 250)
+  }
+
   const handleOfficialSubmission = async () => {
     const d = new Date(new Date().toLocaleString("en-US", {timeZone: "America/Los_Angeles"}));
     const localToday = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -557,8 +590,13 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
 
         {/* Activity Log */}
         <div className="detail-section">
-          <div className="detail-section-title">Activity Log</div>
-          <div className="activity-feed" ref={feedRef}>
+          <div className="activity-feed-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="detail-section-title" style={{ marginBottom: 0 }}>Activity Log</div>
+            <button className="btn btn-icon btn-sm" onClick={handlePrintLog} title="Print Fully Formatted Activity Log" style={{ color: 'var(--text-muted)' }}>
+              <Printer size={14} />
+            </button>
+          </div>
+          <div className="activity-messages" ref={feedRef}>
             {log.length === 0 && (
               <div style={{ color: 'var(--text-muted)', fontSize: 11, textAlign: 'center', padding: '12px 0' }}>
                 No activity yet. Add a note below.
