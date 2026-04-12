@@ -19,10 +19,10 @@ export async function getChatCompletion(messages, submittals, activityLogs, proj
   Revision: ${s.round || 1}
 `).join('\n');
 
-  // Prepare recent activity context (last 20 logs for token efficiency)
-  const logContext = activityLogs.slice(0, 20).map(l => {
+  // Prepare recent activity context (last 50 logs for token efficiency)
+  const logContext = activityLogs.slice(-50).map(l => {
     const sub = submittals.find(s => s.id === l.submittal_id);
-    return `[${new Date(l.created_at).toLocaleDateString()}] ${sub ? sub.item_name : 'System'}: ${l.message} (${l.author})`;
+    return `[${new Date(l.created_at).toLocaleDateString()}] ${sub ? sub.item_name : 'System'}: ${l.message}`;
   }).join('\n');
 
   const systemPrompt = `
@@ -35,15 +35,16 @@ Below is the current state of all submittals and the recent activity log for thi
 SUBMITTALS:
 ${submittalContext}
 
-RECENT ACTIVITY LOG:
+RECENT ACTIVITY LOG (Newest messages at bottom):
 ${logContext}
 
-GOALS:
+GOALS & SYMBOLS:
 1. Answer user questions about submittal status, spec sections, priorities, and next actions.
-2. Help the user identify bottlenecks (e.g., items in their court).
-3. Be professional, concise, and helpful. 
-4. If asked about a specific item, use the context to provide the most accurate status.
-5. If the user asks "What model are you?", respond that you are a "Gemini 2.0 Live Brain".
+2. The log uses symbols: ✅ means Approved, 📤 means Official Submission, 🔄 means Revision changed, 🗑️ means Deleted.
+3. Help the user identify bottlenecks (e.g., items in their court).
+4. Be professional, concise, and helpful. 
+5. If asked about a specific item, use the context to provide the most accurate status.
+6. If the user asks "What model are you?", respond that you are a "Gemini 2.0 Live Brain".
 
 FORMATTING:
 Use markdown for bolding critical info. Keep responses short and actionable.
