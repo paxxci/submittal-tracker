@@ -124,21 +124,21 @@ export default function Login({ initialMode = MODE_LOGIN, onComplete }) {
             </div>
             <span className="logo-text">Submittal Tracker <span className="text-accent">Pro</span></span>
           </div>
-          <h1>Construction submittals, <br /><span className="text-accent">built for the field.</span></h1>
+          <h1>Professional <br /><span className="text-accent">Submittal Tracker.</span></h1>
           <p>Professional grade tracking, PDF reporting, and team coordination in one beautiful interface.</p>
           
           <div className="feature-list">
             <div className="feature-item">
               <BadgeCheck size={18} className="text-accent" />
-              <span>Real-time persistence with Supabase</span>
+              <span>Automated Spec Breakdown</span>
             </div>
             <div className="feature-item">
               <BadgeCheck size={18} className="text-accent" />
-              <span>Branded PDF reporting</span>
+              <span>Full Activity Paper Trail</span>
             </div>
             <div className="feature-item">
               <BadgeCheck size={18} className="text-accent" />
-              <span>Role-based access control</span>
+              <span>Clean & Simple Dashboard</span>
             </div>
           </div>
         </div>
