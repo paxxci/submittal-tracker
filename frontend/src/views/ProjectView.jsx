@@ -159,14 +159,6 @@ export default function ProjectView({ project, onBack, activeUser, onSpecIntel, 
           {project.number && <span style={{ color: 'var(--text-dim)', fontSize: 11 }}> · #{project.number}</span>}
         </div>
         <div style={{ flex: 1 }} />
-        <button
-          className="btn btn-ghost btn-sm"
-          onClick={() => window.print()}
-          title="Print Visual Report (PDF)"
-          style={{ marginRight: 6 }}
-        >
-          <Printer size={12} /> Print Report
-        </button>
         <button className="btn btn-primary btn-sm" onClick={() => setShowAddSubmittal(true)} id="btn-add-submittal" style={{ marginRight: 6 }}>
           <Plus size={12} /> Add Submittal
         </button>
