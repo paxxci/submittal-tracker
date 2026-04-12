@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { X, Send, Upload, FileText, Trash2, ExternalLink, BookOpen } from 'lucide-react'
+import { X, Send, Upload, FileText, Trash2, ExternalLink, BookOpen, Star, Paperclip } from 'lucide-react'
 import { StatusBadge, BicChip, STATUS_OPTIONS, BIC_OPTIONS } from './StatusBadge'
 import ConfirmModal from './ConfirmModal'
 import { getActivityLog, addActivity } from '../services/activity_service'
-import { getAttachments, uploadAttachment, deleteAttachment } from '../services/attachment_service'
+import { getAttachments, uploadAttachment, deleteAttachment, markAttachmentApproved } from '../services/attachment_service'
 import { updateSubmittal } from '../services/submittal_service'
 import { getContacts } from '../services/contact_service'
 import { formatDate, calculateExpectedDate, isSubmittalOverdue } from '../logic/date_engine'
@@ -64,16 +64,19 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
   })
   const [log, setLog] = useState([])
   const [attachments, setAttachments] = useState([])
+  const [refAttachments, setRefAttachments] = useState([])
   const [omAttachments, setOmAttachments] = useState([])
   const [contacts, setContacts] = useState([])
   const [note, setNote] = useState('')
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [uploadingRef, setUploadingRef] = useState(false)
   const [uploadingOM, setUploadingOM] = useState(false)
   const [savingNote, setSavingNote] = useState(false)
   const [isAiParsing, setIsAiParsing] = useState(false)
   const [aiFields, setAiFields] = useState(new Set())
   const fileRef = useRef()
+  const refFileRef = useRef()
   const omFileRef = useRef()
   const feedRef = useRef()
 
@@ -113,11 +116,13 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
 
   const loadAttachments = async () => {
     try {
-      const [subs, oms] = await Promise.all([
+      const [subs, refs, oms] = await Promise.all([
         getAttachments(submittal.id, 'submittal'),
+        getAttachments(submittal.id, 'reference'),
         getAttachments(submittal.id, 'om'),
       ])
       setAttachments(subs)
+      setRefAttachments(refs)
       setOmAttachments(oms)
     } catch {}
   }
@@ -177,11 +182,14 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
     const file = e.target.files?.[0]
     if (!file) return
     const isOM = type === 'om'
+    const isRef = type === 'reference'
     try {
-      isOM ? setUploadingOM(true) : setUploading(true)
+      if (isOM) setUploadingOM(true)
+      else if (isRef) setUploadingRef(true)
+      else setUploading(true)
       
       // --- SUBMITTAL INTEL: AI Parsing ---
-      if (!isOM && file.type === 'application/pdf') {
+      if (type === 'submittal' && file.type === 'application/pdf') {
         try {
           setIsAiParsing(true)
           const arrayBuffer = await file.arrayBuffer()
@@ -216,16 +224,57 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
         }
       }
       
-      await uploadAttachment(submittal.id, file, type)
+      const targetRound = type === 'submittal' ? (submittal.round || 1) : 1
+      await uploadAttachment(submittal.id, file, type, targetRound)
       await loadAttachments()
       const userDisplay = activeUser.user_metadata?.full_name || activeUser.email || 'User'
-      await addActivity(submittal.id, `${isOM ? 'O&M document' : 'Attachment'} uploaded: "${file.name}"`, userDisplay)
+      
+      let logPrefix = 'Attachment'
+      if (type === 'submittal') logPrefix = `[R${targetRound}] Submittal Document`
+      if (isOM) logPrefix = 'O&M Document'
+      if (isRef) logPrefix = 'Reference File'
+      
+      await addActivity(submittal.id, `${logPrefix} uploaded: "${file.name}"`, userDisplay)
       setLog(await getActivityLog(submittal.id))
     } catch (err) {
       console.error('Upload failed:', err)
     } finally {
-      isOM ? setUploadingOM(false) : setUploading(false)
+      if (isOM) setUploadingOM(false)
+      else if (isRef) setUploadingRef(false)
+      else setUploading(false)
       e.target.value = ''
+    }
+  }
+
+  const handleApproveAttachment = async (att) => {
+    try {
+      await markAttachmentApproved(submittal.id, att.id)
+      await loadAttachments()
+      const userDisplay = activeUser.user_metadata?.full_name || activeUser.email || 'User'
+      await addActivity(submittal.id, `✅ Stamped [R${att.round || 1}] "${att.file_name}" as Officially Approved Version`, userDisplay)
+      setLog(await getActivityLog(submittal.id))
+    } catch (err) {
+      console.error('Approve failed:', err)
+    }
+  }
+
+  const handleBumpRevision = async () => {
+    try {
+      setSaving(true)
+      const nextRound = (submittal.round || 1) + 1
+      const updateData = { round: nextRound, status: 'working', submitted_date: null }
+      const updated = await updateSubmittal(submittal.id, updateData, activeUserRole || 'PM')
+      
+      const userDisplay = activeUser.user_metadata?.full_name || activeUser.email || 'User'
+      await addActivity(submittal.id, `🚀 Submittal Bumped to Revision ${nextRound}`, userDisplay)
+      
+      setForm(f => ({ ...f, ...updateData }))
+      setLog(await getActivityLog(submittal.id))
+      onUpdated(updated)
+    } catch (err) {
+      console.error('Bump Rev failed:', err)
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -494,18 +543,44 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
           fileRef={fileRef}
           onUpload={e => handleUpload(e, 'submittal')}
           onDelete={handleDeleteAttachment}
+          onApprove={handleApproveAttachment}
+          showRounds={true}
           accentColor="var(--accent)"
           hint="Cut sheets, drawings, stamps"
-          action={attachments.length > 0 && !['submitted', 'in_review', 'approved'].includes(form.status) && (
-            <button
-              className="btn btn-primary btn-sm"
-              onClick={handleOfficialSubmission}
-              style={{ padding: '4px 12px', fontSize: 10, background: 'var(--s-submit)', color: '#000' }}
-              title="Flip to Submitted & set Date"
-            >
-              <Send size={11} /> Official Submission
-            </button>
-          )}
+          action={
+            (form.status === 'revise_resubmit' || form.status === 'rejected') ? (
+              <button
+                className="btn btn-primary btn-sm"
+                onClick={handleBumpRevision}
+                style={{ padding: '4px 12px', fontSize: 10, background: 'var(--s-revise)', color: '#000' }}
+                title={`Advance to Revision ${(submittal.round || 1) + 1}`}
+              >
+                🚀 Bump to Rev {(submittal.round || 1) + 1}
+              </button>
+            ) : attachments.length > 0 && !['submitted', 'in_review', 'approved'].includes(form.status) ? (
+              <button
+                className="btn btn-primary btn-sm"
+                onClick={handleOfficialSubmission}
+                style={{ padding: '4px 12px', fontSize: 10, background: 'var(--s-submit)', color: '#000' }}
+                title="Flip to Submitted & set Date"
+              >
+                <Send size={11} /> Official Submission
+              </button>
+            ) : null
+          }
+        />
+
+        {/* Reference Documents */}
+        <AttachmentSection
+          title="Reference Files"
+          files={refAttachments}
+          uploading={uploadingRef}
+          fileRef={refFileRef}
+          onUpload={e => handleUpload(e, 'reference')}
+          onDelete={handleDeleteAttachment}
+          accentColor="var(--text-sub)"
+          hint="Plans, emails, RFI responses, misc info."
+          icon={<Paperclip size={12} />}
         />
 
         {/* O&M Documents */}
@@ -530,7 +605,7 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
   )
 }
 
-function AttachmentSection({ title, files, uploading, fileRef, onUpload, onDelete, accentColor, hint, icon, action }) {
+function AttachmentSection({ title, files, uploading, fileRef, onUpload, onDelete, accentColor, hint, icon, action, onApprove, showRounds }) {
   return (
     <div className="detail-section">
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
@@ -544,13 +619,38 @@ function AttachmentSection({ title, files, uploading, fileRef, onUpload, onDelet
       {files.length > 0 && (
         <div className="attachment-list" style={{ marginBottom: 8 }}>
           {files.map(att => (
-            <div key={att.id} className="attachment-item">
+            <div key={att.id} className="attachment-item" style={att.is_approved_version ? { borderColor: 'rgba(16,185,129,0.5)', background: 'rgba(16,185,129,0.05)' } : {}}>
               <FileText size={14} style={{ color: accentColor, flexShrink: 0 }} />
-              <span className="attachment-name" title={att.file_name}>{att.file_name}</span>
+              
+              {showRounds && (att.round || 1) && (
+                <span style={{ fontSize: 9, fontWeight: 800, color: 'var(--text-muted)', background: 'var(--bg-overlay)', padding: '2px 5px', borderRadius: 4, marginRight: 2 }}>
+                  R{att.round || 1}
+                </span>
+              )}
+
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden' }}>
+                <span className="attachment-name" title={att.file_name} style={{ flex: 'none', maxWidth: '100%', color: att.is_approved_version ? 'var(--s-approved)' : 'var(--text-sub)', fontWeight: att.is_approved_version ? 600 : 400 }}>
+                  {att.file_name}
+                </span>
+                {att.is_approved_version && (
+                  <span style={{ fontSize: 9, fontWeight: 800, color: 'var(--s-approved)', background: 'var(--s-approved-bg)', padding: '2px 6px', borderRadius: 4 }}>APPROVED</span>
+                )}
+              </div>
+
               <a href={att.file_url} target="_blank" rel="noopener noreferrer"
-                className="btn btn-icon btn-sm" title="Open" style={{ border: 'none' }}>
+                 className="btn btn-icon btn-sm" title="Open" style={{ border: 'none' }}>
                 <ExternalLink size={12} />
               </a>
+
+              {onApprove && !att.is_approved_version && (
+                <button className="btn btn-icon btn-sm"
+                  onClick={() => onApprove(att)}
+                  title="Mark as Final Approved Version"
+                  style={{ border: 'none', color: 'var(--text-muted)' }}>
+                  <Star size={12} />
+                </button>
+              )}
+
               <button className="btn btn-icon btn-sm"
                 onClick={() => onDelete(att)}
                 title="Remove"
