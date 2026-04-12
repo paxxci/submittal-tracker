@@ -159,6 +159,14 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
     try {
       setSaving(true)
       
+      const oldNext = submittal.next_action || ''
+      const newNext = form.next_action || ''
+      if (oldNext.trim() !== newNext.trim()) {
+        const userDisplay = activeUser.user_metadata?.full_name || activeUser.email || 'User'
+        const actLabel = newNext.trim() ? `🎯 Set Next Action: "${newNext.trim()}"` : `🎯 Cleared Next Action`
+        await addActivity(submittal.id, actLabel, userDisplay)
+      }
+      
       // Clean data for DB (only send valid columns)
       const { spec_section_code, review_duration, ...cleanForm } = form
       if (review_duration) cleanForm.expected_days = review_duration
@@ -465,6 +473,18 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
           <div className="detail-section" style={{ border: 'none', padding: 0, margin: 0 }}>
             <div className="detail-section-title">Edit Details</div>
 
+            {/* Elevated Next Action Field */}
+            <div className="field-row" style={{ marginBottom: '20px', background: 'var(--bg-surface-elevated)', border: '1px dashed var(--accent)', borderRadius: '8px', padding: '12px' }}>
+              <label className="field-label" style={{ color: 'var(--accent)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>🎯 Next Action</label>
+              <textarea className="field-textarea" rows={2}
+                placeholder="What needs to happen next..."
+                value={form.next_action || ''}
+                onChange={set('next_action')}
+                id="detail-next-action"
+                style={{ background: 'transparent', border: 'none', padding: 0, marginTop: '8px', fontSize: '13px', resize: 'none' }}
+              />
+            </div>
+
           {/* Spec Section + Description */}
           <div className="field-row-2">
             <div className="field-row">
@@ -562,16 +582,6 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
               <label className="field-label">Expected Return Date</label>
               <input className="field-input" type="date" disabled value={expectedDateStr || ''} />
             </div>
-          </div>
-
-          <div className="field-row">
-            <label className="field-label">Next Action</label>
-            <textarea className="field-textarea" rows={2}
-              placeholder="What needs to happen next..."
-              value={form.next_action}
-              onChange={set('next_action')}
-              id="detail-next-action"
-            />
           </div>
 
           <button
