@@ -134,8 +134,12 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
   }
 
   useEffect(() => {
-    if (feedRef.current) feedRef.current.scrollTop = feedRef.current.scrollHeight
-  }, [log])
+    if (activeTab === 'activity') {
+      setTimeout(() => {
+        if (feedRef.current) feedRef.current.scrollTop = feedRef.current.scrollHeight
+      }, 50)
+    }
+  }, [log, activeTab])
 
   if (!submittal) return null
 
