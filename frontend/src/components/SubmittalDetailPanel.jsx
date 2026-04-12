@@ -457,9 +457,7 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
         {/* --- DETAILS TAB --- */}
         {activeTab === 'details' && (
           <div className="detail-section" style={{ border: 'none', padding: 0, margin: 0 }}>
-        {/* Fields */}
-        <div className="detail-section">
-          <div className="detail-section-title">Edit Details</div>
+            <div className="detail-section-title">Edit Details</div>
 
           {/* Spec Section + Description */}
           <div className="field-row-2">
