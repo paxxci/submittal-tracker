@@ -248,13 +248,20 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
 
   const handleApproveAttachment = async (att) => {
     try {
+      setSaving(true)
       await markAttachmentApproved(submittal.id, att.id)
       await loadAttachments()
       const userDisplay = activeUser.user_metadata?.full_name || activeUser.email || 'User'
       await addActivity(submittal.id, `✅ Stamped [R${att.round || 1}] "${att.file_name}" as Officially Approved Version`, userDisplay)
+      
+      const updated = await updateSubmittal(submittal.id, { status: 'approved' }, activeUserRole || 'PM')
+      setForm(f => ({ ...f, status: 'approved' }))
       setLog(await getActivityLog(submittal.id))
+      onUpdated(updated)
     } catch (err) {
       console.error('Approve failed:', err)
+    } finally {
+      setSaving(false)
     }
   }
 
