@@ -15,7 +15,7 @@ const fmt = (ts) => {
   if (!ts) return ''
   const d = new Date(ts)
   if (isNaN(d.valueOf())) return 'Unknown Date'
-  return formatDate(ts, { month: 'short', day: 'numeric' }) +
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) +
     ' · ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
 }
 
@@ -616,6 +616,7 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
               }
               
               let displayMsg = clean(entry.message)
+              if (typeof displayMsg === 'string' && displayMsg.includes('Auto-Audit:')) return null
               displayMsg = displayMsg.replace(/\[R\d+\] Submittal Document uploaded: ".+?"/, '📎 Uploaded Document')
               displayMsg = displayMsg.replace(/O&M Document uploaded: ".+?"/, '📕 Uploaded O&M Document')
               displayMsg = displayMsg.replace(/Reference File uploaded: ".+?"/, '🔗 Uploaded Reference File')
