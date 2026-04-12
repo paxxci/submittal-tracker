@@ -208,8 +208,6 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
               return next
             })
             setAiFields(newFields)
-            const userDisplay = activeUser.user_metadata?.full_name || activeUser.email || 'User'
-            await addActivity(submittal.id, `🤖 AI Intel: Analyzed "${file.name}" and extracted metadata.`, 'AI Assistant')
           }
         } catch (aiErr) {
           console.error('AI Intel failed:', aiErr)
