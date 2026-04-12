@@ -279,18 +279,22 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
   const handleUpdateAttRound = async (att, newRound) => {
     try {
       await updateAttachmentRound(att.id, newRound)
-      await loadAttachments()
+      
+      const freshSubs = await getAttachments(submittal.id, 'submittal')
       
       const userDisplay = activeUser.user_metadata?.full_name || activeUser.email || 'User'
       await addActivity(submittal.id, `🔄 Re-classified "${att.file_name}" to Revision ${newRound}`, userDisplay)
       
-      let updatedParent = null
-      if (newRound > (form.round || 1)) {
-        updatedParent = await updateSubmittal(submittal.id, { round: newRound }, activeUserRole || 'PM')
-        setForm(f => ({ ...f, round: newRound }))
+      const maxRound = freshSubs.length > 0 ? Math.max(...freshSubs.map(a => a.round || 1)) : newRound
+      
+      if (maxRound !== (form.round || 1)) {
+        const updatedParent = await updateSubmittal(submittal.id, { round: maxRound }, activeUserRole || 'PM')
+        setForm(f => ({ ...f, round: maxRound }))
+        onUpdated(updatedParent)
       }
+      
+      await loadAttachments()
       setLog(await getActivityLog(submittal.id))
-      if (updatedParent) onUpdated(updatedParent)
     } catch (err) {
       console.error('Update round failed:', err)
     }
@@ -375,8 +379,22 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
       onConfirm: async () => {
         try {
           await deleteAttachment(att.id, att.file_url)
-          setAttachments(a => a.filter(x => x.id !== att.id))
-          setOmAttachments(a => a.filter(x => x.id !== att.id))
+          
+          if (att.type === 'submittal') {
+            const freshSubs = await getAttachments(submittal.id, 'submittal')
+            const maxRound = freshSubs.length > 0 ? Math.max(...freshSubs.map(a => a.round || 1)) : 1
+            if (maxRound !== parseInt(form.round || 1)) {
+              const updatedParent = await updateSubmittal(submittal.id, { round: maxRound }, activeUserRole || 'PM')
+              setForm(f => ({ ...f, round: maxRound }))
+              onUpdated(updatedParent)
+            }
+          }
+          
+          await loadAttachments()
+          const userDisplay = activeUser.user_metadata?.full_name || activeUser.email || 'User'
+          await addActivity(submittal.id, `🗑️ Deleted Document: "${att.file_name}"`, userDisplay)
+          setLog(await getActivityLog(submittal.id))
+          
           setConfirm(c => ({ ...c, isOpen: false }))
         } catch (err) {
           console.error('Delete failed:', err)
