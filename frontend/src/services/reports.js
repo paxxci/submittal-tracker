@@ -146,24 +146,52 @@ export const generateActivityLogReport = (submittal, logData) => {
   doc.setTextColor(71, 85, 105)
   doc.text(`Spec Section: ${submittal?.spec_section || 'N/A'}`, 14, 48)
 
-  const tableData = logData.map(entry => {
+  const validLogs = logData.filter(entry => {
+    return typeof entry.message !== 'string' || !entry.message.includes('Auto-Audit:')
+  })
+
+  const tableData = validLogs.map(entry => {
      const dt = new Date(entry.created_at).toLocaleString()
      
      const clean = (val) => {
        if (typeof val !== 'string' || !val.trim().startsWith('{')) return val
        try {
          const p = JSON.parse(val)
-         if (p.email) return p.user_metadata?.full_name || p.email
+         if (p.email) return p.user_metadata?.full_name || p.email.split('@')[0]
          if (p.user_metadata) return p.user_metadata.full_name || 'User'
          if (p.id) return `System Action [${p.id.slice(0,8)}]`
          return '[Archive Data]'
        } catch { return val }
      }
 
+     let author = clean(entry.author || 'System')
+     if (author && author.includes('@')) {
+       author = author.split('@')[0]
+     }
+
+     let msg = clean(entry.message).replace(/\n/g, ' ')
+     
+     // ASCII Text translations to mimic frontend emojis without breaking the PDF Font Engine
+     msg = msg.replace(/\[R\d+\] Submittal Document uploaded: ".+?"/, '[FILE] Uploaded Document')
+     msg = msg.replace(/O&M Document uploaded: ".+?"/, '[FILE] Uploaded O&M Document')
+     msg = msg.replace(/Reference File uploaded: ".+?"/, '[FILE] Uploaded Reference File')
+     msg = msg.replace(/🔄 Re-classified ".+?" to Revision (\d+)/, '[UPDATE] Changed to Revision $1')
+     msg = msg.replace(/📤 OFFICIAL SUBMISSION FILED/, '[STATUS] Marked as Official Submission')
+     msg = msg.replace(/✅ Stamped .+? as Officially Approved Version/, '[APPROVED]')
+     msg = msg.replace(/⏪ Revoked Approval Stamp from .+?/, '[REVOKED] Removed Approval')
+     msg = msg.replace(/🗑️ Deleted Document: ".+?"/, '[DELETED] Removed Document')
+     msg = msg.replace(/🚀 Submittal Bumped to Revision \d+/, '[UPDATE] Bumped Revision')
+     msg = msg.replace(/Created submittal: .+/, '[NEW] Created Submittal')
+     msg = msg.replace(/🎯 Set Next Action: "(.*?)"/, '[ACTION] Next: "$1"')
+     msg = msg.replace(/🎯 Cleared Next Action/, '[ACTION] Cleared Next Action')
+
+     // Obliterate any remaining emojis/unicode characters that crash PDF fonts
+     msg = msg.replace(/[^\x00-\x7F]/g, "")
+
      return [
        dt,
-       clean(entry.author || 'System'),
-       clean(entry.message).replace(/\n/g, ' ')
+       author,
+       msg
      ]
   })
 
@@ -185,8 +213,8 @@ export const generateActivityLogReport = (submittal, logData) => {
     },
     columnStyles: {
       0: { cellWidth: 35 },
-      1: { cellWidth: 40 },
-      2: { cellWidth: 'auto' }
+      1: { cellWidth: 40 }
+      // Column 2 expands to fit remainder naturally
     },
     styles: { 
       overflow: 'linebreak',
