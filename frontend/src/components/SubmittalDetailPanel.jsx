@@ -473,17 +473,7 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
           <div className="detail-section" style={{ border: 'none', padding: 0, margin: 0 }}>
             <div className="detail-section-title">Edit Details</div>
 
-            {/* Elevated Next Action Field */}
-            <div className="field-row" style={{ marginBottom: '20px', background: 'var(--bg-surface-elevated)', border: '1px dashed var(--accent)', borderRadius: '8px', padding: '12px' }}>
-              <label className="field-label" style={{ color: 'var(--accent)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>🎯 Next Action</label>
-              <textarea className="field-textarea" rows={2}
-                placeholder="What needs to happen next..."
-                value={form.next_action || ''}
-                onChange={set('next_action')}
-                id="detail-next-action"
-                style={{ background: 'transparent', border: 'none', padding: 0, marginTop: '8px', fontSize: '13px', resize: 'none' }}
-              />
-            </div>
+
 
           {/* Spec Section + Description */}
           <div className="field-row-2">
@@ -582,6 +572,18 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
               <label className="field-label">Expected Return Date</label>
               <input className="field-input" type="date" disabled value={expectedDateStr || ''} />
             </div>
+          </div>
+
+          {/* Elevated Next Action Field */}
+          <div className="field-row" style={{ marginBottom: '24px', background: 'var(--bg-surface-elevated)', border: '1px dashed var(--accent)', borderRadius: '8px', padding: '12px' }}>
+            <label className="field-label" style={{ color: 'var(--accent)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>🎯 Next Action</label>
+            <textarea className="field-textarea" rows={2}
+              placeholder="What needs to happen next..."
+              value={form.next_action || ''}
+              onChange={set('next_action')}
+              id="detail-next-action"
+              style={{ background: 'transparent', border: 'none', padding: 0, marginTop: '8px', fontSize: '13px', resize: 'none' }}
+            />
           </div>
 
           <button
