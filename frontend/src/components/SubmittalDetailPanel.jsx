@@ -3,7 +3,7 @@ import { X, Send, Upload, FileText, Trash2, ExternalLink, BookOpen, Star, Paperc
 import { StatusBadge, BicChip, STATUS_OPTIONS, BIC_OPTIONS } from './StatusBadge'
 import ConfirmModal from './ConfirmModal'
 import { getActivityLog, addActivity } from '../services/activity_service'
-import { getAttachments, uploadAttachment, deleteAttachment, toggleAttachmentApproval } from '../services/attachment_service'
+import { getAttachments, uploadAttachment, deleteAttachment, toggleAttachmentApproval, updateAttachmentRound } from '../services/attachment_service'
 import { updateSubmittal } from '../services/submittal_service'
 import { getContacts } from '../services/contact_service'
 import { formatDate, calculateExpectedDate, isSubmittalOverdue } from '../logic/date_engine'
@@ -61,6 +61,7 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
     due_date: submittal?.due_date || '',
     submitted_date: submittal?.submitted_date || '',
     review_duration: submittal?.review_duration || 15,
+    round: submittal?.round || 1
   })
   const [log, setLog] = useState([])
   const [attachments, setAttachments] = useState([])
@@ -103,6 +104,7 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
       due_date: submittal.due_date || '',
       submitted_date: submittal.submitted_date || '',
       review_duration: submittal.review_duration || 15,
+      round: submittal.round || 1
     })
     loadLog()
     loadAttachments()
@@ -274,6 +276,26 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
     }
   }
 
+  const handleUpdateAttRound = async (att, newRound) => {
+    try {
+      await updateAttachmentRound(att.id, newRound)
+      await loadAttachments()
+      
+      const userDisplay = activeUser.user_metadata?.full_name || activeUser.email || 'User'
+      await addActivity(submittal.id, `🔄 Re-classified "${att.file_name}" to Revision ${newRound}`, userDisplay)
+      
+      let updatedParent = null
+      if (newRound > (form.round || 1)) {
+        updatedParent = await updateSubmittal(submittal.id, { round: newRound }, activeUserRole || 'PM')
+        setForm(f => ({ ...f, round: newRound }))
+      }
+      setLog(await getActivityLog(submittal.id))
+      if (updatedParent) onUpdated(updatedParent)
+    } catch (err) {
+      console.error('Update round failed:', err)
+    }
+  }
+
   const handleBumpRevision = async () => {
     try {
       setSaving(true)
@@ -284,6 +306,23 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
       const userDisplay = activeUser.user_metadata?.full_name || activeUser.email || 'User'
       await addActivity(submittal.id, `🚀 Submittal Bumped to Revision ${nextRound}`, userDisplay)
       
+      setForm(f => ({ ...f, ...updateData }))
+      setLog(await getActivityLog(submittal.id))
+      onUpdated(updated)
+    } catch (err) {
+      console.error('Bump Rev failed:', err)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleBumpRevisionOverride = async (newRound) => {
+    try {
+      setSaving(true)
+      const updateData = { round: newRound }
+      const updated = await updateSubmittal(submittal.id, updateData, activeUserRole || 'PM')
+      const userDisplay = activeUser.user_metadata?.full_name || activeUser.email || 'User'
+      await addActivity(submittal.id, `🚀 Submittal Revision manually set to ${newRound}`, userDisplay)
       setForm(f => ({ ...f, ...updateData }))
       setLog(await getActivityLog(submittal.id))
       onUpdated(updated)
@@ -427,6 +466,25 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
               </select>
             </div>
             <div className="field-row">
+              <label className="field-label">Revision Level</label>
+              <input 
+                className="field-input" 
+                type="number" 
+                min="1" 
+                value={form.round || 1} 
+                onChange={set('round')} 
+                onBlur={() => {
+                  const r = parseInt(form.round || 1)
+                  if (r !== (submittal.round || 1)) {
+                    handleBumpRevisionOverride(r)
+                  }
+                }}
+              />
+            </div>
+          </div>
+
+          <div className="field-row-2">
+            <div className="field-row">
               <label className="field-label">Review Duration</label>
               <div style={{ position: 'relative' }}>
                 <input 
@@ -560,6 +618,7 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
           onUpload={e => handleUpload(e, 'submittal')}
           onDelete={handleDeleteAttachment}
           onApprove={handleApproveAttachment}
+          onChangeRound={handleUpdateAttRound}
           showRounds={true}
           accentColor="var(--accent)"
           hint="Cut sheets, drawings, stamps"
@@ -621,7 +680,7 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
   )
 }
 
-function AttachmentSection({ title, files, uploading, fileRef, onUpload, onDelete, accentColor, hint, icon, action, onApprove, showRounds }) {
+function AttachmentSection({ title, files, uploading, fileRef, onUpload, onDelete, accentColor, hint, icon, action, onApprove, onChangeRound, showRounds }) {
   return (
     <div className="detail-section">
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
@@ -638,10 +697,20 @@ function AttachmentSection({ title, files, uploading, fileRef, onUpload, onDelet
             <div key={att.id} className="attachment-item" style={att.is_approved_version ? { borderColor: 'rgba(16,185,129,0.5)', background: 'rgba(16,185,129,0.05)' } : {}}>
               <FileText size={14} style={{ color: accentColor, flexShrink: 0 }} />
               
-              {showRounds && (att.round || 1) && (
-                <span style={{ fontSize: 9, fontWeight: 800, color: 'var(--text-muted)', background: 'var(--bg-overlay)', padding: '2px 5px', borderRadius: 4, marginRight: 2 }}>
-                  R{att.round || 1}
-                </span>
+              {showRounds && (
+                <select 
+                  value={att.round || 1} 
+                  onChange={(e) => onChangeRound && onChangeRound(att, parseInt(e.target.value))}
+                  style={{ 
+                    fontSize: 10, fontWeight: 800, color: 'var(--text)', 
+                    background: 'var(--bg-overlay)', padding: '2px 4px', 
+                    borderRadius: 4, marginRight: 6, border: '1px solid var(--border)', cursor: 'pointer',
+                    outline: 'none'
+                  }}
+                  title="Change Document Revision"
+                >
+                  {[1,2,3,4,5,6,7,8,9,10].map(r => <option key={r} value={r}>R{r}</option>)}
+                </select>
               )}
 
               <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden' }}>

@@ -79,6 +79,12 @@ export const toggleAttachmentApproval = async (submittalId, attachmentId, setApp
   }
 }
 
+export const updateAttachmentRound = async (id, round) => {
+  const { data, error } = await supabase.from('attachments').update({ round }).eq('id', id).select().single()
+  if (error) throw error
+  return data
+}
+
 export const deleteAttachment = async (id, fileUrl) => {
   // Extract storage path from URL
   const path = fileUrl.split('/attachments/')[1]
