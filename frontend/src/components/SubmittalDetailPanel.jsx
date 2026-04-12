@@ -16,6 +16,26 @@ const fmt = (ts) => {
     ' · ' + new Date(ts).toLocaleDateString('en-US', { hour: 'numeric', minute: '2-digit' })
 }
 
+const getAvatarColor = (name) => {
+  if (!name) return 'hsl(0, 0%, 50%)'
+  const cleanName = name.trim()
+  if (cleanName === 'AI Assistant') return 'var(--s-revise)'
+  if (cleanName.startsWith('System')) return 'var(--text-muted)'
+  let hash = 0
+  for (let i = 0; i < cleanName.length; i++) {
+    hash = cleanName.charCodeAt(i) + ((hash << 5) - hash)
+  }
+  return `hsl(${Math.abs(hash) % 360}, 65%, 45%)`
+}
+
+const getInitials = (name) => {
+  if (!name) return '?'
+  const cleanName = name.trim()
+  if (cleanName === 'AI Assistant') return '🤖'
+  if (cleanName.startsWith('System')) return '⚙️'
+  return cleanName.split(' ').filter(w => w).map(w => w[0]).join('').slice(0, 2).toUpperCase()
+}
+
 export default function SubmittalDetailPanel({ submittal, projectId, activeUser, activeUserRole, onClose, onUpdated }) {
   const [form, setForm] = useState({
     spec_section_id: submittal?.spec_section_id || '',
@@ -391,8 +411,6 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
               </div>
             )}
             {log.map(entry => {
-              const role = (entry.author === 'AI Assistant' || entry.author === 'System') ? 'system' : (activeUserRole || 'pm')
-              
               // Robust Self-Healing for legacy data (Converts JSON dumps into clean text)
               const clean = (val) => {
                 if (typeof val !== 'string' || !val.trim().startsWith('{')) return val
@@ -407,15 +425,23 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
 
               const displayAuthor = clean(entry.author || 'System Auto')
               const displayMsg = clean(entry.message)
+              const bgColor = getAvatarColor(displayAuthor)
+              const initials = getInitials(displayAuthor)
 
               return (
                 <div key={entry.id} className="activity-entry">
                   <div className="activity-meta">
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span className={`role-pill role-pill-${role.toLowerCase()}`}>
-                        {role}
-                      </span>
-                      <span className="activity-author-name">{displayAuthor}</span>
+                      <div style={{
+                        width: 22, height: 22, borderRadius: '50%',
+                        background: bgColor, color: '#fff',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 9, fontWeight: 800, flexShrink: 0,
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                      }}>
+                        {initials}
+                      </div>
+                      <span className="activity-author-name" style={{ fontWeight: 700, color: 'var(--text-main)', fontSize: 13, letterSpacing: '-0.2px' }}>{displayAuthor}</span>
                     </div>
                     <span className="activity-time">{fmt(entry.created_at)}</span>
                   </div>
