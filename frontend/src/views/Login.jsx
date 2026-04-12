@@ -152,13 +152,13 @@ export default function Login({ initialMode = MODE_LOGIN, onComplete }) {
               {mode === MODE_LOGIN && 'Welcome Back'}
               {mode === MODE_SIGNUP && 'Create Account'}
               {mode === MODE_FORGOT && 'Reset Password'}
-              {mode === MODE_RESET && 'Set New Password'}
+              {mode === MODE_RESET && 'Welcome to the Team'}
             </h2>
             <p>
               {mode === MODE_LOGIN && 'Sign in to access your projects'}
               {mode === MODE_SIGNUP && 'Start tracking your submittals today'}
               {mode === MODE_FORGOT && "Enter your email to get a recovery link"}
-              {mode === MODE_RESET && 'Enter your new secure password'}
+              {mode === MODE_RESET && 'Set a secure password to activate your account'}
             </p>
           </div>
 
@@ -211,7 +211,9 @@ export default function Login({ initialMode = MODE_LOGIN, onComplete }) {
           <div className="login-footer">
             {mode === MODE_LOGIN && (
               <>
-                <p>Don't have an account? <button className="btn-link" onClick={() => setMode(MODE_SIGNUP)}>Sign Up</button></p>
+                {new URLSearchParams(window.location.search).get('signup') === 'true' && (
+                  <p>Don't have an account? <button className="btn-link" onClick={() => setMode(MODE_SIGNUP)}>Sign Up</button></p>
+                )}
                 <button className="btn-link forgot-link" onClick={() => setMode(MODE_FORGOT)}>Forgot your password?</button>
               </>
             )}
