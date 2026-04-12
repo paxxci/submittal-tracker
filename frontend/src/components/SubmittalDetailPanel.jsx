@@ -16,6 +16,17 @@ const fmt = (ts) => {
     ' · ' + new Date(ts).toLocaleDateString('en-US', { hour: 'numeric', minute: '2-digit' })
 }
 
+const AVATAR_COLORS = [
+  'hsl(340, 75%, 55%)', // Vibrant Rose
+  'hsl(210, 80%, 55%)', // Vivid Blue
+  'hsl(160, 75%, 40%)', // Emerald
+  'hsl(280, 70%, 60%)', // Deep Purple
+  'hsl(25, 85%, 50%)',  // Amber/Orange
+  'hsl(190, 80%, 45%)', // Cyan
+  'hsl(0, 75%, 60%)',   // Red
+  'hsl(240, 70%, 65%)', // Indigo
+]
+
 const getAvatarColor = (name) => {
   if (!name) return 'hsl(0, 0%, 50%)'
   const cleanName = name.trim()
@@ -25,7 +36,9 @@ const getAvatarColor = (name) => {
   for (let i = 0; i < cleanName.length; i++) {
     hash = cleanName.charCodeAt(i) + ((hash << 5) - hash)
   }
-  return `hsl(${Math.abs(hash) % 360}, 65%, 45%)`
+  // Add length to hash to further scatter similar strings, then modulo array length
+  const index = Math.abs(hash + cleanName.length * 13) % AVATAR_COLORS.length
+  return AVATAR_COLORS[index]
 }
 
 const getInitials = (name) => {
