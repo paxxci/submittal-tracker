@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Submittal Tracker Pro - Privacy & Security Primer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0ea5e9;
+            --text: #1e293b;
+            --subtext: #475569;
+            --bg: #ffffff;
+            --section: #f8fafc;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            color: var(--text);
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background: var(--bg);
+        }
+        .header {
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 20px;
+            margin-bottom: 40px;
+        }
+        .header h1 {
+            color: var(--primary);
+            font-size: 2.5rem;
+            margin: 0;
+            letter-spacing: -0.02em;
+        }
+        .header p {
+            font-weight: 600;
+            color: var(--subtext);
+            margin-top: 10px;
+        }
+        .intro {
+            font-size: 1.1rem;
+            color: var(--text);
+            margin-bottom: 40px;
+        }
+        .section {
+            background: var(--section);
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 1px solid #e2e8f0;
+        }
+        .section h2 {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--primary);
+            margin-top: 0;
+            font-size: 1.5rem;
+        }
+        .section ul {
+            padding-left: 20px;
+            margin-bottom: 0;
+        }
+        .section li {
+            margin-bottom: 12px;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 60px;
+            font-size: 0.85rem;
+            color: var(--subtext);
+            border-top: 1px solid #e2e8f0;
+            padding-top: 20px;
+        }
+        @media print {
+            body { margin: 0; padding: 0; }
+            .section { break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Submittal Tracker Pro</h1>
+        <p>Data Privacy & Security Primer</p>
+    </div>
+
+    <div class="intro">
+        <strong>An Executive Summary for Stakeholders, Architects, and Project Owners.</strong>
+        <p>At Submittal Tracker Pro, we understand that construction project data—especially for government, financial, and institutional facilities—requires the highest level of confidentiality. Our platform is engineered with a "Security-First" architecture to ensure your proprietary information remains your own.</p>
+    </div>
+
+    <div class="section">
+        <h2>AI Privacy & The "No-Train" Guarantee</h2>
+        <p>We utilize Enterprise-Grade AI APIs (via OpenRouter connecting to Claude and GPT models). Unlike "Public" AI interfaces:</p>
+        <ul>
+            <li><strong>Zero Training:</strong> Your data is never used to train the base AI models. Once a specification section is processed, the data is instantly flushed from the AI's ephemeral memory.</li>
+            <li><strong>Stateless Processing:</strong> We do not send full project plans or sensitive blueprints to the AI. Only text-based specification requirements are analyzed for the purpose of building your submittal register.</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>Data Isolation & Encryption</h2>
+        <p>Your documents are housed in a Private Cloud Vault powered by Supabase (PostgreSQL).</p>
+        <ul>
+            <li><strong>Encryption at Rest:</strong> All PDF files and database entries are encrypted using industry-standard AES-256 encryption.</li>
+            <li><strong>Row-Level Security (RLS):</strong> Our database utilizes "Zero-Trust" logic. Only authorized members specifically invited to a project can view its contents.</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>Infrastructure Integrity</h2>
+        <ul>
+            <li><strong>Hosting:</strong> Our application is hosted on Vercel, providing global-standard DDoS protection and a secure SSL/TLS encrypted connection for every user.</li>
+            <li><strong>Storage Protection:</strong> All attachments are stored in private buckets. Direct download links are only issued to authorized users and expire automatically.</li>
+        </ul>
+    </div>
+
+    <div class="footer">
+        © 2026 Submittal Tracker Pro | Built for the Field. Secured for the Owner.
+    </div>
+</body>
+</html>
