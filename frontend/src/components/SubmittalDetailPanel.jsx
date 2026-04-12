@@ -77,6 +77,7 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
   const [savingNote, setSavingNote] = useState(false)
   const [isAiParsing, setIsAiParsing] = useState(false)
   const [aiFields, setAiFields] = useState(new Set())
+  const [activeTab, setActiveTab] = useState('details') // 'details', 'documents', 'activity'
   const fileRef = useRef()
   const refFileRef = useRef()
   const omFileRef = useRef()
@@ -441,7 +442,21 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
         </div>
       </div>
 
-      <div className="detail-panel-body">
+      <div className="detail-panel-body" style={{ display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden' }}>
+        
+        {/* Sleek Enterprise Tab Bar */}
+        <div style={{ display: 'flex', width: '100%', flexShrink: 0, background: 'var(--bg-base)', borderBottom: '1px solid var(--border)' }}>
+          <Tab active={activeTab === 'details'} onClick={() => setActiveTab('details')}>Details</Tab>
+          <Tab active={activeTab === 'documents'} onClick={() => setActiveTab('documents')}>Documents</Tab>
+          <Tab active={activeTab === 'activity'} onClick={() => setActiveTab('activity')}>Activity</Tab>
+        </div>
+
+        {/* Tab Content Canvas */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column' }}>
+
+        {/* --- DETAILS TAB --- */}
+        {activeTab === 'details' && (
+          <div className="detail-section" style={{ border: 'none', padding: 0, margin: 0 }}>
         {/* Fields */}
         <div className="detail-section">
           <div className="detail-section-title">Edit Details</div>
@@ -565,9 +580,11 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
             {saving ? 'Saving...' : 'Save Changes'}
           </button>
         </div>
+        )}
 
-        {/* Activity Log */}
-        <div className="detail-section">
+        {/* --- ACTIVITY TAB --- */}
+        {activeTab === 'activity' && (
+          <div className="detail-section" style={{ border: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', height: '100%' }}>
           <div className="activity-feed-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div className="detail-section-title" style={{ marginBottom: 0 }}>Activity Log</div>
             <button className="btn btn-icon btn-sm" onClick={handlePrintLog} title="Print Fully Formatted Activity Log" style={{ color: 'var(--text-muted)' }}>
@@ -642,9 +659,13 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
             </button>
           </div>
         </div>
+        )}
 
-        {/* Submittal Documents */}
-        <AttachmentSection
+        {/* --- DOCUMENTS TAB --- */}
+        {activeTab === 'documents' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            {/* Submittal Documents */}
+            <AttachmentSection
           title="Submittal Documents"
           files={attachments}
           uploading={uploading}
@@ -704,6 +725,11 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
           hint="Operations & maintenance manuals — uploaded at project closeout"
           icon={<BookOpen size={12} />}
         />
+        
+          </div>
+        )}
+        
+        </div>
       </div>
 
       <ConfirmModal
@@ -799,3 +825,28 @@ function AttachmentSection({ title, files, uploading, fileRef, onUpload, onDelet
     </div>
   )
 }
+
+function Tab({ active, onClick, children }) {
+  return (
+    <div 
+      onClick={onClick}
+      style={{
+        flex: 1, 
+        textAlign: 'center', 
+        padding: '14px 0', 
+        cursor: 'pointer',
+        fontSize: 12,
+        fontWeight: active ? 700 : 500,
+        color: active ? 'var(--text)' : 'var(--text-muted)',
+        borderBottom: active ? '2px solid var(--accent)' : '2px solid transparent',
+        transition: 'all 0.2s',
+        background: active ? 'transparent' : 'rgba(0,0,0,0.01)',
+        letterSpacing: '0.3px',
+        userSelect: 'none'
+      }}
+    >
+      {children}
+    </div>
+  )
+}
+
