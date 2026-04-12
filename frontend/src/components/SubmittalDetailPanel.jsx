@@ -133,7 +133,7 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
     setForm(f => {
       const next = { ...f, [field]: value }
       if (field === 'status' && value === 'submitted' && !f.submitted_date) {
-        const d = new Date()
+        const d = new Date(new Date().toLocaleString("en-US", {timeZone: "America/Los_Angeles"}));
         next.submitted_date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
       }
       return next
@@ -232,7 +232,7 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
   }
 
   const handleOfficialSubmission = async () => {
-    const d = new Date()
+    const d = new Date(new Date().toLocaleString("en-US", {timeZone: "America/Los_Angeles"}));
     const localToday = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
     const next = { ...form, status: 'submitted', submitted_date: localToday }
     
