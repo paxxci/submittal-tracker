@@ -108,6 +108,7 @@ export default function App() {
         goToDashboard={goToDashboard}
         userEmail={session.user.email}
         onLogoutRequest={() => setShowLogoutConfirm(true)}
+        activeUserRole={activeUserRole}
       />
       <div className="main-stage">
         {view === 'dashboard' && (

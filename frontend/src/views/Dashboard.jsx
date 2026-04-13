@@ -13,7 +13,15 @@ export default function Dashboard({
   userEmail
 }) {
   const [showNewProject, setShowNewProject] = useState(false)
-  const isAdmin = ['paxtonmike11@gmail.com'].includes(userEmail)
+  
+  // "Island Access" check: 
+  // 1. If you are brand new (no projects), you are starting your first island.
+  // 2. If you are an 'admin' in any project, you have management rights.
+  // 3. If you were only invited as an 'editor' or 'viewer', you cannot create projects.
+  const isIslandOwner = !loading && (
+    projects.length === 0 || 
+    projects.some(p => p.project_members?.[0]?.role === 'admin')
+  )
 
   return (
     <>
@@ -34,7 +42,7 @@ export default function Dashboard({
           </label>
         </div>
 
-        {isAdmin && (
+        {isIslandOwner && (
           <button
             className="btn btn-primary"
             onClick={() => setShowNewProject(true)}
@@ -74,17 +82,27 @@ export default function Dashboard({
             ))}
           </div>
         ) : projects.length === 0 ? (
-          <div className="empty-state animate-in">
-            <div className="empty-state-icon">
-              <Building2 size={24} style={{ color: 'var(--accent)' }} />
+          <div className="empty-state animate-in" style={{ 
+            marginTop: 40,
+            background: 'rgba(255,255,255,0.02)',
+            border: '1px dashed var(--border)',
+            borderRadius: 'var(--radius-lg)',
+            padding: '80px 40px'
+          }}>
+            <div className="empty-state-icon" style={{ 
+              background: 'linear-gradient(135deg, var(--accent), #22d3ee)',
+              boxShadow: '0 0 30px rgba(0, 180, 216, 0.3)',
+              color: '#000'
+            }}>
+              <Building2 size={28} />
             </div>
-            <div className="empty-state-title">No projects yet</div>
-            <div className="empty-state-sub" style={{ marginBottom: 20 }}>
-              Create your first project to start tracking submittals.
+            <div className="empty-state-title" style={{ fontSize: 20, color: 'var(--text)' }}>Welcome to Submittal Tracker</div>
+            <div className="empty-state-sub" style={{ marginBottom: 32, fontSize: 13, color: 'var(--text-sub)' }}>
+              You haven't been added to any projects yet. Start by creating your own first project to begin tracking submittals with your team.
             </div>
-            {isAdmin && (
-              <button className="btn btn-primary" onClick={() => setShowNewProject(true)}>
-                <Plus size={14} /> New Project
+            {isIslandOwner && (
+              <button className="btn btn-primary btn-lg" onClick={() => setShowNewProject(true)} style={{ padding: '12px 24px', fontSize: 14 }}>
+                <Plus size={18} /> Create Your First Project
               </button>
             )}
           </div>

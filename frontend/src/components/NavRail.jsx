@@ -2,13 +2,13 @@ import React from 'react'
 import { LayoutDashboard, FolderOpen, Settings, Cpu, LogOut, Shield } from 'lucide-react'
 import { supabase } from '../supabase_client'
 
-export default function NavRail({ view, setView, currentProject, goToDashboard, userEmail, onLogoutRequest }) {
+export default function NavRail({ view, setView, currentProject, goToDashboard, userEmail, onLogoutRequest, activeUserRole }) {
   const handleLogout = async () => {
     onLogoutRequest()
   }
 
   const userInitial = userEmail?.[0].toUpperCase() || '?'
-  const isAdmin = ['paxtonmike11@gmail.com'].includes(userEmail)
+  const isAdmin = activeUserRole === 'admin'
 
   return (
     <nav className="nav-rail">
