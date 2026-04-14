@@ -33,9 +33,9 @@
 - [x] Loading states + error boundaries
 
 ## ⚙️ Phase 5: E — Evaluate (Self-Healing & Polish)
-- [/] Comprehensive QA Audit (Phase 1-3 of overnight pass)
+- [x] Comprehensive QA Audit (Phase 1-3 of overnight pass)
 - [ ] Mobile responsiveness check
-- [ ] learnings.md updated
+- [x] learnings.md updated
 - [ ] 11 Essential Guards (E2E Playwright Tests)
-- [ ] Git commit + push
+- [x] Git commit + push
 
