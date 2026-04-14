@@ -1,7 +1,39 @@
 import React from 'react'
-import { Trash2, ChevronRight, AlertTriangle } from 'lucide-react'
+import { Trash2, ChevronRight, AlertTriangle, Building2 } from 'lucide-react'
 import { StatusBadge, BicChip, PriorityChip } from './StatusBadge'
 import { calculateExpectedDate, isSubmittalOverdue, formatDate } from '../logic/date_engine'
+
+function BicDisplay({ bic }) {
+  if (!bic) return null
+  
+  // Standard roles (e.g. "ENGINEER", "ARCHITECT")
+  const isStandard = ['you', 'pm', 'gc', 'engineer', 'architect', 'vendor'].includes(bic.toLowerCase())
+  
+  if (isStandard) {
+    return <BicChip bic={bic} />
+  }
+
+  // Custom contact parsing: "Name (Company)"
+  // Priority: Company (match[2]), then Name (match[1])
+  const match = bic.match(/^(.*?)\s*\((.*?)\)$/)
+  
+  if (match) {
+    const person = match[1]
+    const company = match[2]
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+        <div style={{ fontWeight: 700, fontSize: 12, color: 'var(--text-sub)' }}>{company}</div>
+        <div className="td-name-sub" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <ChevronRight size={9} style={{ opacity: 0.6 }} />
+          {person}
+        </div>
+      </div>
+    )
+  }
+
+  // Fallback for single strings (could be just Name or just Company)
+  return <div style={{ fontWeight: 700, fontSize: 12, color: 'var(--text-sub)' }}>{bic}</div>
+}
 
 export default function SubmittalRow({ sub, today, selected, onClick, onDelete }) {
   const expectedDate = calculateExpectedDate(sub.submitted_date, sub.review_duration)
@@ -37,7 +69,9 @@ export default function SubmittalRow({ sub, today, selected, onClick, onDelete }
         )}
       </td>
       <td><StatusBadge status={sub.status} /></td>
-      <td><BicChip bic={sub.bic} /></td>
+      <td>
+        <BicDisplay bic={sub.bic} />
+      </td>
       <td className={`td-date ${overdue ? 'overdue' : ''}`}>
         {overdue && <AlertTriangle size={10} style={{ marginRight: 4, display: 'inline' }} />}
         {formatDate(expectedDate)}

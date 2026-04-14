@@ -461,8 +461,8 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
         {/* Sleek Enterprise Tab Bar */}
         <div style={{ display: 'flex', width: '100%', flexShrink: 0, background: 'var(--bg-base)', borderBottom: '1px solid var(--border)' }}>
           <Tab active={activeTab === 'details'} onClick={() => setActiveTab('details')}>Details</Tab>
-          <Tab active={activeTab === 'documents'} onClick={() => setActiveTab('documents')}>Documents</Tab>
           <Tab active={activeTab === 'activity'} onClick={() => setActiveTab('activity')}>Activity</Tab>
+          <Tab active={activeTab === 'documents'} onClick={() => setActiveTab('documents')}>Documents</Tab>
         </div>
 
         {/* Tab Content Canvas */}
