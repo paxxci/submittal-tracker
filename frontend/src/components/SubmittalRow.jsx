@@ -52,18 +52,19 @@ export default function SubmittalRow({ sub, today, selected, onClick, onDelete }
       </td>
       <td style={{ width: 100 }}>
         <span style={{
-          fontSize: 11, fontWeight: 700,
+          fontSize: 12, fontWeight: 800,
           color: isApproved ? 'var(--s-approved)' : 'var(--accent)',
-          letterSpacing: '0.3px'
+          letterSpacing: '0.5px'
         }}>
           {sub.spec_sections?.csi_code || '—'}
         </span>
       </td>
       <td className="td-name">
-        <div>{sub.item_name}</div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: 2 }}>{sub.item_name}</div>
         {sub.next_action && (
-          <div className="td-name-sub" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <ChevronRight size={9} />
+          <div className="td-name-sub" style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--accent)', marginTop: 4 }}>
+            <ChevronRight size={9} style={{ color: 'var(--accent)' }} />
+            <span style={{ fontWeight: 800, fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--accent)', opacity: 0.8 }}>Next Action:</span>
             {sub.next_action}
           </div>
         )}
