@@ -47,6 +47,13 @@ export default function App() {
     // 2. Listen for changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session)
+      
+      // Force Dashboard on Login/Event
+      if (event === 'SIGNED_IN') {
+        setView('dashboard')
+        setCurrentProject(null)
+      }
+
       const hash = window.location.hash
       if (event === 'PASSWORD_RECOVERY' || hash.includes('type=recovery') || hash.includes('type=invite')) {
         setRecoveryFlow(true)
@@ -93,6 +100,8 @@ export default function App() {
   const handleLogout = async () => {
     await supabase.auth.signOut()
     setShowLogoutConfirm(false)
+    setView('dashboard')
+    setCurrentProject(null)
   }
 
   if (!session || recoveryFlow) {

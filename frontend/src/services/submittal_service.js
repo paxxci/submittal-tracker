@@ -26,10 +26,10 @@ const cleanDates = (obj) => {
   return cleaned
 }
 
-export const createSubmittal = async (fields, authorRoleOrUser = 'PM') => {
+export const createSubmittal = async (fields, authorRoleOrUser = null) => {
   const authorRole = typeof authorRoleOrUser === 'string' 
     ? authorRoleOrUser 
-    : (authorRoleOrUser?.user_metadata?.full_name || authorRoleOrUser?.email || 'User')
+    : (authorRoleOrUser?.user_metadata?.full_name || authorRoleOrUser?.email || 'System')
 
   const { data, error } = await supabase
     .from('submittals')
@@ -44,10 +44,10 @@ export const createSubmittal = async (fields, authorRoleOrUser = 'PM') => {
   return data
 }
 
-export const updateSubmittal = async (id, updates, authorRoleOrUser = 'PM') => {
+export const updateSubmittal = async (id, updates, authorRoleOrUser = null, options = {}) => {
   const authorRole = typeof authorRoleOrUser === 'string' 
     ? authorRoleOrUser 
-    : (authorRoleOrUser?.user_metadata?.full_name || authorRoleOrUser?.email || 'User')
+    : (authorRoleOrUser?.user_metadata?.full_name || authorRoleOrUser?.email || 'System')
 
   // Fetch current for comparison to log changes
   const { data: current } = await supabase.from('submittals').select('*').eq('id', id).single()
@@ -62,11 +62,19 @@ export const updateSubmittal = async (id, updates, authorRoleOrUser = 'PM') => {
   if (error) throw error
 
   // Log status/BIC changes
-  if (current) {
+  if (current && !options.silent) {
     if (cleaned.status && cleaned.status !== current.status) {
-      const statusLabel = cleaned.status.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
-      await addActivity(id, `Status changed to: ${statusLabel}`, authorRole, { round: data.round })
+      if (options.customActivityMsg) {
+        await addActivity(id, options.customActivityMsg, authorRole, { round: data.round })
+      } else {
+        const statusLabel = cleaned.status.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+        await addActivity(id, `Status changed to: ${statusLabel}`, authorRole, { round: data.round })
+      }
+    } else if (options.customActivityMsg) {
+       // Log custom message even if status didn't change (e.g. manual override)
+       await addActivity(id, options.customActivityMsg, authorRole, { round: data.round })
     }
+
     if (cleaned.bic && cleaned.bic !== current.bic) {
       await addActivity(id, `BIC changed to: ${cleaned.bic.toUpperCase()}`, authorRole, { round: data.round })
     }

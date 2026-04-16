@@ -141,6 +141,7 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
     }
   }, [log, activeTab])
 
+  const getAuthorName = () => activeUser?.user_metadata?.full_name || activeUser?.email || 'System'
   if (!submittal) return null
 
   const set = (field) => (e) => {
@@ -162,16 +163,22 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
       const oldNext = submittal.next_action || ''
       const newNext = form.next_action || ''
       if (oldNext.trim() !== newNext.trim()) {
-        const userDisplay = activeUser.user_metadata?.full_name || activeUser.email || 'User'
+        const userDisplay = getAuthorName()
         const actLabel = newNext.trim() ? `🎯 Set Next Action: "${newNext.trim()}"` : `🎯 Cleared Next Action`
         await addActivity(submittal.id, actLabel, userDisplay)
       }
       
-      // Clean data for DB (only send valid columns)
-      const { spec_section_code, review_duration, ...cleanForm } = form
-      if (review_duration) cleanForm.expected_days = review_duration
-      
-      const updated = await updateSubmittal(submittal.id, cleanForm, activeUserRole || 'PM')
+      let options = {}
+      if (form.status === 'submitted' && submittal.status !== 'submitted') {
+        const subDocs = attachments.filter(a => (a.round || 1) === (form.round || 1))
+        const latestFile = subDocs[subDocs.length - 1]
+        const revSuffix = form.round > 1 ? ` rev ${form.round - 1}` : ''
+        options.customActivityMsg = latestFile 
+          ? `📤 PDF "${latestFile.file_name}"${revSuffix} was submitted` 
+          : `📤 Status changed to: Submitted${revSuffix}`
+      }
+
+      const updated = await updateSubmittal(submittal.id, cleanForm, activeUser, options)
       setLog(await getActivityLog(submittal.id))
       onUpdated(updated)
     } catch (err) {
@@ -186,7 +193,7 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
     if (!note.trim()) return
     try {
       setSavingNote(true)
-      const userDisplay = activeUser.user_metadata?.full_name || activeUser.email || 'User'
+      const userDisplay = getAuthorName()
       await addActivity(submittal.id, note.trim(), userDisplay)
       setNote('')
       setLog(await getActivityLog(submittal.id))
@@ -245,7 +252,7 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
       const targetRound = type === 'submittal' ? (submittal.round || 1) : 1
       await uploadAttachment(submittal.id, file, type, targetRound)
       await loadAttachments()
-      const userDisplay = activeUser.user_metadata?.full_name || activeUser.email || 'User'
+      const userDisplay = getAuthorName()
       
       let logPrefix = 'Attachment'
       if (type === 'submittal') logPrefix = `[R${targetRound}] Submittal Document`
@@ -269,7 +276,7 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
       setSaving(true)
       await toggleAttachmentApproval(submittal.id, att.id, setApproved)
       await loadAttachments()
-      const userDisplay = activeUser.user_metadata?.full_name || activeUser.email || 'User'
+      const userDisplay = getAuthorName()
       
       let updatedStatus = form.status
       if (setApproved) {
@@ -281,7 +288,7 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
         if (form.status === 'approved') updatedStatus = 'working'
       }
 
-      const updated = await updateSubmittal(submittal.id, { status: updatedStatus }, activeUserRole || 'PM')
+      const updated = await updateSubmittal(submittal.id, { status: updatedStatus }, activeUser)
       setForm(f => ({ ...f, status: updatedStatus }))
       setLog(await getActivityLog(submittal.id))
       onUpdated(updated)
@@ -298,13 +305,13 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
       
       const freshSubs = await getAttachments(submittal.id, 'submittal')
       
-      const userDisplay = activeUser.user_metadata?.full_name || activeUser.email || 'User'
+      const userDisplay = getAuthorName()
       await addActivity(submittal.id, `🔄 Re-classified "${att.file_name}" to Revision ${newRound}`, userDisplay)
       
       const maxRound = freshSubs.length > 0 ? Math.max(...freshSubs.map(a => a.round || 1)) : newRound
       
       if (maxRound !== (form.round || 1)) {
-        const updatedParent = await updateSubmittal(submittal.id, { round: maxRound }, activeUserRole || 'PM')
+        const updatedParent = await updateSubmittal(submittal.id, { round: maxRound }, activeUser)
         setForm(f => ({ ...f, round: maxRound }))
         onUpdated(updatedParent)
       }
@@ -321,9 +328,9 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
       setSaving(true)
       const nextRound = (submittal.round || 1) + 1
       const updateData = { round: nextRound, status: 'working', submitted_date: null }
-      const updated = await updateSubmittal(submittal.id, updateData, activeUserRole || 'PM')
+      const updated = await updateSubmittal(submittal.id, updateData, activeUser)
       
-      const userDisplay = activeUser.user_metadata?.full_name || activeUser.email || 'User'
+      const userDisplay = getAuthorName()
       await addActivity(submittal.id, `🚀 Submittal Bumped to Revision ${nextRound}`, userDisplay)
       
       setForm(f => ({ ...f, ...updateData }))
@@ -340,8 +347,8 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
     try {
       setSaving(true)
       const updateData = { round: newRound }
-      const updated = await updateSubmittal(submittal.id, updateData, activeUserRole || 'PM')
-      const userDisplay = activeUser.user_metadata?.full_name || activeUser.email || 'User'
+      const updated = await updateSubmittal(submittal.id, updateData, activeUser)
+      const userDisplay = getAuthorName()
       await addActivity(submittal.id, `🚀 Submittal Revision manually set to ${newRound}`, userDisplay)
       setForm(f => ({ ...f, ...updateData }))
       setLog(await getActivityLog(submittal.id))
@@ -383,10 +390,16 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
       const { spec_section_code, review_duration, ...cleanForm } = next
       if (review_duration) cleanForm.expected_days = review_duration
 
-      const updated = await updateSubmittal(submittal.id, cleanForm, activeUserRole || 'PM')
+      // Build descriptive message
+      const subDocs = attachments.filter(a => (a.round || 1) === (form.round || 1))
+      const latestFile = subDocs[subDocs.length - 1]
+      const revSuffix = form.round > 1 ? ` rev ${form.round - 1}` : ''
+      const customMsg = latestFile 
+        ? `📤 PDF "${latestFile.file_name}"${revSuffix} was submitted` 
+        : `📤 OFFICIAL SUBMISSION FILED${revSuffix}`
+
+      const updated = await updateSubmittal(submittal.id, cleanForm, activeUser, { customActivityMsg: customMsg })
       setForm(next)
-      const userDisplay = activeUser.user_metadata?.full_name || activeUser.email || 'User'
-      await addActivity(submittal.id, `📤 OFFICIAL SUBMISSION FILED`, userDisplay)
       setLog(await getActivityLog(submittal.id))
       onUpdated(updated)
     } catch (err) {
@@ -410,14 +423,14 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
             const freshSubs = await getAttachments(submittal.id, 'submittal')
             const maxRound = freshSubs.length > 0 ? Math.max(...freshSubs.map(a => a.round || 1)) : 1
             if (maxRound !== parseInt(form.round || 1)) {
-              const updatedParent = await updateSubmittal(submittal.id, { round: maxRound }, activeUserRole || 'PM')
+              const updatedParent = await updateSubmittal(submittal.id, { round: maxRound }, activeUser)
               setForm(f => ({ ...f, round: maxRound }))
               onUpdated(updatedParent)
             }
           }
           
           await loadAttachments()
-          const userDisplay = activeUser.user_metadata?.full_name || activeUser.email || 'User'
+          const userDisplay = getAuthorName()
           await addActivity(submittal.id, `🗑️ Deleted Document: "${att.file_name}"`, userDisplay)
           setLog(await getActivityLog(submittal.id))
           
