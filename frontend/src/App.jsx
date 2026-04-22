@@ -5,72 +5,158 @@ import ProjectView from './views/ProjectView'
 import SpecView from './views/SpecView'
 import Settings from './views/Settings'
 import AccountSecurity from './views/AccountSecurity'
+import TeamView from './views/TeamView'
 import Login from './views/Login'
 import { getProjects } from './services/project_service'
+import { getOrganizationForUser, createOrganization } from './services/organization_service'
 import { supabase } from './supabase_client'
 
 export default function App() {
   const [session, setSession] = useState(null)
-  const [view, setView] = useState('dashboard')
+  const [isLoaded, setIsLoaded] = useState(false)
+  const [view, setViewInternal] = useState(localStorage.getItem('sa-active-view') || 'dashboard')
+
+  // URL Self-Healing (Prevents white screens if user is at /login or other ghost paths)
+  useEffect(() => {
+    if (window.location.pathname !== '/') {
+      window.history.replaceState(null, '', '/')
+    }
+  }, [])
   const [projects, setProjects] = useState([])
   const [currentProject, setCurrentProject] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [userProfile, setUserProfile] = useState(null)
+  const [organization, setOrganization] = useState(null)
+  const [loading, setLoading] = useState(false)
   const [showArchived, setShowArchived] = useState(false)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
-  const [recoveryFlow, setRecoveryFlow] = useState(false)
+
+  const setView = (v) => {
+    localStorage.setItem('sa-active-view', v)
+    setViewInternal(v)
+  }
 
   useEffect(() => {
-    // 0. E2E Test Bypass
-    if (localStorage.getItem('sb-test-mode') === 'true') {
+    const isTestMode = localStorage.getItem('sb-test-mode') === 'true'
+    if (isTestMode) {
       setSession({
-        user: { 
-          id: 'test-user-id', 
-          email: 'paxtonmike11@gmail.com',
-          user_metadata: { full_name: 'Audit Administrator' }
-        },
-        access_token: 'fake-token'
+        user: { id: 'test-user-id', email: 'test@example.com', user_metadata: { full_name: 'Test Administrator' } }
       })
-      setLoading(false)
+      setIsLoaded(true)
       return
     }
 
-    // 1. Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
-      // Check for recovery/invite in hash on initial load
-      const hash = window.location.hash
-      if (hash.includes('type=recovery') || hash.includes('type=invite')) {
-        setRecoveryFlow(true)
-      }
+      setIsLoaded(true)
     })
-
-    // 2. Listen for changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
-      
-      // Force Dashboard on Login/Event
-      if (event === 'SIGNED_IN') {
-        setView('dashboard')
-        setCurrentProject(null)
-      }
-
-      const hash = window.location.hash
-      if (event === 'PASSWORD_RECOVERY' || hash.includes('type=recovery') || hash.includes('type=invite')) {
-        setRecoveryFlow(true)
-      }
+      setIsLoaded(true)
     })
-
     return () => subscription.unsubscribe()
   }, [])
 
+  useEffect(() => {
+    if (session) {
+      const isTestMode = typeof window !== 'undefined' && localStorage.getItem('sb-test-mode') === 'true'
+      
+      if (isTestMode) {
+        setUserProfile({ id: session.user.id, is_global_staff: true })
+        setOrganization({ id: 'test-org-id', name: 'Audit Test Org' })
+      } else {
+        // 1. Load Profile
+        supabase.from('profiles').select('*').eq('id', session.user.id).maybeSingle()
+          .then(async ({ data }) => {
+            const profile = data || { id: session.user.id }
+            setUserProfile(profile)
+
+            // 2. Load or Create Organization
+            try {
+              let org = await getOrganizationForUser(session.user.id)
+              
+              if (!org) {
+                // Check for a pending invitation
+                const { data: invite } = await supabase
+                  .from('organization_invites')
+                  .select('*')
+                  .ilike('email', session.user.email) // ILIKE is case-insensitive
+                  .maybeSingle()
+
+                if (invite) {
+                  // 1. Create the Profile for the guest
+                  const { data: newProfile, error: profileErr } = await supabase.from('profiles').upsert({ 
+                    id: session.user.id,
+                    email: session.user.email,
+                    organization_id: invite.organization_id,
+                    is_global_staff: invite.is_portfolio_access 
+                  }).select().single()
+
+                  if (profileErr) throw profileErr
+                  
+                  // 2. Refresh Local State immediately
+                  setUserProfile(newProfile)
+                  
+                  // 3. Link to Organization
+                  const { data: orgData } = await supabase.from('organizations').select('*').eq('id', invite.organization_id).single()
+                  org = orgData
+                  
+                  // 4. Clean up invite
+                  await supabase.from('organization_invites').delete().eq('id', invite.id)
+                } else {
+                  // Create a NEW Island (New customer)
+                  org = await createOrganization(`${session.user.email.split('@')[0]}'s Island`, session.user.id)
+                  
+                  // UPSERT PROFILE (Create if missing)
+                  const { data: newProfile, error: profileErr } = await supabase.from('profiles').upsert({ 
+                    id: session.user.id,
+                    email: session.user.email,
+                    organization_id: org.id,
+                    is_global_staff: true // The island creator is always the admin
+                  }).select().single()
+
+                  if (profileErr) throw profileErr
+                  setUserProfile(newProfile)
+
+                  // BURN THE KEY (Mark as redeemed)
+                  const usedCode = session.user.user_metadata?.signup_code
+                  if (usedCode) {
+                    await supabase.from('onboarding_keys').update({
+                      is_redeemed: true,
+                      redeemed_at: new Date().toISOString(),
+                      redeemed_by: session.user.id
+                    }).eq('key_code', usedCode.toUpperCase())
+                  }
+                }
+              }
+              setOrganization(org)
+            } catch (err) {
+              console.error('Organization sync failed:', err)
+            }
+          })
+      }
+    }
+  }, [session])
+
   const loadProjects = async () => {
+    const isTestMode = localStorage.getItem('sb-test-mode') === 'true'
+    if (isTestMode) {
+      setProjects([{
+        id: 'test-project-id',
+        name: 'Audit Test Project',
+        number: 'PEC-2024-001',
+        client: 'Test Client',
+        is_archived: false,
+        created_at: new Date().toISOString(),
+        project_members: [{ email: 'test@example.com', role: 'admin' }]
+      }])
+      return
+    }
+
     if (!session) return
+    setLoading(true)
     try {
-      setLoading(true)
       const data = await getProjects(showArchived)
-      setProjects(data)
-    } catch (err) {
-      console.error('Failed to load projects:', err)
+      setProjects(data || [])
     } finally {
       setLoading(false)
     }
@@ -78,35 +164,34 @@ export default function App() {
 
   useEffect(() => {
     if (session) loadProjects()
-  }, [showArchived, session])
+  }, [session, showArchived])
 
-  const openProject = (project) => {
-    setCurrentProject(project)
+  // Restore active project from memory
+  useEffect(() => {
+    const savedPid = localStorage.getItem('sa-active-project-id')
+    if (projects.length > 0 && savedPid && !currentProject) {
+      const p = projects.find(proj => proj.id === savedPid)
+      if (p) setCurrentProject(p)
+    }
+  }, [projects])
+
+  const openProject = (p) => {
+    localStorage.setItem('sa-active-project-id', p.id)
+    setCurrentProject(p)
     setView('project')
   }
 
   const goToDashboard = () => {
+    localStorage.removeItem('sa-active-project-id')
     setCurrentProject(null)
     setView('dashboard')
   }
 
-  const activeUserRole = currentProject?.project_members?.[0]?.role || 'viewer'
+  if (!isLoaded) return <div style={{ background: '#0a0a0a', height: '100vh' }} />
+  if (!session) return <Login onComplete={() => window.location.reload()} />
 
-  const handleProjectUpdated = (updated) => {
-    setCurrentProject(prev => prev ? { ...prev, ...updated } : updated)
-    setProjects(ps => ps.map(p => p.id === updated.id ? { ...p, ...updated } : p))
-  }
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut()
-    setShowLogoutConfirm(false)
-    setView('dashboard')
-    setCurrentProject(null)
-  }
-
-  if (!session || recoveryFlow) {
-    return <Login onComplete={() => setRecoveryFlow(false)} initialMode={recoveryFlow ? 'reset' : 'login'} />
-  }
+  const isGlobalAdmin = userProfile?.is_global_staff === true
+  const activeUserRole = currentProject?.project_members?.find(m => m.email === session.user.email)?.role || 'viewer'
 
   return (
     <div className="app-shell">
@@ -118,7 +203,11 @@ export default function App() {
         userEmail={session.user.email}
         onLogoutRequest={() => setShowLogoutConfirm(true)}
         activeUserRole={activeUserRole}
+        userProfile={userProfile}
+        isGlobalAdmin={isGlobalAdmin}
+        organization={organization}
       />
+      
       <div className="main-stage">
         {view === 'dashboard' && (
           <Dashboard
@@ -128,69 +217,58 @@ export default function App() {
             onProjectsChange={loadProjects}
             showArchived={showArchived}
             setShowArchived={setShowArchived}
-            userEmail={session?.user?.email}
+            userEmail={session.user.email}
+            organization={organization}
           />
         )}
+        
         {view === 'project' && currentProject && (
           <ProjectView 
             project={currentProject} 
-            onBack={goToDashboard} 
-            activeUser={session?.user} 
+            activeUser={session.user} 
+            onBack={goToDashboard}
             onSpecIntel={() => setView('spec')}
             activeUserRole={activeUserRole}
           />
         )}
+
         {view === 'spec' && currentProject && (
-          <SpecView
-            project={currentProject}
-            activeUser={session.user.email}
+          <SpecView 
+            project={currentProject} 
+            activeUser={session.user.email} 
             onBack={() => setView('project')}
-            activeUserRole={activeUserRole}
           />
         )}
+
+        {view === 'team' && (
+          <TeamView 
+            activeUser={session.user} 
+            projects={projects} 
+            organization={organization}
+          />
+        )}
+
         {view === 'settings' && currentProject && (
           <Settings 
             project={currentProject} 
-            onProjectUpdated={handleProjectUpdated}
+            onProjectUpdated={loadProjects} 
             activeUserRole={activeUserRole}
+            organization={organization}
           />
         )}
+
         {view === 'security' && (
-          <AccountSecurity />
+          <AccountSecurity userEmail={session.user.email} />
         )}
       </div>
 
-      {/* Global Logout Modal */}
       {showLogoutConfirm && (
-        <div className="modal-backdrop animate-in" style={{ zIndex: 9999 }}>
-          <div className="modal" style={{ maxWidth: 360, textAlign: 'center', padding: '32px 24px' }}>
-            <div style={{ 
-              width: 56, height: 56, borderRadius: '50%', 
-              background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              margin: '0 auto 20px'
-            }}>
-              <div style={{ fontSize: 24 }}>🚪</div>
-            </div>
-            <h2 style={{ fontSize: 20, fontWeight: 800, marginBottom: 8 }}>Log Out?</h2>
-            <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20, lineHeight: 1.5 }}>
-              Are you sure you want to log out of the Submittal Tracker? Your session will be ended.
-            </p>
-            <div style={{ display: 'flex', gap: 12 }}>
-              <button 
-                className="btn btn-outline" 
-                style={{ flex: 1 }}
-                onClick={() => setShowLogoutConfirm(false)}
-              >
-                Cancel
-              </button>
-              <button 
-                className="btn" 
-                style={{ flex: 1, background: '#ef4444', color: 'white' }}
-                onClick={handleLogout}
-              >
-                Log Out
-              </button>
+        <div className="modal-backdrop">
+          <div className="modal" style={{ maxWidth: 360, textAlign: 'center', padding: 32 }}>
+            <h2 style={{ fontSize: 20, fontWeight: 800 }}>Log Out?</h2>
+            <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
+              <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => setShowLogoutConfirm(false)}>Cancel</button>
+              <button className="btn btn-danger" style={{ flex: 1 }} onClick={async () => { await supabase.auth.signOut(); localStorage.clear(); window.location.reload(); }}>Log Out</button>
             </div>
           </div>
         </div>

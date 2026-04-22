@@ -1,41 +1,31 @@
-# Submittal Tracker — task_plan.md
-*Protocol: F.O.R.G.E. | Framework: Vite + React + Supabase*
+# Project Execution Plan: Multi-Tenant Architecture & Security Hardening
+
+## Phase 1: Foundation & Data Sync [COMPLETED]
+- [x] Clear active sessions and local storage issues.
+- [x] Correct table naming conventions in SQL (activity_log).
+- [x] Prepare comprehensive data purge script.
+- [x] Add `is_global_staff` and `organization_id` fields to profiles.
+
+## Phase 2: The Island Lockdown [COMPLETED]
+- [x] Execute SQL Migration (Purge legacy data, create organizations table, enable RLS).
+- [x] Create the "Onboarding Key" (License Key) system.
+- [x] Refactor `App.jsx` for Organization-based session loading.
+- [x] Implement "Key Burning" logic to prevent reuse of signup codes.
+- [x] Update project creation to include `organization_id`.
+
+## Phase 3: Team & Guest Security [COMPLETED]
+- [x] Update Team Directory to filter by current Organization.
+- [x] Implement the Coworker Invitation flow (link emails to Orgs before signup).
+- [x] Refind RLS logic for "Cross-Island Guest Access" (Allow external vendors).
+- [x] Professionalize the Email Onboarding Template.
+
+## Phase 4: Polish & Performance [UPCOMING]
+- [ ] Enhance Dashboard UI for multi-project management.
+- [ ] Add "Switch Island" UI if user has multiple memberships (Advanced).
+- [ ] Implement activity auditing with organization-wide reporting.
 
 ---
-
-## 🟢 Protocol 0: Initialization
-- [x] Protocols read (FORGE, BLAST, Phase 0, Memory)
-- [x] Discovery Questions answered
-- [x] architecture.md created
-- [x] schema.md created
-- [x] learnings.md created
-
----
-
-## 🏗️ Phase 1: F — Foundation (Discovery & Vibe)
-- [x] 5 Discovery Questions locked in
-- [x] Tech stack approved (Vite + React + Supabase)
-
-## 🧠 Phase 2: O — Organize (Data-First)
-- [x] JSON schema defined in schema.md
-- [x] State map defined
-- [x] Supabase tables created
-
-## 🎨 Phase 3: R — Render (Premium UI Shell)
-- [x] Design tokens in index.css
-- [x] App shell built (NavRail, MainStage)
-- [x] All views built (Dashboard, ProjectView, SpecView, Settings, Security)
-- [x] Micro-animations and hover states applied (ConfirmModal, App.jsx transitions)
-
-## 🔗 Phase 4: G — Glue (State & API Integration)
-- [x] Supabase client connected
-- [x] All views wired to live data (projects, spec_sections, submittals)
-- [x] Loading states + error boundaries
-
-## ⚙️ Phase 5: E — Evaluate (Self-Healing & Polish)
-- [x] Comprehensive QA Audit (Phase 1-3 of overnight pass)
-- [ ] Mobile responsiveness check
-- [x] learnings.md updated
-- [ ] 11 Essential Guards (E2E Playwright Tests)
-- [x] Git commit + push
-
+**Milestones Achieved:**
+- 🏝️ **ISLAND SECURITY**: Database-level isolation between companies.
+- 🔑 **LICENSE GATING**: Invite-only registration for new customers.
+- 🛡️ **SHIELD ACCESS**: Controlled portfolio-wide management.

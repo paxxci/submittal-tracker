@@ -178,6 +178,9 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
           : `📤 Status changed to: Submitted${revSuffix}`
       }
 
+      const { spec_section_code, review_duration, ...cleanForm } = form
+      if (review_duration) cleanForm.expected_days = review_duration
+      
       const updated = await updateSubmittal(submittal.id, cleanForm, activeUser, options)
       setLog(await getActivityLog(submittal.id))
       onUpdated(updated)

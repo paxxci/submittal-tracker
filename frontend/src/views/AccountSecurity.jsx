@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { Shield, Lock, CheckCircle2, AlertCircle, ArrowRight, RefreshCw } from 'lucide-react'
 import { supabase } from '../supabase_client'
 
-export default function AccountSecurity() {
+export default function AccountSecurity({ userEmail }) {
   const [currentPassword, setCurrentPassword] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
@@ -56,23 +56,31 @@ export default function AccountSecurity() {
     <>
       <div className="top-bar">
         <span className="top-bar-title">Account & Security</span>
-        <span className="top-bar-sub" style={{ marginLeft: 8 }}>— Protect your credentials</span>
       </div>
 
       <div className="stage-body" style={{ maxWidth: 500, margin: '24px auto' }}>
         <div className="card" style={{ padding: 40, background: 'var(--bg-modal)', textAlign: 'center' }}>
-          <div style={{ 
-            width: 64, height: 64, borderRadius: 16, 
-            background: 'var(--accent-dim)', color: 'var(--accent)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            margin: '0 auto 24px', border: '1px solid var(--border-hover)'
-          }}>
-            <Shield size={32} />
+          
+          {/* Identity Section */}
+          <div style={{ marginBottom: 32, padding: '20px', background: 'rgba(255,255,255,0.03)', borderRadius: 16, border: '1px solid var(--border)' }}>
+            <div style={{ 
+              width: 48, height: 48, borderRadius: '50%', 
+              background: 'var(--accent)', color: '#000',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              margin: '0 auto 12px', fontSize: 20, fontWeight: 900
+            }}>
+              {userEmail?.[0]?.toUpperCase() || '?'}
+            </div>
+            <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text)' }}>Active Identity</div>
+            <div style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 600, marginTop: 4 }}>{userEmail}</div>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 12, fontSize: 9, background: 'rgba(255,255,255,0.05)', padding: '4px 10px', borderRadius: 20, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1 }}>
+              <CheckCircle2 size={10} color="var(--s-approved)" /> Verified Session
+            </div>
           </div>
 
-          <h2 style={{ fontSize: 24, fontWeight: 900, marginBottom: 8 }}>Password Security</h2>
-          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 32, lineHeight: 1.6 }}>
-            Update your account password. This will take effect immediately without requiring an email link.
+          <h2 style={{ fontSize: 22, fontWeight: 900, marginBottom: 8 }}>Password Security</h2>
+          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 28, lineHeight: 1.6 }}>
+            Update your credentials. Changes take effect on your next sign-in.
           </p>
 
           <form onSubmit={handleUpdate} style={{ textAlign: 'left' }}>

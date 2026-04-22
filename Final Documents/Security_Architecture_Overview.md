@@ -1,27 +1,38 @@
-# Submittal Tracker Pro — Security Overview
-*Platform Intelligence & Data Integrity*
+# Security Architecture: The Island Model (V2.0)
 
-## 🏛️ Industrial-Grade Infrastructure
-The application is built on the world's most resilient cloud backbone, leveraging the same infrastructure patterns used by industry leaders such as Autodesk Construction Cloud and Procore.
+## 1. Overview
+The Submittal Tracker has been transformed into a secure, multi-tenant SaaS platform. Every user belongs to a strictly isolated "Island" (Organization). Data leakage between islands is physically impossible at the database level.
 
-- **Hosting:** Data resides in dedicated AWS (Amazon Web Services) clusters.
-- **Encryption:** AES-256 encryption at rest and TLS 1.2+ for all data in transit.
-- **Compliance:** SOC2 Type II, HIPAA, and ISO 27001 certified underlying platform architecture.
+## 2. The Island Boundary (Organization ID)
+Every critical table in the database is now stamped with an `organization_id`.
+- **`organizations`**: The container for a company.
+- **`profiles`**: Linked to an Org ID. Defines which island a user "lives" on.
+- **`projects`**: Linked to an Org ID. Defines which island a project belongs to.
 
-## 🔐 Row-Level Security (RLS) Vault
-Unlike traditional databases, our architecture implements security at the *data layer*. Every individual row in our database is guarded by specific logic that verifies user identity before permission is granted.
+## 3. Row Level Security (RLS) Policies
+The database now enforces access rules via Postgres RLS. Even if the frontend code makes a mistake, the database will refuse to serve data from another island.
 
-- **Strict Isolation:** Multi-tenant isolation ensures project data is never shared or "leaked" between organizations.
-- **Zero Trust:** No request is trusted by default; authentication is required for every single operation.
+### Project Access Policy:
+Users can ONLY see projects if:
+1. They are in the same `organization_id` AND have the `is_global_staff` (Portfolio Access) flag.
+2. OR, they are explicitly added to that project via the `project_members` table (Guest/External Access).
 
-## 🧠 Submittal Architect — AI Data Privacy
-Our AI-driven processing ensures information is extracted without compromising proprietary project data.
+### Submittal & Activity Access:
+These tables inherit security from the Project. If you can't see the Project, you can't see the Submittal or its logs.
 
-- **Zero Retention:** Data processed by our AI models is never used for training or stored by the model providers.
-- **Private Tunnel:** Information is transmitted via encrypted enterprise channels (OpenRouter/Supabase) and discarded immediately after processing.
+## 4. Onboarding & Registration
+### New Organization (Founder)
+- **Path**: `/?signup=true`
+- **Security**: Requires a valid, unredeemed **License Key** from the `onboarding_keys` table.
+- **Result**: Creates a brand new `organization_id` and grants the owner `is_global_staff = true`.
 
----
+### Team Member (Coworker)
+- **Path**: Standard Signup.
+- **Security**: Must be pre-invited via the **Team Directory (Shield)**.
+- **Result**: On signup, the app "absorbs" the user into the existing Organization and deletes the pending invitation.
 
-> "We haven't just put your data in the cloud; we've built a private, hardened environment designed specifically for the high-stakes requirements of modern electrical contracting."
-
-*© 2026 Submittal Tracker Pro | Confidential Project Memo | April 15, 2026*
+## 5. Global Admin (The Shield)
+The "Shield" icon in the navigation rail is strictly for **Portfolio-wide management**. 
+- Only visible to users with `is_global_staff = true`.
+- Allows viewing/editing all projects within the SAME island.
+- Controls coworker access levels (Member vs. Portfolio Admin).

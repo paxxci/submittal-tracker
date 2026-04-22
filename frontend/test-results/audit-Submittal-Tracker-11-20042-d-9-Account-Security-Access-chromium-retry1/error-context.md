@@ -12,17 +12,84 @@
 # Error details
 
 ```
-Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5174/
-Call log:
-  - navigating to "http://localhost:5174/", waiting until "load"
+Error: expect(locator).toBeVisible() failed
 
+Locator: locator('text=Password Management')
+Expected: visible
+Timeout: 5000ms
+Error: element(s) not found
+
+Call log:
+  - Expect "toBeVisible" with timeout 5000ms
+  - waiting for locator('text=Password Management')
+
+```
+
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - navigation [ref=e4]:
+    - generic [ref=e5]: ST
+    - button "Dashboard" [ref=e6] [cursor=pointer]:
+      - img [ref=e7]
+      - generic: Dashboard
+    - generic [ref=e12]:
+      - button "T Account & Security" [ref=e13] [cursor=pointer]:
+        - generic [ref=e14]: T
+        - generic: Account & Security
+      - button "Log Out" [active] [ref=e15] [cursor=pointer]:
+        - img [ref=e16]
+        - generic: Log Out
+  - generic [ref=e19]:
+    - generic [ref=e20]:
+      - generic [ref=e21]: Project Portfolio
+      - generic [ref=e22]:
+        - generic [ref=e23] [cursor=pointer]:
+          - checkbox "Show Archived" [ref=e24]
+          - text: Show Archived
+        - button "New Project" [ref=e25] [cursor=pointer]:
+          - img [ref=e26]
+          - text: New Project
+    - generic [ref=e27]:
+      - generic [ref=e28]:
+        - generic [ref=e29]:
+          - heading "System Registry" [level=1] [ref=e30]
+          - paragraph [ref=e31]:
+            - text: Managing
+            - strong [ref=e32]: "1"
+            - text: active workspaces.
+        - generic [ref=e33]:
+          - generic [ref=e34]:
+            - img [ref=e35]
+            - 'textbox "Find project name or #..." [ref=e38]'
+          - generic [ref=e39]:
+            - button "Sort by Date" [ref=e40] [cursor=pointer]:
+              - img [ref=e41]
+            - button "Sort A-Z" [ref=e43] [cursor=pointer]:
+              - img [ref=e44]
+            - 'button "Sort Project #" [ref=e48] [cursor=pointer]':
+              - img [ref=e49]
+          - generic [ref=e52]:
+            - button [ref=e53] [cursor=pointer]:
+              - img [ref=e54]
+            - button [ref=e59] [cursor=pointer]:
+              - img [ref=e60]
+      - generic [ref=e63] [cursor=pointer]:
+        - generic [ref=e64]:
+          - generic [ref=e65]: Audit Test Project
+          - generic [ref=e67]: "#PEC-2024-001"
+        - img [ref=e70]
+  - generic [ref=e78]:
+    - heading "Log Out?" [level=2] [ref=e79]
+    - generic [ref=e80]:
+      - button "Cancel" [ref=e81] [cursor=pointer]
+      - button "Log Out" [ref=e82] [cursor=pointer]
 ```
 
 # Test source
 
 ```ts
-  1   | import { test, expect } from '@playwright/test';
-  2   | 
   3   | test.describe('Submittal Tracker: 11 Essential Guards Audit', () => {
   4   |   
   5   |   test.beforeEach(async ({ page }) => {
@@ -30,8 +97,7 @@ Call log:
   7   |     await page.addInitScript(() => {
   8   |       window.localStorage.setItem('sb-test-mode', 'true');
   9   |     });
-> 10  |     await page.goto('/');
-      |                ^ Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5174/
+  10  |     await page.goto('/');
   11  |   });
   12  | 
   13  |   test('Guard 1: Dashboard Foundation & Projects', async ({ page }) => {
@@ -117,14 +183,15 @@ Call log:
   93  |     await page.click('.project-card:first-child');
   94  |     await page.click('button:has-text("Spec Intel")'); 
   95  |     await expect(page.locator('text=Spec Intel Hub')).toBeVisible();
-  96  |     await expect(page.locator('.spec-dropzone')).toBeVisible();
+  96  |     await expect(page.locator('.spec-dropzone').first()).toBeVisible();
   97  |   });
   98  | 
   99  |   test('Guard 9: Account & Security Access', async ({ page }) => {
   100 |     // Click account button in NavRail (usually bottom)
   101 |     await page.click('.nav-btn:last-child');
   102 |     await expect(page.locator('text=Security')).toBeVisible();
-  103 |     await expect(page.locator('text=Password Management')).toBeVisible();
+> 103 |     await expect(page.locator('text=Password Management')).toBeVisible();
+      |                                                            ^ Error: expect(locator).toBeVisible() failed
   104 |   });
   105 | 
   106 |   test('Guard 10: Global Search & Filtering', async ({ page }) => {
@@ -132,4 +199,20 @@ Call log:
   108 |     const searchInput = page.locator('#search-submittals');
   109 |     await searchInput.fill('UNLIKELY_MATCH_XYZ');
   110 |     await expect(page.locator('text=No results')).toBeVisible();
+  111 |     await searchInput.fill(''); // Clear search
+  112 |   });
+  113 | 
+  114 |   test('Guard 11: AI Chat Responsiveness', async ({ page }) => {
+  115 |     const chatFab = page.locator('.chat-fab-button');
+  116 |     await chatFab.click();
+  117 |     
+  118 |     const chatWindow = page.locator('.chat-window');
+  119 |     await expect(chatWindow).toBeVisible();
+  120 |     
+  121 |     // Should see initial assistant greeting
+  122 |     await expect(page.locator('.chat-bubble.assistant').first()).toContainText('assistant');
+  123 |   });
+  124 | 
+  125 | });
+  126 | 
 ```

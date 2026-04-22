@@ -93,7 +93,7 @@ test.describe('Submittal Tracker: 11 Essential Guards Audit', () => {
     await page.click('.project-card:first-child');
     await page.click('button:has-text("Spec Intel")'); 
     await expect(page.locator('text=Spec Intel Hub')).toBeVisible();
-    await expect(page.locator('.spec-dropzone')).toBeVisible();
+    await expect(page.locator('.spec-dropzone').first()).toBeVisible();
   });
 
   test('Guard 9: Account & Security Access', async ({ page }) => {

@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { X } from 'lucide-react'
 import { createProject } from '../services/project_service'
 
-export default function NewProjectModal({ onClose, onCreated }) {
+export default function NewProjectModal({ onClose, onCreated, organizationId }) {
   const [form, setForm] = useState({ name: '', number: '', client: '', address: '' })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
@@ -15,7 +15,7 @@ export default function NewProjectModal({ onClose, onCreated }) {
     try {
       setSaving(true)
       setError(null)
-      await createProject(form)
+      await createProject({ ...form, organizationId })
       onCreated()
     } catch (err) {
       setError(err.message || 'Failed to create project.')

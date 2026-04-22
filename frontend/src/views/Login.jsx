@@ -15,6 +15,7 @@ export default function Login({ initialMode = MODE_LOGIN, onComplete }) {
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(false)
   const [message, setMessage] = useState(null)
+  const [signupCode, setSignupCode] = useState('')
 
   useEffect(() => {
     // 1. Check for URL Parameters (Invitations & Errors)
@@ -60,6 +61,27 @@ export default function Login({ initialMode = MODE_LOGIN, onComplete }) {
     return () => subscription.unsubscribe()
   }, [initialMode])
 
+  const [isInvited, setIsInvited] = useState(false)
+  const [checkingInvite, setCheckingInvite] = useState(false)
+
+  const checkInviteStatus = async (emailToCheck) => {
+    if (!emailToCheck || !emailToCheck.includes('@')) {
+      setIsInvited(false)
+      return
+    }
+    
+    try {
+      setCheckingInvite(true)
+      const { data, error } = await supabase.rpc('check_invitation', { email_text: emailToCheck })
+      
+      setIsInvited(!!data)
+    } catch (err) {
+      console.error('Invite check failed:', err)
+    } finally {
+      setCheckingInvite(false)
+    }
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
@@ -72,10 +94,32 @@ export default function Login({ initialMode = MODE_LOGIN, onComplete }) {
         if (error) throw error
       } 
       else if (mode === MODE_SIGNUP) {
+        // 1. If NOT invited, they MUST have a valid, unredeemed License Key
+        if (!isInvited) {
+          const formattedCode = (signupCode || '').trim().toUpperCase()
+          if (!formattedCode) throw new Error("A License Key is required to create a new island.")
+
+          const { data: keyData, error: keyError } = await supabase
+            .from('onboarding_keys')
+            .select('*')
+            .eq('key_code', formattedCode)
+            .eq('is_redeemed', false)
+            .maybeSingle()
+          
+          if (keyError || !keyData) {
+            throw new Error(`Invalid Key: "${formattedCode}" is not recognized or has already been used.`)
+          }
+        }
+
         const { error } = await supabase.auth.signUp({ 
           email, 
           password,
-          options: { emailRedirectTo: window.location.origin }
+          options: { 
+            emailRedirectTo: window.location.origin,
+            data: { 
+              signup_code: isInvited ? null : signupCode // Only store if they actually used one
+            }
+          }
         })
         if (error) throw error
         setSuccess(true)
@@ -97,7 +141,7 @@ export default function Login({ initialMode = MODE_LOGIN, onComplete }) {
       }
     } catch (err) {
       if (err.message.toLowerCase().includes('rate limit')) {
-        setError("Security Cooldown: You've requested several links recently. Please wait about 5-10 minutes before trying again to protect your account. In the meantime, check your spam for the last link sent!")
+        setError("Security Cooldown: Please wait a few minutes before trying again.")
       } else {
         setError(err.message)
       }
@@ -183,10 +227,14 @@ export default function Login({ initialMode = MODE_LOGIN, onComplete }) {
                   <input 
                     type="email" 
                     value={email} 
-                    onChange={e => setEmail(e.target.value)} 
+                    onChange={e => {
+                      setEmail(e.target.value)
+                      if (mode === MODE_SIGNUP) checkInviteStatus(e.target.value)
+                    }} 
                     placeholder="name@company.com" 
                     required 
                   />
+                  {checkingInvite && <div className="input-spinner" />}
                 </div>
               </div>
             )}
@@ -207,6 +255,39 @@ export default function Login({ initialMode = MODE_LOGIN, onComplete }) {
               </div>
             )}
 
+            {mode === MODE_SIGNUP && !isInvited && (
+              <div className="input-group" style={{ marginTop: '-4px', marginBottom: '24px' }}>
+                <label>Company Onboarding Code</label>
+                <div className="input-wrapper">
+                  <Shield size={18} className="input-icon" />
+                  <input 
+                    type="text" 
+                    value={signupCode} 
+                    onChange={e => setSignupCode(e.target.value.toUpperCase())} 
+                    placeholder="Enter Private Code" 
+                    id="input-signup-code"
+                  />
+                </div>
+                <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                  Required to create a new company island.
+                </p>
+              </div>
+            )}
+
+            {mode === MODE_SIGNUP && isInvited && (
+               <div className="animate-in" style={{ 
+                    padding: '12px 16px', borderRadius: 12, background: 'rgba(34, 197, 94, 0.1)', 
+                    border: '1px solid rgba(34, 197, 94, 0.2)', color: '#22c55e', fontSize: 13, marginBottom: 24,
+                    display: 'flex', alignItems: 'center', gap: 12
+                }}>
+                  <BadgeCheck size={20} />
+                  <div>
+                    <strong>VIP Invitation Found!</strong>
+                    <div style={{ opacity: 0.8, fontSize: 11 }}>No onboarding code required for team members.</div>
+                  </div>
+               </div>
+            )}
+
             <button type="submit" className="btn btn-primary login-btn" disabled={loading}>
               {loading ? 'Processing...' : (
                 mode === MODE_LOGIN ? 'Sign In' : 
@@ -220,9 +301,7 @@ export default function Login({ initialMode = MODE_LOGIN, onComplete }) {
           <div className="login-footer">
             {mode === MODE_LOGIN && (
               <>
-                {new URLSearchParams(window.location.search).get('signup') === 'true' && (
-                  <p>Don't have an account? <button className="btn-link" onClick={() => setMode(MODE_SIGNUP)}>Sign Up</button></p>
-                )}
+                <p>Don't have an account? <button className="btn-link" onClick={() => setMode(MODE_SIGNUP)}>Sign Up</button></p>
                 <button className="btn-link forgot-link" onClick={() => setMode(MODE_FORGOT)}>Forgot your password?</button>
               </>
             )}

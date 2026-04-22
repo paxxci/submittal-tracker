@@ -1493,3 +1493,115 @@ tr:hover .row-actions { opacity: 1; }
   0% { transform: scale(0.98); opacity: 0; }
   100% { transform: scale(1); opacity: 1; }
 }
+
+/* ── MOBILE RESPONSIVENESS ───────────────────────────────────────── */
+@media (max-width: 768px) {
+  :root {
+    --nav-w: 0px;
+    --panel-w: 100vw;
+  }
+
+  .app-container {
+    flex-direction: column-reverse; /* Put nav at bottom */
+  }
+
+  .nav-rail {
+    width: 100%;
+    height: 64px;
+    flex-direction: row;
+    padding: 0 16px;
+    border-right: none;
+    border-top: 1px solid var(--border);
+    justify-content: space-around;
+  }
+
+  .nav-top, .nav-bottom {
+    flex-direction: row;
+    width: auto;
+    gap: 20px;
+  }
+
+  .nav-logo, .nav-divider {
+    display: none;
+  }
+
+  .nav-btn {
+    width: 48px;
+    height: 48px;
+  }
+
+  .nav-label {
+    display: none; /* Keep it clean */
+  }
+
+  .main-content {
+    height: calc(100vh - 64px);
+  }
+
+  .top-bar {
+    padding: 0 16px;
+    height: 56px;
+  }
+
+  .stage-body {
+    padding: 16px;
+  }
+
+  .projects-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .submittal-table thead {
+    display: none; /* Table is too wide for mobile */
+  }
+
+  .submittal-table, .submittal-table tbody, .submittal-table tr, .submittal-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .submittal-table tr {
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 8px;
+    background: var(--bg-surface);
+    border-radius: 12px;
+  }
+
+  .submittal-table td {
+    padding: 4px 0;
+    border: none !important;
+  }
+
+  .submittal-table td:first-child {
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  /* Detail Panel on Mobile */
+  .detail-panel {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    transform: translateY(100%);
+  }
+  
+  .detail-panel.open {
+    transform: translateY(0);
+  }
+
+  .floating-chat-container {
+    bottom: 80px; /* Above mobile nav */
+    right: 20px;
+  }
+
+  .floating-chat-container.shifted {
+    right: 20px; /* Don't shift on mobile, overlay instead */
+  }
+
+  .chat-window {
+    width: calc(100vw - 40px);
+    right: 0;
+  }
+}
