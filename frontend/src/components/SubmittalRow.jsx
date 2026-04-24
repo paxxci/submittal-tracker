@@ -5,10 +5,10 @@ import { calculateExpectedDate, isSubmittalOverdue, formatDate } from '../logic/
 
 function BicDisplay({ bic }) {
   if (!bic) return null
-  
+
   // Standard roles (e.g. "ENGINEER", "ARCHITECT")
   const isStandard = ['you', 'pm', 'gc', 'engineer', 'architect', 'vendor'].includes(bic.toLowerCase())
-  
+
   if (isStandard) {
     return <BicChip bic={bic} />
   }
@@ -16,7 +16,7 @@ function BicDisplay({ bic }) {
   // Custom contact parsing: "Name (Company)"
   // Priority: Company (match[2]), then Name (match[1])
   const match = bic.match(/^(.*?)\s*\((.*?)\)$/)
-  
+
   if (match) {
     const person = match[1]
     const company = match[2]
@@ -39,9 +39,10 @@ export default function SubmittalRow({ sub, today, selected, onClick, onDelete }
   const expectedDate = calculateExpectedDate(sub.submitted_date, sub.review_duration)
   const overdue = isSubmittalOverdue(expectedDate, sub.status)
   const isApproved = sub.status === 'approved'
-  
+
   const rowClass = [
-    selected ? 'selected' : '', 
+    'submittal-row',
+    selected ? 'selected' : '',
     isApproved ? 'row-approved' : ''
   ].filter(Boolean).join(' ')
 

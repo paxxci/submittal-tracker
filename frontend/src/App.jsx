@@ -59,7 +59,7 @@ export default function App() {
   useEffect(() => {
     if (session) {
       const isTestMode = typeof window !== 'undefined' && localStorage.getItem('sb-test-mode') === 'true'
-      
+
       if (isTestMode) {
         setUserProfile({ id: session.user.id, is_global_staff: true })
         setOrganization({ id: 'test-org-id', name: 'Audit Test Org' })
@@ -73,7 +73,7 @@ export default function App() {
             // 2. Load or Create Organization
             try {
               let org = await getOrganizationForUser(session.user.id)
-              
+
               if (!org) {
                 // Check for a pending invitation
                 const { data: invite } = await supabase
@@ -84,30 +84,30 @@ export default function App() {
 
                 if (invite) {
                   // 1. Create the Profile for the guest
-                  const { data: newProfile, error: profileErr } = await supabase.from('profiles').upsert({ 
+                  const { data: newProfile, error: profileErr } = await supabase.from('profiles').upsert({
                     id: session.user.id,
                     email: session.user.email,
                     organization_id: invite.organization_id,
-                    is_global_staff: invite.is_portfolio_access 
+                    is_global_staff: invite.is_portfolio_access
                   }).select().single()
 
                   if (profileErr) throw profileErr
-                  
+
                   // 2. Refresh Local State immediately
                   setUserProfile(newProfile)
-                  
+
                   // 3. Link to Organization
                   const { data: orgData } = await supabase.from('organizations').select('*').eq('id', invite.organization_id).single()
                   org = orgData
-                  
+
                   // 4. Clean up invite
                   await supabase.from('organization_invites').delete().eq('id', invite.id)
                 } else {
                   // Create a NEW Island (New customer)
                   org = await createOrganization(`${session.user.email.split('@')[0]}'s Island`, session.user.id)
-                  
+
                   // UPSERT PROFILE (Create if missing)
-                  const { data: newProfile, error: profileErr } = await supabase.from('profiles').upsert({ 
+                  const { data: newProfile, error: profileErr } = await supabase.from('profiles').upsert({
                     id: session.user.id,
                     email: session.user.email,
                     organization_id: org.id,
@@ -117,18 +117,19 @@ export default function App() {
                   if (profileErr) throw profileErr
                   setUserProfile(newProfile)
 
-                  // BURN THE KEY (Mark as redeemed)
-                  const usedCode = session.user.user_metadata?.signup_code
-                  if (usedCode) {
-                    await supabase.from('onboarding_keys').update({
-                      is_redeemed: true,
-                      redeemed_at: new Date().toISOString(),
-                      redeemed_by: session.user.id
-                    }).eq('key_code', usedCode.toUpperCase())
-                  }
                 }
               }
               setOrganization(org)
+
+              // BURN THE KEY (Mark as redeemed if it hasn't been yet)
+              const usedCode = session.user.user_metadata?.signup_code
+              if (usedCode) {
+                await supabase.from('onboarding_keys').update({
+                  is_redeemed: true,
+                  redeemed_at: new Date().toISOString(),
+                  redeemed_by: session.user.id
+                }).eq('key_code', usedCode.toUpperCase()).eq('is_redeemed', false)
+              }
             } catch (err) {
               console.error('Organization sync failed:', err)
             }
@@ -141,7 +142,7 @@ export default function App() {
     const isTestMode = localStorage.getItem('sb-test-mode') === 'true'
     if (isTestMode) {
       setProjects([{
-        id: 'test-project-id',
+        id: '00000000-0000-0000-0000-000000000000',
         name: 'Audit Test Project',
         number: 'PEC-2024-001',
         client: 'Test Client',
@@ -188,7 +189,7 @@ export default function App() {
   }
 
   if (!isLoaded) return <div style={{ background: '#0a0a0a', height: '100vh' }} />
-  if (!session) return <Login onComplete={() => window.location.reload()} />
+  if (!session) return <Login onComplete={() => { localStorage.setItem('sa-active-view', 'dashboard'); window.location.reload() }} />
 
   const isGlobalAdmin = userProfile?.is_global_staff === true
   const activeUserRole = currentProject?.project_members?.find(m => m.email === session.user.email)?.role || 'viewer'
@@ -207,7 +208,7 @@ export default function App() {
         isGlobalAdmin={isGlobalAdmin}
         organization={organization}
       />
-      
+
       <div className="main-stage">
         {view === 'dashboard' && (
           <Dashboard
@@ -221,11 +222,11 @@ export default function App() {
             organization={organization}
           />
         )}
-        
+
         {view === 'project' && currentProject && (
-          <ProjectView 
-            project={currentProject} 
-            activeUser={session.user} 
+          <ProjectView
+            project={currentProject}
+            activeUser={session.user}
             onBack={goToDashboard}
             onSpecIntel={() => setView('spec')}
             activeUserRole={activeUserRole}
@@ -233,25 +234,25 @@ export default function App() {
         )}
 
         {view === 'spec' && currentProject && (
-          <SpecView 
-            project={currentProject} 
-            activeUser={session.user.email} 
+          <SpecView
+            project={currentProject}
+            activeUser={session.user.email}
             onBack={() => setView('project')}
           />
         )}
 
         {view === 'team' && (
-          <TeamView 
-            activeUser={session.user} 
-            projects={projects} 
+          <TeamView
+            activeUser={session.user}
+            projects={projects}
             organization={organization}
           />
         )}
 
         {view === 'settings' && currentProject && (
-          <Settings 
-            project={currentProject} 
-            onProjectUpdated={loadProjects} 
+          <Settings
+            project={currentProject}
+            onProjectUpdated={loadProjects}
             activeUserRole={activeUserRole}
             organization={organization}
           />

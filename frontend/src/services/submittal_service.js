@@ -1,21 +1,26 @@
 import { supabase } from '../supabase_client'
 import { addActivity } from './activity_service'
 
+let mockSubmittals = null;
+
 export const getSubmittals = async (projectId) => {
   const isTestMode = typeof window !== 'undefined' && localStorage.getItem('sb-test-mode') === 'true'
   if (isTestMode) {
-    return [{
-      id: 'test-sub-1',
-      project_id: projectId,
-      item_name: 'Test Submittal 001',
-      status: 'working',
-      priority: 'medium',
-      bic: 'GC',
-      round: 1,
-      created_at: new Date().toISOString(),
-      spec_sections: { csi_code: '01 00 00', title: 'General Requirements' },
-      attachments: []
-    }]
+    if (!mockSubmittals) {
+      mockSubmittals = [{
+        id: 'test-sub-1',
+        project_id: projectId,
+        item_name: 'Test Submittal 001',
+        status: 'working',
+        priority: 'medium',
+        bic: 'GC',
+        round: 1,
+        created_at: new Date().toISOString(),
+        spec_sections: { csi_code: '01 00 00', title: 'General Requirements' },
+        attachments: []
+      }]
+    }
+    return [...mockSubmittals]
   }
 
   const { data, error } = await supabase
@@ -45,16 +50,26 @@ const cleanDates = (obj) => {
 export const createSubmittal = async (fields, authorRoleOrUser = null) => {
   const isTestMode = typeof window !== 'undefined' && localStorage.getItem('sb-test-mode') === 'true'
   if (isTestMode) {
-    return {
+    const newSub = {
       id: 'test-sub-' + Date.now(),
       ...fields,
+      item_name: fields.item_name || 'New Submittal',
+      status: fields.status || 'not_started',
+      priority: fields.priority || 'medium',
+      bic: fields.bic || 'PM',
       created_at: new Date().toISOString(),
-      spec_sections: { csi_code: fields.spec_section_code || '00 00 00', title: 'Test Section' }
+      spec_sections: { csi_code: fields.spec_section || '00 00 00', title: 'Test Section' }
     }
+    if (mockSubmittals) {
+      mockSubmittals.push(newSub)
+    } else {
+      mockSubmittals = [newSub]
+    }
+    return newSub
   }
 
-  const authorRole = typeof authorRoleOrUser === 'string' 
-    ? authorRoleOrUser 
+  const authorRole = typeof authorRoleOrUser === 'string'
+    ? authorRoleOrUser
     : (authorRoleOrUser?.user_metadata?.full_name || authorRoleOrUser?.email || 'System')
 
   const { data, error } = await supabase
@@ -63,21 +78,29 @@ export const createSubmittal = async (fields, authorRoleOrUser = null) => {
     .select(`*, spec_sections(csi_code, title)`)
     .single()
   if (error) throw error
-  
+
   // Auto-log creation
   await addActivity(data.id, `Created submittal: ${data.item_name}`, authorRole)
-  
+
   return data
 }
 
 export const updateSubmittal = async (id, updates, authorRoleOrUser = null, options = {}) => {
-  const authorRole = typeof authorRoleOrUser === 'string' 
-    ? authorRoleOrUser 
+  const isTestMode = typeof window !== 'undefined' && localStorage.getItem('sb-test-mode') === 'true'
+  if (isTestMode) {
+    if (mockSubmittals) {
+      mockSubmittals = mockSubmittals.map(s => s.id === id ? { ...s, ...updates } : s)
+    }
+    return { id, ...updates }
+  }
+
+  const authorRole = typeof authorRoleOrUser === 'string'
+    ? authorRoleOrUser
     : (authorRoleOrUser?.user_metadata?.full_name || authorRoleOrUser?.email || 'System')
 
   // Fetch current for comparison to log changes
   const { data: current } = await supabase.from('submittals').select('*').eq('id', id).single()
-  
+
   const cleaned = cleanDates(updates)
   const { data, error } = await supabase
     .from('submittals')
@@ -97,8 +120,8 @@ export const updateSubmittal = async (id, updates, authorRoleOrUser = null, opti
         await addActivity(id, `Status changed to: ${statusLabel}`, authorRole, { round: data.round })
       }
     } else if (options.customActivityMsg) {
-       // Log custom message even if status didn't change (e.g. manual override)
-       await addActivity(id, options.customActivityMsg, authorRole, { round: data.round })
+      // Log custom message even if status didn't change (e.g. manual override)
+      await addActivity(id, options.customActivityMsg, authorRole, { round: data.round })
     }
 
     if (cleaned.bic && cleaned.bic !== current.bic) {
@@ -110,6 +133,12 @@ export const updateSubmittal = async (id, updates, authorRoleOrUser = null, opti
 }
 
 export const deleteSubmittal = async (id) => {
+  if (typeof window !== 'undefined' && localStorage.getItem('sb-test-mode') === 'true') {
+    if (mockSubmittals) {
+      mockSubmittals = mockSubmittals.filter(s => s.id !== id)
+    }
+    return true
+  }
   const { error } = await supabase.from('submittals').delete().eq('id', id)
   if (error) throw error
 }

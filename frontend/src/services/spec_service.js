@@ -26,6 +26,11 @@ export const deleteSpecSection = async (id) => {
 }
 
 export const resolveSpecSectionId = async (projectId, csiCode) => {
+  // AUDIT MODE: Bypass database call for mocked projects
+  if (localStorage.getItem('sb-test-mode') === 'true' || projectId === '00000000-0000-0000-0000-000000000000') {
+    return '00000000-0000-0000-0000-000000000000'
+  }
+
   const code = (csiCode || 'GENERAL').trim()
   const { data: existing } = await supabase
     .from('spec_sections')
@@ -33,15 +38,15 @@ export const resolveSpecSectionId = async (projectId, csiCode) => {
     .eq('project_id', projectId)
     .eq('csi_code', code)
     .maybeSingle()
-  
+
   if (existing) return existing.id
-  
+
   const { data: created, error } = await supabase
     .from('spec_sections')
     .insert([{ project_id: projectId, csi_code: code, title: 'Manual Entry' }])
     .select('id')
     .single()
-    
+
   if (error) throw error
   return created.id
 }

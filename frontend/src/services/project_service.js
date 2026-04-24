@@ -1,6 +1,24 @@
 import { supabase } from '../supabase_client'
 
+let mockProjects = null;
+
 export const getProjects = async (includeArchived = false) => {
+  const isTestMode = typeof window !== 'undefined' && localStorage.getItem('sb-test-mode') === 'true'
+  if (isTestMode) {
+    if (!mockProjects) {
+      mockProjects = [{
+        id: '00000000-0000-0000-0000-000000000000',
+        name: 'Audit Test Project',
+        number: 'PEC-2024-001',
+        client: 'Internal Audit',
+        is_archived: false,
+        created_at: new Date().toISOString(),
+        project_members: [{ email: 'test@example.com', role: 'admin' }]
+      }]
+    }
+    return [...mockProjects]
+  }
+
   try {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return []
@@ -15,7 +33,7 @@ export const getProjects = async (includeArchived = false) => {
     const isGlobal = profile?.is_global_staff === true
 
     let query = supabase.from('projects').select('*, project_members(email, role)')
-    
+
     if (!isGlobal) {
       // If NOT admin, only show membership matches
       // We use a separate query or join depending on preference, 
@@ -24,7 +42,7 @@ export const getProjects = async (includeArchived = false) => {
         .from('project_members')
         .select('project_id')
         .eq('email', user.email)
-      
+
       const ids = memberProjects?.map(m => m.project_id) || []
       if (ids.length === 0) return []
       query = query.in('id', ids)
@@ -36,7 +54,7 @@ export const getProjects = async (includeArchived = false) => {
 
     const { data, error } = await query.order('created_at', { ascending: false })
     if (error) throw error
-    
+
     return data || []
   } catch (err) {
     console.error('getProjects error:', err)
@@ -45,6 +63,18 @@ export const getProjects = async (includeArchived = false) => {
 }
 
 export const createProject = async ({ name, number, client, address, organizationId }) => {
+  if (typeof window !== 'undefined' && localStorage.getItem('sb-test-mode') === 'true') {
+    const newProj = {
+      id: 'test-proj-' + Date.now(),
+      name, number, client, address, organization_id: organizationId,
+      created_at: new Date().toISOString(),
+      project_members: [{ email: 'test@example.com', role: 'admin' }]
+    }
+    if (mockProjects) mockProjects.push(newProj)
+    else mockProjects = [newProj]
+    return newProj
+  }
+
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Authorization required')
 
@@ -58,7 +88,7 @@ export const createProject = async ({ name, number, client, address, organizatio
   await supabase.from('project_members').insert([
     { project_id: data.id, email: user.email, role: 'admin' }
   ])
-  
+
   return data
 }
 

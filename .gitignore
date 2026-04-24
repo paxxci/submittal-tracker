@@ -8,3 +8,7 @@ frontend/dist/
 reference/*.jpg
 reference/*.png
 reference/*.xlsx
+
+# Playwright
+frontend/test-results/
+frontend/playwright-report/

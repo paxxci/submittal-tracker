@@ -1,8 +1,13 @@
 import { supabase } from '../supabase_client'
 
+let mockActivities = []
+
 export const getActivityLog = async (submittalId) => {
+  if (typeof window !== 'undefined' && localStorage.getItem('sb-test-mode') === 'true') {
+    return mockActivities.filter(a => a.submittal_id === submittalId)
+  }
   const { data, error } = await supabase
-    .from('activity_log')
+    .from('activity_logs')
     .select('*')
     .eq('submittal_id', submittalId)
     .order('created_at', { ascending: true })
@@ -11,9 +16,12 @@ export const getActivityLog = async (submittalId) => {
 }
 
 export const getAllActivityLogs = async (submittalIds) => {
+  if (typeof window !== 'undefined' && localStorage.getItem('sb-test-mode') === 'true') {
+    return mockActivities.filter(a => submittalIds.includes(a.submittal_id))
+  }
   if (!submittalIds.length) return []
   const { data, error } = await supabase
-    .from('activity_log')
+    .from('activity_logs')
     .select('*')
     .in('submittal_id', submittalIds)
     .order('created_at', { ascending: false })
@@ -22,11 +30,24 @@ export const getAllActivityLogs = async (submittalIds) => {
 }
 
 export const addActivity = async (submittalId, message, author = 'You', { attachmentId = null, round = null } = {}) => {
+  if (typeof window !== 'undefined' && localStorage.getItem('sb-test-mode') === 'true') {
+    const newAct = {
+      id: 'test-act-' + Date.now(),
+      submittal_id: submittalId,
+      message,
+      author,
+      attachment_id: attachmentId,
+      round: round,
+      created_at: new Date().toISOString()
+    }
+    mockActivities.push(newAct)
+    return newAct
+  }
   const { data, error } = await supabase
-    .from('activity_log')
-    .insert([{ 
-      submittal_id: submittalId, 
-      message, 
+    .from('activity_logs')
+    .insert([{
+      submittal_id: submittalId,
+      message,
       author,
       attachment_id: attachmentId,
       round: round
