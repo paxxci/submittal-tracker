@@ -95,13 +95,23 @@ export const getUserMemberships = async (email) => {
   return data
 }
 
-export const toggleProjectAccess = async (projectId, email, role = 'editor', grant = true) => {
+export const toggleProjectAccess = async (projectId, email, role = 'editor', grant = true, membershipId = null) => {
   const cleanEmail = email?.toLowerCase().trim()
   if (!grant) {
+    if (!membershipId) {
+      // Fallback to match if ID isn't provided (backwards compatibility)
+      const { error } = await supabase
+        .from('project_members')
+        .delete()
+        .match({ project_id: projectId, email: cleanEmail })
+      if (error) throw error
+      return
+    }
+
     const { error } = await supabase
       .from('project_members')
       .delete()
-      .match({ project_id: projectId, email: cleanEmail })
+      .eq('id', membershipId)
     if (error) throw error
     return
   }

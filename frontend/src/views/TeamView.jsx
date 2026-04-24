@@ -45,6 +45,7 @@ export default function TeamView({ activeUser, projects: appProjects = [], organ
       setProfiles(prev => prev.map(p => p.id === profile.id ? { ...p, is_global_staff: !currentVal } : p))
     } catch (err) {
       console.error('Toggle failed:', err)
+      alert('Global Access Update Failed:' + (err.message || 'Check your admin permissions.'))
     } finally {
       setUpdating(null)
     }
@@ -63,10 +64,11 @@ export default function TeamView({ activeUser, projects: appProjects = [], organ
 
   const handleToggleProject = async (projId) => {
     if (!selectedMember) return
-    const hasAccess = memberApps.some(m => m.project_id === projId)
+    const memberShip = memberApps.find(m => m.project_id === projId)
+    const hasAccess = !!memberShip
     try {
       setUpdating(projId)
-      await toggleProjectAccess(projId, selectedMember.email, 'editor', !hasAccess)
+      await toggleProjectAccess(projId, selectedMember.email, 'editor', !hasAccess, memberShip?.id)
 
       // Update local state for the detail panel
       if (hasAccess) {
@@ -84,6 +86,7 @@ export default function TeamView({ activeUser, projects: appProjects = [], organ
       ))
     } catch (err) {
       console.error('Project toggle failed:', err)
+      alert('Action Failed: ' + (err.message || 'The database rejected this change. Please check your permissions.'))
     } finally {
       setUpdating(null)
     }
