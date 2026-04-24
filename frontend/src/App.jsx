@@ -111,7 +111,8 @@ export default function App() {
                     id: session.user.id,
                     email: session.user.email,
                     organization_id: org.id,
-                    is_global_staff: true // The island creator is always the admin
+                    is_global_staff: true, // The island creator is always the admin
+                    signup_code: session.user.user_metadata?.signup_code // Store here for secure RLS
                   }).select().single()
 
                   if (profileErr) throw profileErr
