@@ -19,7 +19,7 @@ export const getTeamProfiles = async (organizationId) => {
     .from('project_members')
     .select('email, role, project_id, projects!inner(organization_id)')
     .eq('projects.organization_id', organizationId)
-  
+
   const { data: invites, error: iError } = await supabase
     .from('organization_invites')
     .select('*')
@@ -29,33 +29,39 @@ export const getTeamProfiles = async (organizationId) => {
 
   // 4. Merge them into a unique roster
   const roster = {}
-  
-  // Add members first
-  ;(members || []).forEach(m => {
-    if (!roster[m.email]) {
-      roster[m.email] = { email: m.email, full_name: '', is_global_staff: false, projects_count: 0, is_pending: true, roles: [] }
-    }
-    roster[m.email].projects_count++
-    if (!roster[m.email].roles.includes(m.role)) roster[m.email].roles.push(m.role)
-  })
 
-  // Add organization invites
-  ;(invites || []).forEach(i => {
-    if (!roster[i.email]) {
-      roster[i.email] = { email: i.email, full_name: '', is_global_staff: i.is_portfolio_access, projects_count: 0, is_pending: true, roles: [i.role] }
-    } else {
-      roster[i.email].is_global_staff = roster[i.email].is_global_staff || i.is_portfolio_access
-    }
-  })
+    // Add members first
+    ; (members || []).forEach(m => {
+      const email = m.email?.toLowerCase().trim()
+      if (!email) return
+      if (!roster[email]) {
+        roster[email] = { email, full_name: '', is_global_staff: false, projects_count: 0, is_pending: true, roles: [] }
+      }
+      roster[email].projects_count++
+      if (!roster[email].roles.includes(m.role)) roster[email].roles.push(m.role)
+    })
 
-  // Overlay profile data
-  ;(profiles || []).forEach(p => {
-    if (p.email && roster[p.email]) {
-      roster[p.email] = { ...roster[p.email], ...p, is_pending: false }
-    } else {
-      roster[p.email] = { ...p, projects_count: 0, is_pending: false, roles: [] }
-    }
-  })
+    // Add organization invites
+    ; (invites || []).forEach(i => {
+      const email = i.email?.toLowerCase().trim()
+      if (!email) return
+      if (!roster[email]) {
+        roster[email] = { email, full_name: '', is_global_staff: i.is_portfolio_access, projects_count: 0, is_pending: true, roles: [i.role] }
+      } else {
+        roster[email].is_global_staff = roster[email].is_global_staff || i.is_portfolio_access
+      }
+    })
+
+    // Overlay profile data
+    ; (profiles || []).forEach(p => {
+      const email = p.email?.toLowerCase().trim()
+      if (!email) return
+      if (roster[email]) {
+        roster[email] = { ...roster[email], ...p, is_pending: false }
+      } else {
+        roster[email] = { ...p, email, projects_count: 0, is_pending: false, roles: [] }
+      }
+    })
 
   return Object.values(roster).sort((a, b) => (a.email || '').localeCompare(b.email || ''))
 }
@@ -66,7 +72,7 @@ export const createOrganizationInvite = async ({ email, organizationId, isPortfo
     .upsert([{ email, organization_id: organizationId, is_portfolio_access: isPortfolioAccess, role }], { onConflict: 'organization_id,email' })
     .select()
     .single()
-  
+
   if (error) throw error
   return data
 }
@@ -80,26 +86,28 @@ export const updateGlobalAccess = async (profileId, isGlobal) => {
 }
 
 export const getUserMemberships = async (email) => {
+  const cleanEmail = email?.toLowerCase().trim()
   const { data, error } = await supabase
     .from('project_members')
     .select('*, projects(*)')
-    .eq('email', email)
+    .eq('email', cleanEmail)
   if (error) throw error
   return data
 }
 
 export const toggleProjectAccess = async (projectId, email, role = 'editor', grant = true) => {
+  const cleanEmail = email?.toLowerCase().trim()
   if (!grant) {
     const { error } = await supabase
       .from('project_members')
       .delete()
-      .match({ project_id: projectId, email })
+      .match({ project_id: projectId, email: cleanEmail })
     if (error) throw error
     return
   }
 
   const { error } = await supabase
     .from('project_members')
-    .upsert({ project_id: projectId, email, role }, { onConflict: 'project_id,email' })
+    .upsert({ project_id: projectId, email: cleanEmail, role }, { onConflict: 'project_id,email' })
   if (error) throw error
 }

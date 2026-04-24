@@ -328,7 +328,7 @@ export default function TeamView({ activeUser, projects: appProjects = [], organ
                             onClick={() => handleToggleProject(proj.id)}
                             disabled={updating === proj.id}
                           >
-                            {hasAccess ? 'Revoke' : 'Grant'}
+                            {updating === proj.id ? 'Working...' : (hasAccess ? 'Revoke' : 'Grant')}
                           </button>
                         </div>
                       )
