@@ -80,6 +80,7 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
   const [isAiParsing, setIsAiParsing] = useState(false)
   const [aiFields, setAiFields] = useState(new Set())
   const [activeTab, setActiveTab] = useState('details') // 'details', 'documents', 'activity'
+  const [activityFilter, setActivityFilter] = useState('all') // 'all' or 'flags'
   const fileRef = useRef()
   const refFileRef = useRef()
   const omFileRef = useRef()
@@ -707,32 +708,49 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
           {/* --- ACTIVITY TAB --- */}
           {activeTab === 'activity' && (
             <div className="detail-section" style={{ border: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', height: '100%' }}>
-              <div className="activity-feed-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div className="activity-feed-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                 <div className="detail-section-title" style={{ marginBottom: 0 }}>Activity Log</div>
                 <button className="btn btn-icon btn-sm" onClick={handlePrintLog} title="Print Fully Formatted Activity Log" style={{ color: 'var(--text-muted)' }}>
                   <Printer size={14} />
                 </button>
               </div>
+
+              {/* FILTER TABS */}
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', padding: '0 4px', flexShrink: 0 }}>
+                <button 
+                  onClick={() => setActivityFilter('all')}
+                  style={{ flex: 1, padding: '6px', borderRadius: '6px', background: activityFilter === 'all' ? 'var(--bg-surface-elevated)' : 'transparent', border: '1px solid', borderColor: activityFilter === 'all' ? 'var(--border)' : 'transparent', color: activityFilter === 'all' ? 'var(--text-main)' : 'var(--text-muted)', fontSize: '11px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}>
+                  All Activity
+                </button>
+                <button 
+                  onClick={() => setActivityFilter('flags')}
+                  style={{ flex: 1, padding: '6px', borderRadius: '6px', background: activityFilter === 'flags' ? 'rgba(239, 68, 68, 0.1)' : 'transparent', border: '1px solid', borderColor: activityFilter === 'flags' ? 'rgba(239, 68, 68, 0.3)' : 'transparent', color: activityFilter === 'flags' ? 'var(--s-rejected)' : 'var(--text-muted)', fontSize: '11px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', transition: 'all 0.2s' }}>
+                  <Flag size={10} fill={activityFilter === 'flags' ? 'var(--s-rejected)' : 'none'} />
+                  Critical Flags ({pinnedLogs.length})
+                </button>
+              </div>
+
               <div className="activity-messages" ref={feedRef} style={{ flex: 1, overflowY: 'auto', paddingRight: '8px', display: 'flex', flexDirection: 'column' }}>
                 
-                {/* Pinned Red Flags Section */}
-                {pinnedLogs.length > 0 && (
-                  <div style={{ marginBottom: '16px', background: 'var(--bg-surface)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '8px', padding: '12px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--s-rejected)', fontWeight: 800, fontSize: '11px', textTransform: 'uppercase', marginBottom: '10px', letterSpacing: '0.5px' }}>
-                      <Flag size={12} fill="var(--s-rejected)" />
-                      Critical Pinned Notes
-                    </div>
+                {activityFilter === 'flags' ? (
+                  <>
+                    {pinnedLogs.length === 0 && (
+                      <div style={{ color: 'var(--text-muted)', fontSize: 11, textAlign: 'center', padding: '12px 0' }}>
+                        No flagged items yet.
+                      </div>
+                    )}
                     {pinnedLogs.map(entry => renderLogEntry(entry, true))}
-                  </div>
+                  </>
+                ) : (
+                  <>
+                    {log.length === 0 && (
+                      <div style={{ color: 'var(--text-muted)', fontSize: 11, textAlign: 'center', padding: '12px 0' }}>
+                        No activity yet. Add a note below.
+                      </div>
+                    )}
+                    {log.map(entry => renderLogEntry(entry, entry.is_flagged))}
+                  </>
                 )}
-
-                {/* Regular Logs */}
-                {regularLogs.length === 0 && (
-                  <div style={{ color: 'var(--text-muted)', fontSize: 11, textAlign: 'center', padding: '12px 0' }}>
-                    No activity yet. Add a note below.
-                  </div>
-                )}
-                {regularLogs.map(entry => renderLogEntry(entry, false))}
               </div>
               <div className="activity-add" style={{ marginTop: '16px', flexShrink: 0, display: 'flex', gap: '8px' }}>
                 <textarea
