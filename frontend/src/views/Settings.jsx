@@ -36,6 +36,7 @@ export default function Settings({ project, onProjectUpdated, activeUserRole, or
 
   // Project edit form
   const [projectForm, setProjectForm] = useState({ name: '', number: '', client: '', address: '' })
+  const [defaultReviewDuration, setDefaultReviewDuration] = useState(15)
   const [savingProject, setSavingProject] = useState(false)
   const [projectSaved, setProjectSaved] = useState(false)
 
@@ -69,6 +70,8 @@ export default function Settings({ project, onProjectUpdated, activeUserRole, or
         client: project.client || '',
         address: project.address || '',
       })
+      const savedDuration = localStorage.getItem(`sa-project-duration-${project.id}`)
+      setDefaultReviewDuration(savedDuration ? parseInt(savedDuration, 10) : 15)
       loadContacts()
       loadMembers()
     } else {
@@ -98,6 +101,7 @@ export default function Settings({ project, onProjectUpdated, activeUserRole, or
     try {
       setSavingProject(true)
       const updated = await updateProject(project.id, projectForm)
+      localStorage.setItem(`sa-project-duration-${project.id}`, defaultReviewDuration)
       if (onProjectUpdated) onProjectUpdated(updated)
       setProjectSaved(true)
       setTimeout(() => setProjectSaved(false), 2000)
@@ -371,6 +375,21 @@ export default function Settings({ project, onProjectUpdated, activeUserRole, or
                 <div className="form-group" style={{ marginBottom: 14 }}>
                   <label className="form-label">Project Address</label>
                   <input className="form-input" value={projectForm.address} onChange={setProj('address')} disabled={!isAdmin} id="settings-project-address" />
+                </div>
+                <div className="form-group" style={{ marginBottom: 14 }}>
+                  <label className="form-label">Default Review Duration (Days)</label>
+                  <input 
+                    type="number" 
+                    min="1" 
+                    className="form-input" 
+                    value={defaultReviewDuration} 
+                    onChange={e => setDefaultReviewDuration(e.target.value)} 
+                    disabled={!isAdmin} 
+                    id="settings-project-duration" 
+                  />
+                  <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
+                    New submittals will automatically inherit this target duration.
+                  </p>
                 </div>
                 {isAdmin && (
                   <button

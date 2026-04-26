@@ -63,7 +63,7 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
     next_action: submittal?.next_action || '',
     due_date: submittal?.due_date || '',
     submitted_date: submittal?.submitted_date || '',
-    review_duration: submittal?.review_duration || 15,
+    review_duration: submittal?.expected_days || (parseInt(localStorage.getItem(`sa-project-duration-${projectId}`) || 15, 10)),
     round: submittal?.round || 1
   })
   const [log, setLog] = useState([])
@@ -108,7 +108,7 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
       next_action: submittal.next_action || '',
       due_date: submittal.due_date || '',
       submitted_date: submittal.submitted_date || '',
-      review_duration: submittal.review_duration || 15,
+      review_duration: submittal.expected_days || (parseInt(localStorage.getItem(`sa-project-duration-${projectId}`) || 15, 10)),
       round: submittal.round || 1
     })
     loadLog()
@@ -860,6 +860,8 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
                 onApprove={handleApproveAttachment}
                 onChangeRound={handleUpdateAttRound}
                 showRounds={true}
+                currentStatus={form.status}
+                currentRound={form.round}
                 accentColor="var(--accent)"
                 hint="Cut sheets, drawings, stamps"
                 action={
@@ -925,7 +927,7 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
   )
 }
 
-function AttachmentSection({ title, files, uploading, fileRef, onUpload, onDelete, accentColor, hint, icon, action, onApprove, onChangeRound, showRounds }) {
+function AttachmentSection({ title, files, uploading, fileRef, onUpload, onDelete, accentColor, hint, icon, action, onApprove, onChangeRound, showRounds, currentStatus, currentRound }) {
   return (
     <div className="detail-section">
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
@@ -938,8 +940,16 @@ function AttachmentSection({ title, files, uploading, fileRef, onUpload, onDelet
 
       {files.length > 0 && (
         <div className="attachment-list" style={{ marginBottom: 8 }}>
-          {files.map(att => (
-            <div key={att.id} className="attachment-item" style={att.is_approved_version ? { borderColor: 'rgba(16,185,129,0.5)', background: 'rgba(16,185,129,0.05)' } : {}}>
+          {files.map(att => {
+            const isOfficial = showRounds && ['submitted', 'in_review'].includes(currentStatus) && (att.round || 1) === (currentRound || 1) && !att.is_approved_version;
+            const containerStyle = att.is_approved_version 
+              ? { borderColor: 'rgba(16,185,129,0.5)', background: 'rgba(16,185,129,0.05)' } 
+              : isOfficial
+              ? { borderColor: 'rgba(34, 197, 94, 0.6)', background: 'rgba(34, 197, 94, 0.08)' }
+              : {};
+              
+            return (
+            <div key={att.id} className="attachment-item" style={containerStyle}>
               <FileText size={14} style={{ color: accentColor, flexShrink: 0 }} />
 
               {showRounds && (
@@ -959,11 +969,14 @@ function AttachmentSection({ title, files, uploading, fileRef, onUpload, onDelet
               )}
 
               <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden' }}>
-                <span className="attachment-name" title={att.file_name} style={{ flex: 'none', maxWidth: '100%', color: att.is_approved_version ? 'var(--s-approved)' : 'var(--text-sub)', fontWeight: att.is_approved_version ? 600 : 400 }}>
+                <span className="attachment-name" title={att.file_name} style={{ flex: 'none', maxWidth: '100%', color: (att.is_approved_version || isOfficial) ? 'var(--s-approved)' : 'var(--text-sub)', fontWeight: (att.is_approved_version || isOfficial) ? 600 : 400 }}>
                   {att.file_name}
                 </span>
                 {att.is_approved_version && (
                   <span style={{ fontSize: 9, fontWeight: 800, color: 'var(--s-approved)', background: 'var(--s-approved-bg)', padding: '2px 6px', borderRadius: 4 }}>APPROVED</span>
+                )}
+                {isOfficial && (
+                  <span style={{ fontSize: 9, fontWeight: 800, color: '#fff', background: 'var(--s-submit)', padding: '2px 6px', borderRadius: 4, letterSpacing: '0.5px' }}>OFFICIAL SUBMISSION</span>
                 )}
               </div>
 
@@ -988,7 +1001,8 @@ function AttachmentSection({ title, files, uploading, fileRef, onUpload, onDelet
                 <Trash2 size={12} />
               </button>
             </div>
-          ))}
+            )
+          })}
         </div>
       )}
 

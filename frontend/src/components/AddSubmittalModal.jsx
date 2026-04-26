@@ -36,12 +36,14 @@ export default function AddSubmittalModal({ projectId, activeUser, onClose, onCr
       setError(null)
       
       const spec_section_id = await resolveSpecSectionId(projectId, form.spec_section)
+      const defaultDuration = parseInt(localStorage.getItem(`sa-project-duration-${projectId}`) || 15, 10)
       
       await createSubmittal({ 
         ...form, 
         project_id: projectId, 
         spec_section_id,
-        round: Number(form.round) 
+        round: Number(form.round),
+        expected_days: defaultDuration
       }, activeUser?.user_metadata?.full_name || activeUser?.email || 'User')
       onCreated()
     } catch (err) {

@@ -229,6 +229,7 @@ export default function SpecView({ project, onBack, activeUser }) {
         
         // 2. Mocking deep submittal scan for now (Phase 11.4)
         // IN PRODUCE: We would find the page for this section and extract Part 1.03 Submittals
+        const defaultDuration = parseInt(localStorage.getItem(`sa-project-duration-${project.id}`) || 15, 10)
         await createSubmittal({
           project_id: project.id,
           spec_section_id: sectionId,
@@ -236,7 +237,8 @@ export default function SpecView({ project, onBack, activeUser }) {
           status: 'not_started',
           bic: 'you',
           priority: 'medium',
-          next_action: 'Initial extraction from Spec Intel'
+          next_action: 'Initial extraction from Spec Intel',
+          expected_days: defaultDuration
         }, activeUser?.user_metadata?.full_name || activeUser?.email || 'User')
       }
       

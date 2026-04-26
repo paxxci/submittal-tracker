@@ -36,7 +36,7 @@ function BicDisplay({ bic }) {
 }
 
 export default function SubmittalRow({ sub, today, tags = [], selected, onClick, onDelete }) {
-  const expectedDate = calculateExpectedDate(sub.submitted_date, sub.review_duration)
+  const expectedDate = calculateExpectedDate(sub.submitted_date, sub.expected_days)
   const overdue = isSubmittalOverdue(expectedDate, sub.status)
   const isApproved = sub.status === 'approved'
 
