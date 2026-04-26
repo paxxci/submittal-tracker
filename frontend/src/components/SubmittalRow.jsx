@@ -74,12 +74,12 @@ export default function SubmittalRow({ sub, today, selected, onClick, onDelete }
       <td>
         <BicDisplay bic={sub.bic} />
       </td>
+      <td className="td-date">
+        {formatDate(sub.submitted_date)}
+      </td>
       <td className={`td-date ${overdue ? 'overdue' : ''}`}>
         {overdue && <AlertTriangle size={10} style={{ marginRight: 4, display: 'inline' }} />}
         {formatDate(expectedDate)}
-      </td>
-      <td className="td-date">
-        {formatDate(sub.submitted_date)}
       </td>
       <td style={{ textAlign: 'center' }}>
         {sub.round > 1

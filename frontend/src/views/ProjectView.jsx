@@ -262,8 +262,8 @@ export default function ProjectView({ project, onBack, activeUser, onSpecIntel, 
                     <SortTh label="Description"    field="name"     sortField={sortField} sortDir={sortDir} onSort={handleSort} />
                     <SortTh label="Status"          field="status"   sortField={sortField} sortDir={sortDir} onSort={handleSort} />
                     <th>Ball In Court</th>
-                    <th>Expected Return Date</th>
                     <SortTh label="Submitted"       field="submitted" sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                    <th>Expected Return Date</th>
                     <th style={{ textAlign: 'center', width: 80 }}>Revision</th>
                     <th style={{ width: 48 }} />
                   </tr>
