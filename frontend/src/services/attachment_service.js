@@ -13,14 +13,13 @@ export const getAttachments = async (submittalId, type = null) => {
   return data
 }
 
-export const getOmAttachmentsForSubmittals = async (submittalIds) => {
+export const getImportantAttachmentsForSubmittals = async (submittalIds) => {
   if (!submittalIds.length) return []
   const { data, error } = await supabase
     .from('attachments')
     .select('*')
-    .eq('type', 'om')
+    .or('type.eq.om,is_approved_version.eq.true')
     .in('submittal_id', submittalIds)
-    .order('uploaded_at', { ascending: true })
   if (error) throw error
   return data
 }

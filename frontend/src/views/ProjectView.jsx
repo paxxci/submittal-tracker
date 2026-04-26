@@ -7,10 +7,9 @@ import SubmittalDetailPanel from '../components/SubmittalDetailPanel'
 import AddSubmittalModal from '../components/AddSubmittalModal'
 import SubmittalChat from '../components/SubmittalChat'
 import SubmittalRow from '../components/SubmittalRow'
-import OmSubRow from '../components/OmSubRow'
 import SortTh from '../components/SortHeader'
 import { getSubmittals, deleteSubmittal } from '../services/submittal_service'
-import { getOmAttachmentsForSubmittals } from '../services/attachment_service'
+import { getImportantAttachmentsForSubmittals } from '../services/attachment_service'
 import { getAllActivityLogs } from '../services/activity_service'
 
 const ALL_STATUSES = [
@@ -33,7 +32,7 @@ const STATUS_LABELS = {
 
 export default function ProjectView({ project, onBack, activeUser, onSpecIntel, activeUserRole }) {
   const [submittals, setSubmittals] = useState([])
-  const [omMap, setOmMap] = useState({}) // submittal_id → [attachments]
+  const [tagsMap, setTagsMap] = useState({}) // submittal_id → [attachments]
   const [activityLogs, setActivityLogs] = useState([])
   const [selectedSubmittal, setSelectedSubmittal] = useState(null)
   const [showAddSubmittal, setShowAddSubmittal] = useState(false)
@@ -71,15 +70,15 @@ export default function ProjectView({ project, onBack, activeUser, onSpecIntel, 
       setLoading(true)
       const subs = await getSubmittals(project.id)
       setSubmittals(subs)
-      // Load O&M attachments for all submittals in one query
+      // Load O&M and Approved attachments for all submittals in one query
       if (subs.length) {
-        const oms = await getOmAttachmentsForSubmittals(subs.map(s => s.id))
+        const importantDocs = await getImportantAttachmentsForSubmittals(subs.map(s => s.id))
         const grouped = {}
-        for (const om of oms) {
-          if (!grouped[om.submittal_id]) grouped[om.submittal_id] = []
-          grouped[om.submittal_id].push(om)
+        for (const doc of importantDocs) {
+          if (!grouped[doc.submittal_id]) grouped[doc.submittal_id] = []
+          grouped[doc.submittal_id].push(doc)
         }
-        setOmMap(grouped)
+        setTagsMap(grouped)
 
         // Load all activity logs for the AI to parse
         const logs = await getAllActivityLogs(subs.map(s => s.id))
@@ -274,13 +273,11 @@ export default function ProjectView({ project, onBack, activeUser, onSpecIntel, 
                       <SubmittalRow
                         sub={sub}
                         today={today}
+                        tags={tagsMap[sub.id] || []}
                         selected={selectedSubmittal?.id === sub.id}
                         onClick={() => setSelectedSubmittal(sub)}
                         onDelete={handleDeleteSubmittal}
                       />
-                      {(omMap[sub.id] || []).map(om => (
-                        <OmSubRow key={om.id} om={om} />
-                      ))}
                     </React.Fragment>
                   ))}
                 </tbody>

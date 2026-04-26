@@ -1,5 +1,5 @@
 import React from 'react'
-import { Trash2, ChevronRight, AlertTriangle, Building2 } from 'lucide-react'
+import { Trash2, ChevronRight, AlertTriangle, Building2, BookOpen, Star } from 'lucide-react'
 import { StatusBadge, BicChip, PriorityChip } from './StatusBadge'
 import { calculateExpectedDate, isSubmittalOverdue, formatDate } from '../logic/date_engine'
 
@@ -35,10 +35,13 @@ function BicDisplay({ bic }) {
   return <div style={{ fontWeight: 700, fontSize: 12, color: 'var(--text-sub)' }}>{bic}</div>
 }
 
-export default function SubmittalRow({ sub, today, selected, onClick, onDelete }) {
+export default function SubmittalRow({ sub, today, tags = [], selected, onClick, onDelete }) {
   const expectedDate = calculateExpectedDate(sub.submitted_date, sub.review_duration)
   const overdue = isSubmittalOverdue(expectedDate, sub.status)
   const isApproved = sub.status === 'approved'
+
+  const hasOM = tags.some(t => t.type === 'om')
+  const hasApprovedDoc = tags.some(t => t.is_approved_version)
 
   const rowClass = [
     'submittal-row',
@@ -67,6 +70,32 @@ export default function SubmittalRow({ sub, today, selected, onClick, onDelete }
             <ChevronRight size={9} style={{ color: 'var(--accent)' }} />
             <span style={{ fontWeight: 800, fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--accent)', opacity: 0.8 }}>Next Action:</span>
             {sub.next_action}
+          </div>
+        )}
+        
+        {/* Document Indicator Badges */}
+        {(hasOM || hasApprovedDoc) && (
+          <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
+            {hasApprovedDoc && (
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: '4px',
+                fontSize: 9, fontWeight: 700, letterSpacing: '0.5px',
+                color: 'var(--s-approved)', background: 'rgba(16,185,129,0.1)',
+                padding: '2px 6px', borderRadius: 4,
+              }}>
+                <Star size={10} fill="var(--s-approved)" /> APPROVED VERSION
+              </span>
+            )}
+            {hasOM && (
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: '4px',
+                fontSize: 9, fontWeight: 700, letterSpacing: '0.5px',
+                color: 'var(--s-approved)', background: 'rgba(16,185,129,0.1)',
+                padding: '2px 6px', borderRadius: 4,
+              }}>
+                <BookOpen size={10} /> O&amp;M DOCUMENT
+              </span>
+            )}
           </div>
         )}
       </td>
