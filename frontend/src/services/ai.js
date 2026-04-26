@@ -22,8 +22,35 @@ export async function getChatCompletion(messages, submittals, activityLogs, proj
   // Prepare recent activity context (Leveraging Gemini 2.0 Flash's massive context window)
   const logContext = activityLogs.slice(-5000).map(l => {
     const sub = submittals.find(s => s.id === l.submittal_id);
-    return `[${new Date(l.created_at).toLocaleDateString()}] ${sub ? sub.item_name : 'System'}: ${l.message}`;
-  }).join('\n');
+    let msg = l.message;
+    
+    // Clean up raw data to match UI display strings
+    if (typeof msg !== 'string' || !msg.trim().startsWith('{')) {
+      // It's a regular string, apply regex formatting
+      msg = msg.replace(/📤 PDF "(.+?)" \(Revision (\d+)\) was submitted/, 'Submittal: Submitted - Rev $2 "$1"');
+      msg = msg.replace(/📤 OFFICIAL SUBMISSION FILED \(Revision (\d+)\)/, 'Submittal: Submitted - Rev $1 (No File)');
+      msg = msg.replace(/\[R(\d+)\] Submittal Document uploaded: "(.+?)"/, 'Submittal: Uploaded - Rev $1 "$2"');
+      msg = msg.replace(/O&M Document uploaded: "(.+?)"/, 'O&M Document: Uploaded - "$1"');
+      msg = msg.replace(/Reference File uploaded: "(.+?)"/, 'Reference File: Uploaded - "$1"');
+      msg = msg.replace(/🔄 Re-classified "(.+?)" to Revision (\d+)/, 'Submittal: Changed to Rev $2 "$1"');
+      msg = msg.replace(/✅ Stamped \[R(\d+)\] "(.+?)" as Officially Approved Version/, 'Submittal: Approved - Rev $1 "$2"');
+      msg = msg.replace(/⏪ Revoked Approval Stamp from \[R(\d+)\] "(.+?)"/, 'Submittal: Revoked Approval - Rev $1 "$2"');
+      msg = msg.replace(/🗑️ Deleted Document: "(.+?)"/, 'Document: Deleted - "$1"');
+      msg = msg.replace(/🚀 Submittal Bumped to Revision (\d+)/, 'Submittal: Bumped to Rev $1');
+      msg = msg.replace(/🚀 Submittal Revision manually set to (\d+)/, 'Submittal: Revision Override to Rev $1');
+      msg = msg.replace(/Created submittal: (.+)/, 'Submittal: Created - "$1"');
+      msg = msg.replace(/^(?:🎯|📤|📎|📕|🔗|🔄|✅|⏪|🗑️|🚀|🆕)\s*/, '');
+    } else {
+      try {
+        const p = JSON.parse(msg);
+        msg = 'Legacy System Action';
+      } catch { }
+    }
+
+    if (msg.includes('Auto-Audit:')) return null;
+
+    return `[${new Date(l.created_at).toLocaleString()}] ${sub ? sub.item_name : 'System'}: ${msg}`;
+  }).filter(Boolean).join('\n');
 
   const systemPrompt = `
 You are "Ask Intel", a premium project intelligence assistant for a Submittal Tracker application.
@@ -38,12 +65,12 @@ ${submittalContext}
 RECENT ACTIVITY LOG (Newest messages at bottom):
 ${logContext}
 
-GOALS & SYMBOLS:
-1. Answer user questions about submittal status, spec sections, priorities, and next actions.
-2. The log uses symbols: ✅ means Approved, 📤 means Official Submission, 🔄 means Revision changed, 🗑️ means Deleted.
-3. Help the user identify bottlenecks (e.g., items in their court).
+GOALS & INSTRUCTIONS:
+1. Answer user questions about submittal status, spec sections, priorities, uploads, and next actions.
+2. The log is formatted strictly. Look for keywords like "Submittal: Uploaded", "O&M Document: Uploaded", "Submittal: Approved", "Submittal: Submitted", etc.
+3. Help the user identify bottlenecks (e.g., items in their court) and exact times actions occurred.
 4. Be professional, concise, and helpful. 
-5. If asked about a specific item, use the context to provide the most accurate status.
+5. If asked about a specific item, use the context to provide the most accurate status and timeline.
 6. If the user asks "What model are you?", respond that you are a "Gemini 2.0 Live Brain".
 
 FORMATTING:
