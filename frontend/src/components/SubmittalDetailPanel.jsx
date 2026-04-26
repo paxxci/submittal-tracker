@@ -407,10 +407,10 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
       // Build descriptive message
       const subDocs = attachments.filter(a => (a.round || 1) === (form.round || 1))
       const latestFile = subDocs[subDocs.length - 1]
-      const revSuffix = form.round > 1 ? ` rev ${form.round - 1}` : ''
+      const currentRev = form.round || 1
       const customMsg = latestFile
-        ? `📤 PDF "${latestFile.file_name}"${revSuffix} was submitted`
-        : `📤 OFFICIAL SUBMISSION FILED${revSuffix}`
+        ? `📤 PDF "${latestFile.file_name}" (Revision ${currentRev}) was submitted`
+        : `📤 OFFICIAL SUBMISSION FILED (Revision ${currentRev})`
 
       const updated = await updateSubmittal(submittal.id, cleanForm, activeUser, { customActivityMsg: customMsg })
       setForm(next)
@@ -484,14 +484,14 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
 
     let displayMsg = clean(entry.message)
     if (typeof displayMsg === 'string' && displayMsg.includes('Auto-Audit:')) return null
-    displayMsg = displayMsg.replace(/\[R\d+\] Submittal Document uploaded: ".+?"/, '📎 Uploaded Document')
-    displayMsg = displayMsg.replace(/O&M Document uploaded: ".+?"/, '📕 Uploaded O&M Document')
-    displayMsg = displayMsg.replace(/Reference File uploaded: ".+?"/, '🔗 Uploaded Reference File')
+    displayMsg = displayMsg.replace(/\[R(\d+)\] Submittal Document uploaded: "(.+?)"/, '📎 Uploaded Document "$2" (Rev $1)')
+    displayMsg = displayMsg.replace(/O&M Document uploaded: "(.+?)"/, '📕 Uploaded O&M Document "$1"')
+    displayMsg = displayMsg.replace(/Reference File uploaded: "(.+?)"/, '🔗 Uploaded Reference File "$1"')
     displayMsg = displayMsg.replace(/🔄 Re-classified ".+?" to Revision (\d+)/, '🔄 Changed to Revision $1')
     displayMsg = displayMsg.replace(/📤 OFFICIAL SUBMISSION FILED/, '📤 Marked as Official Submission')
-    displayMsg = displayMsg.replace(/✅ Stamped .+? as Officially Approved Version/, '✅ Approved')
-    displayMsg = displayMsg.replace(/⏪ Revoked Approval Stamp from .+?/, '⏪ Revoked Approval')
-    displayMsg = displayMsg.replace(/🗑️ Deleted Document: ".+?"/, '🗑️ Deleted Document')
+    displayMsg = displayMsg.replace(/✅ Stamped \[R(\d+)\] "(.+?)" as Officially Approved Version/, '✅ Approved "$2" (Rev $1)')
+    displayMsg = displayMsg.replace(/⏪ Revoked Approval Stamp from \[R(\d+)\] "(.+?)"/, '⏪ Revoked Approval "$2" (Rev $1)')
+    displayMsg = displayMsg.replace(/🗑️ Deleted Document: "(.+?)"/, '🗑️ Deleted Document "$1"')
     displayMsg = displayMsg.replace(/🚀 Submittal Bumped to Revision \d+/, '🚀 Bumped Revision')
     displayMsg = displayMsg.replace(/Created submittal: .+/, '🆕 Created Submittal')
     const bgColor = getAvatarColor(displayAuthor)
