@@ -7,7 +7,7 @@ export const getActivityLog = async (submittalId) => {
     return mockActivities.filter(a => a.submittal_id === submittalId)
   }
   const { data, error } = await supabase
-    .from('activity_logs')
+    .from('activity_log')
     .select('*')
     .eq('submittal_id', submittalId)
     .order('created_at', { ascending: true })
@@ -21,7 +21,7 @@ export const getAllActivityLogs = async (submittalIds) => {
   }
   if (!submittalIds.length) return []
   const { data, error } = await supabase
-    .from('activity_logs')
+    .from('activity_log')
     .select('*')
     .in('submittal_id', submittalIds)
     .order('created_at', { ascending: false })
@@ -44,7 +44,7 @@ export const addActivity = async (submittalId, message, author = 'You', { attach
     return newAct
   }
   const { data, error } = await supabase
-    .from('activity_logs')
+    .from('activity_log')
     .insert([{
       submittal_id: submittalId,
       message,
