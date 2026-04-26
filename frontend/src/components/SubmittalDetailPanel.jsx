@@ -388,13 +388,34 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
     }
   }
 
-  const handlePrintLog = () => {
+  const handlePrintLog = async () => {
     try {
-      const doc = generateActivityLogReport(submittal, log)
+      const JSZip = (await import('jszip')).default
+      const { saveAs } = await import('file-saver')
+      
+      const zip = new JSZip()
       const cleanFileName = (submittal.item_name || 'Submittal').replace(/[^a-zA-Z0-9]/g, '_')
-      doc.save(`Activity_Log_${cleanFileName}.pdf`)
+
+      const pinnedLogs = log.filter(l => l.is_flagged)
+      const actionLogs = log.filter(l => /🎯/.test(l.message))
+      const submissionLogs = log.filter(l => /📤|🚀|✅|⏪|🔄|🆕|🗑️/.test(l.message))
+
+      const docAll = generateActivityLogReport(submittal, log, "ALL ACTIVITY LOG")
+      zip.file(`Activity_Log_All.pdf`, docAll.output('blob'))
+
+      const docFlags = generateActivityLogReport(submittal, pinnedLogs, "FLAGGED ACTIVITY")
+      zip.file(`Activity_Log_Flags.pdf`, docFlags.output('blob'))
+
+      const docActions = generateActivityLogReport(submittal, actionLogs, "ACTION HISTORY")
+      zip.file(`Activity_Log_Actions.pdf`, docActions.output('blob'))
+
+      const docSub = generateActivityLogReport(submittal, submissionLogs, "SUBMISSION HISTORY")
+      zip.file(`Activity_Log_Submissions.pdf`, docSub.output('blob'))
+
+      const content = await zip.generateAsync({ type: "blob" })
+      saveAs(content, `Activity_Logs_${cleanFileName}.zip`)
     } catch (err) {
-      console.error('Failed to generate Activity Log PDF:', err)
+      console.error('Failed to generate Activity Logs ZIP:', err)
     }
   }
 

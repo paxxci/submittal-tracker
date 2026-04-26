@@ -64,13 +64,15 @@ export const generateProjectReport = (project, submittals) => {
     s.item_name || 'Unnamed Item',
     s.status.toUpperCase().replace('_', ' '),
     s.bic.toUpperCase(),
-    s.due_date ? new Date(s.due_date).toLocaleDateString() : '-'
+    s.submitted_date ? new Date(s.submitted_date).toLocaleDateString() : '-',
+    s.due_date ? new Date(s.due_date).toLocaleDateString() : '-',
+    s.round > 1 ? `Rev ${s.round}` : '-'
   ])
 
   // ROBUST PLUG-IN CALL
   const options = {
     startY: 75,
-    head: [['CSI CODE', 'ITEM DESCRIPTION', 'STATUS', 'B.I.C.', 'DUE DATE']],
+    head: [['CSI CODE', 'ITEM DESCRIPTION', 'STATUS', 'B.I.C.', 'SUBMITTED', 'DUE DATE', 'REV']],
     body: tableData,
     theme: 'grid',
     headStyles: { 
@@ -84,11 +86,13 @@ export const generateProjectReport = (project, submittals) => {
       textColor: 50 
     },
     columnStyles: {
-      0: { cellWidth: 25 },
+      0: { cellWidth: 22 },
       1: { cellWidth: 'auto' },
-      2: { cellWidth: 25 },
-      3: { cellWidth: 25 },
-      4: { cellWidth: 25 }
+      2: { cellWidth: 22 },
+      3: { cellWidth: 22 },
+      4: { cellWidth: 22 },
+      5: { cellWidth: 22 },
+      6: { cellWidth: 12 }
     },
     styles: { 
       overflow: 'linebreak',
@@ -125,14 +129,14 @@ export const generateProjectReport = (project, submittals) => {
 /**
  * Generates a branded PDF report for a submittal's Activity Log.
  */
-export const generateActivityLogReport = (submittal, logData) => {
+export const generateActivityLogReport = (submittal, logData, title = 'ACTIVITY LOG') => {
   const doc = new jsPDF()
   const now = new Date().toLocaleDateString()
 
   // Header 
   doc.setFontSize(22)
   doc.setTextColor(7, 13, 26)
-  doc.text('ACTIVITY LOG', 14, 22)
+  doc.text(title, 14, 22)
 
   doc.setFontSize(9)
   doc.setTextColor(148, 163, 184)
