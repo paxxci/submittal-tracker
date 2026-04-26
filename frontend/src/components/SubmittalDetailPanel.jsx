@@ -511,7 +511,7 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
     displayMsg = displayMsg.replace(/Created submittal: (.+)/, 'Submittal: Created - "$1"')
     
     // Strip leading emojis from generic DB-stored logs (like Next Actions)
-    displayMsg = displayMsg.replace(/^[🎯📤📎📕🔗🔄✅⏪🗑️🚀🆕]\s*/, '')
+    displayMsg = displayMsg.replace(/^(?:🎯|📤|📎|📕|🔗|🔄|✅|⏪|🗑️|🚀|🆕)\s*/, '')
     const bgColor = getAvatarColor(displayAuthor)
     const initials = getInitials(displayAuthor)
 
