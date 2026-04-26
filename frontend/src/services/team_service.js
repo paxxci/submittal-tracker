@@ -95,7 +95,7 @@ export const getUserMemberships = async (email) => {
   return data
 }
 
-export const toggleProjectAccess = async (projectId, email, role = 'editor', grant = true, membershipId = null) => {
+export const toggleProjectAccess = async (projectId, email, role = 'editor', grant = true, membershipId = null, organizationId = null) => {
   const cleanEmail = email?.toLowerCase().trim()
   if (!grant) {
     if (!membershipId) {
@@ -118,6 +118,11 @@ export const toggleProjectAccess = async (projectId, email, role = 'editor', gra
 
   const { error } = await supabase
     .from('project_members')
-    .upsert({ project_id: projectId, email: cleanEmail, role }, { onConflict: 'project_id,email' })
+    .upsert({ 
+      project_id: projectId, 
+      email: cleanEmail, 
+      role,
+      organization_id: organizationId 
+    }, { onConflict: 'project_id,email' })
   if (error) throw error
 }

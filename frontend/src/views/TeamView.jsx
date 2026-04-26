@@ -68,7 +68,7 @@ export default function TeamView({ activeUser, projects: appProjects = [], organ
     const hasAccess = !!memberShip
     try {
       setUpdating(projId)
-      await toggleProjectAccess(projId, selectedMember.email, 'editor', !hasAccess, memberShip?.id)
+      await toggleProjectAccess(projId, selectedMember.email, 'editor', !hasAccess, memberShip?.id, organization.id)
 
       // Update local state for the detail panel
       if (hasAccess) {
@@ -108,7 +108,7 @@ export default function TeamView({ activeUser, projects: appProjects = [], organ
       // 2. Add to specific projects (if any)
       if (inviteForm.projectIds.length > 0) {
         await Promise.all(inviteForm.projectIds.map(pid =>
-          toggleProjectAccess(pid, inviteForm.email, inviteForm.role, true)
+          toggleProjectAccess(pid, inviteForm.email, inviteForm.role, true, null, organization.id)
         ))
       }
 

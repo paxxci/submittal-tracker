@@ -28,7 +28,7 @@ const ROLE_CONFIG = {
   other:      { label: 'Other',      color: 'var(--text-sub)'      },
 }
 
-export default function Settings({ project, onProjectUpdated, activeUserRole }) {
+export default function Settings({ project, onProjectUpdated, activeUserRole, organization }) {
   const [contacts, setContacts] = useState([])
   const [showForm, setShowForm] = useState(false)
   const [contactForm, setContactForm] = useState({ name: '', company: '', role: 'vendor', email: '' })
@@ -144,7 +144,7 @@ export default function Settings({ project, onProjectUpdated, activeUserRole }) 
     if (!memberForm.email.trim()) return
     try {
       setAddingMember(true)
-      await addProjectMember(project.id, memberForm.email, memberForm.role, memberForm.name)
+      await addProjectMember(project.id, memberForm.email, memberForm.role, memberForm.name, organization?.id)
       setInviteSuccess(memberForm.email)
       setMemberForm({ name: '', email: '', role: 'editor' })
       setShowMemberForm(false)

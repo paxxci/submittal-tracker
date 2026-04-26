@@ -10,10 +10,10 @@ export const getProjectMembers = async (projectId) => {
   return data
 }
 
-export const addProjectMember = async (projectId, email, role = 'editor', name = '') => {
+export const addProjectMember = async (projectId, email, role = 'editor', name = '', organizationId = null) => {
   const { data, error } = await supabase
     .from('project_members')
-    .insert([{ project_id: projectId, email, role, name }])
+    .insert([{ project_id: projectId, email, role, name, organization_id: organizationId }])
     .select()
     .single()
   if (error) throw error
