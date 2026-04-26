@@ -273,11 +273,12 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
       await uploadAttachment(submittal.id, file, type, targetRound)
       
       // If we auto-bumped the round, update the parent submittal to match
+      let currentParent = submittal
       if (type === 'submittal' && targetRound > (submittal.round || 1)) {
-        const updatedParent = await updateSubmittal(submittal.id, { round: targetRound, status: 'working', submitted_date: null }, activeUser)
+        currentParent = await updateSubmittal(submittal.id, { round: targetRound, status: 'working', submitted_date: null }, activeUser)
         setForm(f => ({ ...f, round: targetRound, status: 'working', submitted_date: null }))
-        onUpdated(updatedParent)
       }
+      onUpdated(currentParent)
       await loadAttachments()
       const userDisplay = getAuthorName()
 
@@ -446,15 +447,16 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
         try {
           await deleteAttachment(att.id, att.file_url)
 
+          let currentParent = submittal
           if (att.type === 'submittal') {
             const freshSubs = await getAttachments(submittal.id, 'submittal')
             const maxRound = freshSubs.length > 0 ? Math.max(...freshSubs.map(a => a.round || 1)) : 1
             if (maxRound !== parseInt(form.round || 1)) {
-              const updatedParent = await updateSubmittal(submittal.id, { round: maxRound }, activeUser)
+              currentParent = await updateSubmittal(submittal.id, { round: maxRound }, activeUser)
               setForm(f => ({ ...f, round: maxRound }))
-              onUpdated(updatedParent)
             }
           }
+          onUpdated(currentParent)
 
           await loadAttachments()
           const userDisplay = getAuthorName()
