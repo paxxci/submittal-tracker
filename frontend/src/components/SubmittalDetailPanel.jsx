@@ -531,8 +531,8 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
             }}>
               {initials}
             </div>
-            <span className="activity-author-name" style={{ fontWeight: 700, color: 'var(--text-main)', fontSize: 13, letterSpacing: '-0.2px' }}>{displayAuthor}</span>
-            <span className="activity-time">{fmt(entry.created_at)}</span>
+            <span className="activity-time" style={{ fontWeight: 700, color: 'var(--text)', fontSize: 13, letterSpacing: '-0.2px' }}>{fmt(entry.created_at)}</span>
+            <span className="activity-author-name" style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 500 }}>by {displayAuthor}</span>
           </div>
           <button
             onClick={() => handleToggleFlag(entry)}
