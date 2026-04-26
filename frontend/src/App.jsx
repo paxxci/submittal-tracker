@@ -193,7 +193,8 @@ export default function App() {
   if (!session) return <Login onComplete={() => { localStorage.setItem('sa-active-view', 'dashboard'); window.location.reload() }} />
 
   const isGlobalAdmin = userProfile?.is_global_staff === true
-  const activeUserRole = currentProject?.project_members?.find(m => m.email === session.user.email)?.role || 'viewer'
+  const explicitRole = currentProject?.project_members?.find(m => m.email === session.user.email)?.role
+  const activeUserRole = isGlobalAdmin ? 'admin' : (explicitRole || 'viewer')
 
   return (
     <div className="app-shell">
