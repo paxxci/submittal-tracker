@@ -263,8 +263,20 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
         }
       }
 
-      const targetRound = type === 'submittal' ? (submittal.round || 1) : 1
+      let targetRound = 1
+      if (type === 'submittal') {
+        const currentSubRound = submittal.round || 1
+        const hasDocsInCurrentRound = attachments.some(a => (a.round || 1) === currentSubRound && a.type === 'submittal')
+        targetRound = hasDocsInCurrentRound ? currentSubRound + 1 : currentSubRound
+      }
+
       await uploadAttachment(submittal.id, file, type, targetRound)
+      
+      // If we auto-bumped the round, update the parent submittal to match
+      if (type === 'submittal' && targetRound > (submittal.round || 1)) {
+        await updateSubmittal(submittal.id, { round: targetRound, status: 'working', submitted_date: null }, activeUser)
+        setForm(f => ({ ...f, round: targetRound, status: 'working', submitted_date: null }))
+      }
       await loadAttachments()
       const userDisplay = getAuthorName()
 
