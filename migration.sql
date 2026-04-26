@@ -14,9 +14,10 @@ DROP POLICY IF EXISTS "Memberships Admin" ON public.project_members;
 DROP POLICY IF EXISTS "Submittals Access" ON public.submittals;
 DROP POLICY IF EXISTS "Attachments Access" ON public.attachments;
 DROP POLICY IF EXISTS "Invites Access" ON public.organization_invites;
+DROP POLICY IF EXISTS "Activity Access" ON public.activity_log;
 
 -- 2. PURGE ALL DATA (Fresh Start) - ONLY UNCOMMENT IF NEEDED
--- TRUNCATE public.profiles, public.projects, public.submittals, public.project_members, public.activity_logs, public.attachments, public.spec_sections CASCADE;
+-- TRUNCATE public.profiles, public.projects, public.submittals, public.project_members, public.activity_log, public.attachments, public.spec_sections CASCADE;
 
 -- 3. ORGANIZATIONS LAYER
 CREATE TABLE IF NOT EXISTS public.organizations (
@@ -45,7 +46,7 @@ ALTER TABLE public.organizations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.projects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.submittals ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.activity_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.activity_log ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.attachments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.project_members ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.organization_invites ENABLE ROW LEVEL SECURITY;
@@ -96,6 +97,10 @@ FOR ALL USING ( project_id IN (SELECT id FROM public.projects) );
 
 -- ATTACHMENTS (If you can see the submittal, you can see these)
 CREATE POLICY "Attachments Access" ON public.attachments
+FOR ALL USING ( submittal_id IN (SELECT id FROM public.submittals) );
+
+-- ACTIVITIES (If you can see the submittal, you can see these)
+CREATE POLICY "Activity Access" ON public.activity_log
 FOR ALL USING ( submittal_id IN (SELECT id FROM public.submittals) );
 
 -- INVITES
