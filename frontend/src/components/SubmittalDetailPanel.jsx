@@ -274,8 +274,9 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
       
       // If we auto-bumped the round, update the parent submittal to match
       if (type === 'submittal' && targetRound > (submittal.round || 1)) {
-        await updateSubmittal(submittal.id, { round: targetRound, status: 'working', submitted_date: null }, activeUser)
+        const updatedParent = await updateSubmittal(submittal.id, { round: targetRound, status: 'working', submitted_date: null }, activeUser)
         setForm(f => ({ ...f, round: targetRound, status: 'working', submitted_date: null }))
+        onUpdated(updatedParent)
       }
       await loadAttachments()
       const userDisplay = getAuthorName()
