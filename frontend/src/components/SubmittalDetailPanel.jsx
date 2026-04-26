@@ -724,15 +724,15 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
                   All Activity
                 </button>
                 <button 
-                  onClick={() => setActivityFilter('actions')}
-                  style={{ flex: 1, padding: '6px', borderRadius: '6px', background: activityFilter === 'actions' ? 'rgba(59, 130, 246, 0.1)' : 'transparent', border: '1px solid', borderColor: activityFilter === 'actions' ? 'rgba(59, 130, 246, 0.3)' : 'transparent', color: activityFilter === 'actions' ? 'hsl(210, 80%, 55%)' : 'var(--text-muted)', fontSize: '11px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}>
-                  🎯 Action History
-                </button>
-                <button 
                   onClick={() => setActivityFilter('flags')}
                   style={{ flex: 1, padding: '6px', borderRadius: '6px', background: activityFilter === 'flags' ? 'rgba(239, 68, 68, 0.1)' : 'transparent', border: '1px solid', borderColor: activityFilter === 'flags' ? 'rgba(239, 68, 68, 0.3)' : 'transparent', color: activityFilter === 'flags' ? 'var(--s-rejected)' : 'var(--text-muted)', fontSize: '11px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', transition: 'all 0.2s' }}>
                   <Flag size={10} fill={activityFilter === 'flags' ? 'var(--s-rejected)' : 'none'} />
                   Flags ({pinnedLogs.length})
+                </button>
+                <button 
+                  onClick={() => setActivityFilter('actions')}
+                  style={{ flex: 1, padding: '6px', borderRadius: '6px', background: activityFilter === 'actions' ? 'rgba(59, 130, 246, 0.1)' : 'transparent', border: '1px solid', borderColor: activityFilter === 'actions' ? 'rgba(59, 130, 246, 0.3)' : 'transparent', color: activityFilter === 'actions' ? 'hsl(210, 80%, 55%)' : 'var(--text-muted)', fontSize: '11px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}>
+                  🎯 Action History
                 </button>
               </div>
 
