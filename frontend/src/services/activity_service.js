@@ -57,3 +57,19 @@ export const addActivity = async (submittalId, message, author = 'You', { attach
   if (error) throw error
   return data
 }
+
+export const toggleActivityFlag = async (activityId, isFlagged) => {
+  if (typeof window !== 'undefined' && localStorage.getItem('sb-test-mode') === 'true') {
+    const act = mockActivities.find(a => a.id === activityId)
+    if (act) act.is_flagged = isFlagged
+    return act
+  }
+  const { data, error } = await supabase
+    .from('activity_log')
+    .update({ is_flagged: isFlagged })
+    .eq('id', activityId)
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}

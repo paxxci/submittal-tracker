@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { X, Send, Upload, FileText, Trash2, ExternalLink, BookOpen, Star, Paperclip, Printer } from 'lucide-react'
+import { X, Send, Upload, FileText, Trash2, ExternalLink, BookOpen, Star, Paperclip, Printer, Flag } from 'lucide-react'
 import { StatusBadge, BicChip, STATUS_OPTIONS, BIC_OPTIONS } from './StatusBadge'
 import ConfirmModal from './ConfirmModal'
-import { getActivityLog, addActivity } from '../services/activity_service'
+import { getActivityLog, addActivity, toggleActivityFlag } from '../services/activity_service'
 import { getAttachments, uploadAttachment, deleteAttachment, toggleAttachmentApproval, updateAttachmentRound } from '../services/attachment_service'
 import { updateSubmittal } from '../services/submittal_service'
 import { getContacts } from '../services/contact_service'
@@ -204,6 +204,16 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
       console.error('Failed to add note:', err)
     }
     finally { setSavingNote(false) }
+  }
+
+  const handleToggleFlag = async (act) => {
+    try {
+      const isNowFlagged = !act.is_flagged
+      await toggleActivityFlag(act.id, isNowFlagged)
+      setLog(await getActivityLog(submittal.id))
+    } catch (err) {
+      console.error('Failed to toggle flag:', err)
+    }
   }
 
   const handleUpload = async (e, type = 'submittal') => {
@@ -448,6 +458,86 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
   const expectedDateStr = calculateExpectedDate(form.submitted_date, form.review_duration)
   const isOverdue = isSubmittalOverdue(expectedDateStr, form.status)
 
+  // Filter pinned vs regular logs
+  const pinnedLogs = log.filter(l => l.is_flagged)
+  const regularLogs = log.filter(l => !l.is_flagged)
+
+  const renderLogEntry = (entry, isPinned = false) => {
+    // Robust Self-Healing for legacy data (Converts JSON dumps into clean text)
+    const clean = (val) => {
+      if (typeof val !== 'string' || !val.trim().startsWith('{')) return val
+      try {
+        const p = JSON.parse(val)
+        if (p.email) return p.user_metadata?.full_name || p.email.split('@')[0]
+        if (p.user_metadata) return p.user_metadata.full_name || 'User'
+        if (p.id) return `System Action [${p.id.slice(0, 8)}]`
+        return '[Archive Data]'
+      } catch { return val }
+    }
+
+    let displayAuthor = clean(entry.author || 'System Auto')
+    if (displayAuthor && displayAuthor.includes('@')) {
+      displayAuthor = displayAuthor.split('@')[0]
+    }
+
+    let displayMsg = clean(entry.message)
+    if (typeof displayMsg === 'string' && displayMsg.includes('Auto-Audit:')) return null
+    displayMsg = displayMsg.replace(/\[R\d+\] Submittal Document uploaded: ".+?"/, '📎 Uploaded Document')
+    displayMsg = displayMsg.replace(/O&M Document uploaded: ".+?"/, '📕 Uploaded O&M Document')
+    displayMsg = displayMsg.replace(/Reference File uploaded: ".+?"/, '🔗 Uploaded Reference File')
+    displayMsg = displayMsg.replace(/🔄 Re-classified ".+?" to Revision (\d+)/, '🔄 Changed to Revision $1')
+    displayMsg = displayMsg.replace(/📤 OFFICIAL SUBMISSION FILED/, '📤 Marked as Official Submission')
+    displayMsg = displayMsg.replace(/✅ Stamped .+? as Officially Approved Version/, '✅ Approved')
+    displayMsg = displayMsg.replace(/⏪ Revoked Approval Stamp from .+?/, '⏪ Revoked Approval')
+    displayMsg = displayMsg.replace(/🗑️ Deleted Document: ".+?"/, '🗑️ Deleted Document')
+    displayMsg = displayMsg.replace(/🚀 Submittal Bumped to Revision \d+/, '🚀 Bumped Revision')
+    displayMsg = displayMsg.replace(/Created submittal: .+/, '🆕 Created Submittal')
+    const bgColor = getAvatarColor(displayAuthor)
+    const initials = getInitials(displayAuthor)
+
+    return (
+      <div key={entry.id} className="activity-entry" style={isPinned ? {
+        background: 'rgba(239, 68, 68, 0.04)',
+        border: '1px solid rgba(239, 68, 68, 0.2)',
+        borderRadius: '8px',
+        padding: '12px',
+        marginBottom: '8px'
+      } : {}}>
+        <div className="activity-meta" style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{
+              width: 22, height: 22, borderRadius: '50%',
+              background: bgColor, color: '#fff',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 9, fontWeight: 800, flexShrink: 0,
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+            }}>
+              {initials}
+            </div>
+            <span className="activity-author-name" style={{ fontWeight: 700, color: 'var(--text-main)', fontSize: 13, letterSpacing: '-0.2px' }}>{displayAuthor}</span>
+            <span className="activity-time">{fmt(entry.created_at)}</span>
+          </div>
+          <button
+            onClick={() => handleToggleFlag(entry)}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: entry.is_flagged ? 'var(--s-rejected)' : 'var(--text-muted)',
+              opacity: entry.is_flagged ? 1 : 0.5,
+              transition: 'all 0.2s ease',
+              padding: '2px'
+            }}
+            title={entry.is_flagged ? "Unpin Note" : "Flag as Important"}
+          >
+            <Flag size={14} fill={entry.is_flagged ? "var(--s-rejected)" : "none"} />
+          </button>
+        </div>
+        <div className="activity-msg" style={isPinned ? { color: 'var(--text-main)', fontWeight: 500, marginTop: '6px' } : {}}>
+          {displayMsg}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className={`detail-panel open`} id="detail-panel">
       {/* Header */}
@@ -624,65 +714,25 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
                 </button>
               </div>
               <div className="activity-messages" ref={feedRef} style={{ flex: 1, overflowY: 'auto', paddingRight: '8px', display: 'flex', flexDirection: 'column' }}>
-                {log.length === 0 && (
+                
+                {/* Pinned Red Flags Section */}
+                {pinnedLogs.length > 0 && (
+                  <div style={{ marginBottom: '16px', background: 'var(--bg-surface)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '8px', padding: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--s-rejected)', fontWeight: 800, fontSize: '11px', textTransform: 'uppercase', marginBottom: '10px', letterSpacing: '0.5px' }}>
+                      <Flag size={12} fill="var(--s-rejected)" />
+                      Critical Pinned Notes
+                    </div>
+                    {pinnedLogs.map(entry => renderLogEntry(entry, true))}
+                  </div>
+                )}
+
+                {/* Regular Logs */}
+                {regularLogs.length === 0 && (
                   <div style={{ color: 'var(--text-muted)', fontSize: 11, textAlign: 'center', padding: '12px 0' }}>
                     No activity yet. Add a note below.
                   </div>
                 )}
-                {log.map(entry => {
-                  // Robust Self-Healing for legacy data (Converts JSON dumps into clean text)
-                  const clean = (val) => {
-                    if (typeof val !== 'string' || !val.trim().startsWith('{')) return val
-                    try {
-                      const p = JSON.parse(val)
-                      if (p.email) return p.user_metadata?.full_name || p.email.split('@')[0]
-                      if (p.user_metadata) return p.user_metadata.full_name || 'User'
-                      if (p.id) return `System Action [${p.id.slice(0, 8)}]`
-                      return '[Archive Data]'
-                    } catch { return val }
-                  }
-
-                  let displayAuthor = clean(entry.author || 'System Auto')
-                  if (displayAuthor && displayAuthor.includes('@')) {
-                    displayAuthor = displayAuthor.split('@')[0]
-                  }
-
-                  let displayMsg = clean(entry.message)
-                  if (typeof displayMsg === 'string' && displayMsg.includes('Auto-Audit:')) return null
-                  displayMsg = displayMsg.replace(/\[R\d+\] Submittal Document uploaded: ".+?"/, '📎 Uploaded Document')
-                  displayMsg = displayMsg.replace(/O&M Document uploaded: ".+?"/, '📕 Uploaded O&M Document')
-                  displayMsg = displayMsg.replace(/Reference File uploaded: ".+?"/, '🔗 Uploaded Reference File')
-                  displayMsg = displayMsg.replace(/🔄 Re-classified ".+?" to Revision (\d+)/, '🔄 Changed to Revision $1')
-                  displayMsg = displayMsg.replace(/📤 OFFICIAL SUBMISSION FILED/, '📤 Marked as Official Submission')
-                  displayMsg = displayMsg.replace(/✅ Stamped .+? as Officially Approved Version/, '✅ Approved')
-                  displayMsg = displayMsg.replace(/⏪ Revoked Approval Stamp from .+?/, '⏪ Revoked Approval')
-                  displayMsg = displayMsg.replace(/🗑️ Deleted Document: ".+?"/, '🗑️ Deleted Document')
-                  displayMsg = displayMsg.replace(/🚀 Submittal Bumped to Revision \d+/, '🚀 Bumped Revision')
-                  displayMsg = displayMsg.replace(/Created submittal: .+/, '🆕 Created Submittal')
-                  const bgColor = getAvatarColor(displayAuthor)
-                  const initials = getInitials(displayAuthor)
-
-                  return (
-                    <div key={entry.id} className="activity-entry">
-                      <div className="activity-meta">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <div style={{
-                            width: 22, height: 22, borderRadius: '50%',
-                            background: bgColor, color: '#fff',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontSize: 9, fontWeight: 800, flexShrink: 0,
-                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                          }}>
-                            {initials}
-                          </div>
-                          <span className="activity-author-name" style={{ fontWeight: 700, color: 'var(--text-main)', fontSize: 13, letterSpacing: '-0.2px' }}>{displayAuthor}</span>
-                        </div>
-                        <span className="activity-time">{fmt(entry.created_at)}</span>
-                      </div>
-                      <div className="activity-msg">{displayMsg}</div>
-                    </div>
-                  )
-                })}
+                {regularLogs.map(entry => renderLogEntry(entry, false))}
               </div>
               <div className="activity-add" style={{ marginTop: '16px', flexShrink: 0, display: 'flex', gap: '8px' }}>
                 <textarea
