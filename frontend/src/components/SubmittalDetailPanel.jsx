@@ -462,6 +462,7 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
   // Filter pinned vs regular logs
   const pinnedLogs = log.filter(l => l.is_flagged)
   const regularLogs = log.filter(l => !l.is_flagged)
+  const actionLogs = log.filter(l => /🎯|🚀|✅|⏪|📤|🔄|🆕|🗑️/.test(l.message))
 
   const renderLogEntry = (entry, isPinned = false) => {
     // Robust Self-Healing for legacy data (Converts JSON dumps into clean text)
@@ -723,10 +724,15 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
                   All Activity
                 </button>
                 <button 
+                  onClick={() => setActivityFilter('actions')}
+                  style={{ flex: 1, padding: '6px', borderRadius: '6px', background: activityFilter === 'actions' ? 'rgba(59, 130, 246, 0.1)' : 'transparent', border: '1px solid', borderColor: activityFilter === 'actions' ? 'rgba(59, 130, 246, 0.3)' : 'transparent', color: activityFilter === 'actions' ? 'hsl(210, 80%, 55%)' : 'var(--text-muted)', fontSize: '11px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}>
+                  🎯 Action History
+                </button>
+                <button 
                   onClick={() => setActivityFilter('flags')}
                   style={{ flex: 1, padding: '6px', borderRadius: '6px', background: activityFilter === 'flags' ? 'rgba(239, 68, 68, 0.1)' : 'transparent', border: '1px solid', borderColor: activityFilter === 'flags' ? 'rgba(239, 68, 68, 0.3)' : 'transparent', color: activityFilter === 'flags' ? 'var(--s-rejected)' : 'var(--text-muted)', fontSize: '11px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', transition: 'all 0.2s' }}>
                   <Flag size={10} fill={activityFilter === 'flags' ? 'var(--s-rejected)' : 'none'} />
-                  Critical Flags ({pinnedLogs.length})
+                  Flags ({pinnedLogs.length})
                 </button>
               </div>
 
@@ -740,6 +746,15 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
                       </div>
                     )}
                     {pinnedLogs.map(entry => renderLogEntry(entry, true))}
+                  </>
+                ) : activityFilter === 'actions' ? (
+                  <>
+                    {actionLogs.length === 0 && (
+                      <div style={{ color: 'var(--text-muted)', fontSize: 11, textAlign: 'center', padding: '12px 0' }}>
+                        No action history yet.
+                      </div>
+                    )}
+                    {actionLogs.map(entry => renderLogEntry(entry, entry.is_flagged))}
                   </>
                 ) : (
                   <>
