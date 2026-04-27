@@ -96,13 +96,13 @@ export default function Login({ initialMode = MODE_LOGIN, onComplete }) {
       else if (mode === MODE_SIGNUP) {
         // 1. If NOT invited, they MUST have a valid, unredeemed License Key
         if (!isInvited) {
-          const formattedCode = (signupCode || '').trim().toUpperCase()
+          const formattedCode = (signupCode || '').trim()
           if (!formattedCode) throw new Error("A License Key is required to create a new island.")
 
           const { data: keyData, error: keyError } = await supabase
             .from('onboarding_keys')
             .select('*')
-            .eq('key_code', formattedCode)
+            .ilike('key_code', formattedCode)
             .eq('is_redeemed', false)
             .maybeSingle()
           
@@ -263,7 +263,7 @@ export default function Login({ initialMode = MODE_LOGIN, onComplete }) {
                   <input 
                     type="text" 
                     value={signupCode} 
-                    onChange={e => setSignupCode(e.target.value.toUpperCase())} 
+                    onChange={e => setSignupCode(e.target.value)} 
                     placeholder="Enter Private Code" 
                     id="input-signup-code"
                   />
