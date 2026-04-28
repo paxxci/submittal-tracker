@@ -26,13 +26,19 @@ export const getProjects = async (includeArchived = false) => {
     // 1. Simple fetch: Get everything if Admin, or where I am a member
     const { data: profile } = await supabase
       .from('profiles')
-      .select('is_global_staff')
+      .select('is_global_staff, organization_id')
       .eq('id', user.id)
       .maybeSingle()
 
     const isGlobal = profile?.is_global_staff === true
+    const orgId = profile?.organization_id
 
     let query = supabase.from('projects').select('*, project_members(email, role)')
+
+    // 1.5. Safety Net: Enforce Island Isolation on the frontend just in case RLS is turned off!
+    if (orgId) {
+      query = query.eq('organization_id', orgId)
+    }
 
     if (!isGlobal) {
       // If NOT admin, only show membership matches
