@@ -172,21 +172,30 @@ export default function Dashboard({
                 </tr>
               </thead>
               <tbody>
-                {filtered.map(p => (
-                  <tr key={p.id} onClick={() => onOpenProject(p)} style={{ cursor: 'pointer', height: 72 }}>
+                 {filtered.map(p => (
+                  <tr key={p.id} onClick={() => onOpenProject(p)} style={{ cursor: 'pointer', height: 72, background: p.is_archived ? 'rgba(239, 68, 68, 0.02)' : 'transparent' }}>
                     <td>
                        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                          <div style={{ width: 40, height: 40, background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                             <FolderOpen size={18} color="var(--accent)" />
+                          <div style={{ 
+                            width: 40, height: 40, 
+                            background: p.is_archived ? 'rgba(239, 68, 68, 0.1)' : 'var(--bg-elevated)', 
+                            border: p.is_archived ? '1px solid rgba(239, 68, 68, 0.2)' : '1px solid var(--border)', 
+                            borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' 
+                          }}>
+                             {p.is_archived ? <Archive size={18} color="var(--s-rejected)" /> : <FolderOpen size={18} color="var(--accent)" />}
                           </div>
                           <div>
-                            <div style={{ fontWeight: 800, fontSize: 15 }}>{p.name}</div>
+                            <div style={{ fontWeight: 800, fontSize: 15, color: p.is_archived ? 'var(--s-rejected)' : 'var(--text-main)' }}>{p.name}</div>
                             <div style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: 1 }}>{p.number || 'NO PROJECT #'}</div>
                           </div>
                        </div>
                     </td>
                     <td>
-                       <span className="badge badge-pending">Active Registry</span>
+                       {p.is_archived ? (
+                         <span className="badge" style={{ background: 'var(--s-rejected)', color: '#fff', border: 'none' }}>Archived Vault</span>
+                       ) : (
+                         <span className="badge badge-pending">Active Registry</span>
+                       )}
                     </td>
                     <td style={{ fontSize: 13, color: 'var(--text-muted)' }}>
                       {p.client || 'Internal Portfolio'}

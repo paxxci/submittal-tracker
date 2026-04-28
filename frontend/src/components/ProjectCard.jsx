@@ -12,7 +12,8 @@ export default function ProjectCard({ project, onOpen }) {
   const pct = stats ? calculateCompletionPercentage(stats.approved, stats.total) : 0
 
   return (
-    <div className="project-card card-glow" onClick={() => onOpen(project)} id={`project-card-${project.id}`}>
+    <div className="project-card card-glow" onClick={() => onOpen(project)} id={`project-card-${project.id}`}
+         style={project.is_archived ? { border: '1px solid var(--s-rejected)', background: 'rgba(239, 68, 68, 0.03)' } : {}}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 4 }}>
         <div style={{ flex: 1 }}>
           <div className="project-card-name">{project.name}</div>
@@ -23,19 +24,19 @@ export default function ProjectCard({ project, onOpen }) {
         <div style={{ position: 'relative' }}>
           <div style={{
             width: 36, height: 36, borderRadius: 10,
-            background: project.is_archived ? 'var(--bg-overlay)' : 'var(--accent-dim)', 
-            border: '1px solid var(--border-hover)',
+            background: project.is_archived ? 'rgba(239, 68, 68, 0.1)' : 'var(--accent-dim)', 
+            border: project.is_archived ? '1px solid rgba(239, 68, 68, 0.2)' : '1px solid var(--border-hover)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: project.is_archived ? 'var(--text-muted)' : 'var(--accent)', flexShrink: 0
+            color: project.is_archived ? 'var(--s-rejected)' : 'var(--accent)', flexShrink: 0
           }}>
             {project.is_archived ? <Archive size={16} /> : <FolderOpen size={16} />}
           </div>
           {project.is_archived && (
             <div style={{
               position: 'absolute', top: -6, right: -6,
-              background: 'var(--bg-overlay)', border: '1px solid var(--border)',
+              background: 'var(--s-rejected)', border: 'none',
               borderRadius: 4, padding: '2px 6px', fontSize: 9, fontWeight: 700,
-              color: 'var(--text-muted)', letterSpacing: 0.5, boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
+              color: '#fff', letterSpacing: 0.5, boxShadow: '0 2px 8px rgba(239, 68, 68, 0.4)'
             }}>
               ARCHIVED
             </div>
