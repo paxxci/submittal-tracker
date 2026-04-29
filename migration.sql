@@ -95,6 +95,10 @@ FOR ALL USING (
 CREATE POLICY "Submittals Access" ON public.submittals
 FOR ALL USING ( project_id IN (SELECT id FROM public.projects) );
 
+-- CONTACTS (If you can see the project, you can manage these)
+CREATE POLICY "Contacts Access" ON public.contacts
+FOR ALL USING ( project_id IN (SELECT id FROM public.projects) );
+
 -- ATTACHMENTS (If you can see the submittal, you can see these)
 CREATE POLICY "Attachments Access" ON public.attachments
 FOR ALL USING ( submittal_id IN (SELECT id FROM public.submittals) );
