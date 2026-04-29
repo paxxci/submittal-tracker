@@ -121,7 +121,8 @@ export default function Settings({ project, onProjectUpdated, activeUserRole, or
         name: contactForm.name,
         company: contactForm.company,
         role: contactForm.role,
-        project_id: project.id
+        project_id: project.id,
+        organization_id: organization?.id
       })
       setContactForm({ name: '', company: '', role: 'vendor' })
       setShowForm(false)
