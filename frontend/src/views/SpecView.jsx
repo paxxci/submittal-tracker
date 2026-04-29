@@ -130,65 +130,117 @@ export default function SpecView({ project, onBack, activeUser }) {
       const arrayBuffer = await file.arrayBuffer()
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
       
-      // DEEP SCAN: For municipal bid sets, the TOC can be buried deep.
-      const isLargeFile = file.size > 2 * 1024 * 1024 // 2MB
-      const scanLimit = isLargeFile ? 100 : 30
-      const maxPages = Math.min(pdf.numPages, scanLimit)
-      
-      let tocText = ''
-      let detectedPages = []
+      let sections = []
 
-      // PHASE 1: BROAD KEYWORD SEARCH
-      console.log(`Starting Deep Scan of ${maxPages} pages...`)
-      
-      for (let i = 1; i <= maxPages; i++) {
-        const page = await pdf.getPage(i)
-        const textContent = await page.getTextContent()
-        const strings = textContent.items.map(item => item.str)
-        const pageText = strings.join(' ')
-        
-        // Loosened keyword net: Look for Index, Contents, Sections, or Division patterns
-        const hasTOC = /table\s+of\s+contents|project\s+manual|section\s+index|division\s+\d+|index\s+of\s+sections/i.test(pageText)
-        
-        // Grab page if it looks like an index, OR if it's in the first 10 pages (safety buffer)
-        if (hasTOC || i <= 10) {
-          tocText += `--- PAGE ${i} ---\n${pageText}\n`
-          detectedPages.push(i)
+      // TIER 1: NATIVE PDF OUTLINE (BOOKMARKS)
+      try {
+        const outline = await pdf.getOutline()
+        if (outline && outline.length > 0) {
+          console.log("Found native PDF outline! Extracting bookmarks...")
+          
+          const flattenOutline = (items) => {
+            let result = []
+            for (const item of items) {
+              result.push(item.title)
+              if (item.items && item.items.length > 0) {
+                result = result.concat(flattenOutline(item.items))
+              }
+            }
+            return result
+          }
+          
+          const allTitles = flattenOutline(outline)
+          
+          // Look for CSI codes in the bookmark titles: "26 05 19 - Wire" or "260519 Wire"
+          const csiRegex = /^(\d{2})[\s-]?(\d{2})[\s-]?(\d{2})\s*[-:]?\s*(.+)$/
+          
+          for (const title of allTitles) {
+            const match = title.trim().match(csiRegex)
+            if (match) {
+              const div = match[1]
+              const code = `${match[1]} ${match[2]} ${match[3]}`
+              const name = match[4].trim()
+              // Avoid duplicates
+              if (!sections.find(s => s.code === code)) {
+                sections.push({ division: div, code: code, title: name })
+              }
+            }
+          }
         }
-        
-        // Cap the data we send to AI to keep it fast, but allow up to 30 pages of "hits"
-        if (detectedPages.length >= 30) break 
+      } catch (e) {
+        console.warn("Outline extraction failed, falling back to AI scan...", e)
       }
 
-      console.log(`Extracted text from ${detectedPages.length} smart-sampled pages. Sending to AI...`)
-      
-      const prompt = `
-        You are a construction specification expert. I am providing a text dump from a ${file.name} project index.
+      // TIER 2: AI DEEP SCAN (FALLBACK)
+      if (sections.length === 0) {
+        const isLargeFile = file.size > 2 * 1024 * 1024 // 2MB
+        const scanLimit = isLargeFile ? 150 : 50 // Increased scan limit
+        const maxPages = Math.min(pdf.numPages, scanLimit)
         
-        GOAL: Extract ALL Divisions and Sections listed in this index (e.g. Div 01, 02, 08, 10, 26, 27, 28, etc.).
-        Do not filter by trade; extract everything so the user can choose their responsibility.
-        
-        Return ONLY a JSON array:
-        [
-          { "division": "01", "code": "01 10 00", "title": "Summary of Work" },
-          { "division": "26", "code": "26 05 19", "title": "Low-Voltage Power Conductors" },
-          ...
-        ]
-        
-        Text Data:
-        ${tocText.slice(0, 50000)} // Deep scan
-      `
+        let tocText = ''
+        let detectedPages = []
 
-      const aiResponse = await callAI(prompt)
-      let sections = []
-      try {
-        // More robust JSON cleaning for different AI response styles
-        const cleanJson = aiResponse.replace(/```json|```/g, '').trim()
-        const match = cleanJson.match(/\[[\s\S]*\]/)
-        sections = JSON.parse(match ? match[0] : cleanJson)
-      } catch (err) {
-        console.error('AI JSON Parse Error:', err, 'Response was:', aiResponse)
-        sections = []
+        console.log(`No valid bookmarks found. Starting AI Deep Scan of ${maxPages} pages...`)
+        
+        for (let i = 1; i <= maxPages; i++) {
+          const page = await pdf.getPage(i)
+          const textContent = await page.getTextContent()
+          const strings = textContent.items.map(item => item.str)
+          const pageText = strings.join(' ')
+          
+          // SMART DETECTION: High density of CSI codes means it IS a TOC page.
+          // Looks for 6 digits with optional spaces or dashes (e.g. 26 05 19, 26-05-19, 260519)
+          const csiMatches = pageText.match(/\b\d{2}[\s-]?\d{2}[\s-]?\d{2}\b/g)
+          const hasHighCsiDensity = csiMatches && csiMatches.length >= 3
+          
+          // Also check for explicit TOC headers on the first 15 pages
+          const isExplicitTOC = i <= 15 && /table\s+of\s+contents|project\s+manual|section\s+index/i.test(pageText)
+          
+          if (hasHighCsiDensity || isExplicitTOC) {
+            tocText += `--- PAGE ${i} ---\n${pageText}\n`
+            detectedPages.push(i)
+          }
+          
+          // Prevent the AI prompt from becoming too large, but collect up to 40 pages of TOC
+          if (detectedPages.length >= 40) break 
+        }
+
+        console.log(`Extracted text from ${detectedPages.length} actual TOC pages. Sending to AI...`)
+        
+        const prompt = `
+          You are a construction specification expert. I am providing a text dump from a ${file.name} project index.
+          
+          GOAL: Extract ALL Divisions and Sections listed in this index (e.g. Div 01, 02, 08, 10, 26, 27, 28, etc.).
+          Do not filter by trade; extract everything so the user can choose their responsibility.
+          
+          RULES FOR WEIRD FORMATTING:
+          1. Codes might be missing spaces (e.g. "260519"). Format them properly as "26 05 19".
+          2. The word "Division" or "Section" might be missing entirely. Just look for the 6-digit codes and the title next to them.
+          3. Ignore page numbers, architectural stamps, and introductory legal jargon.
+          
+          Return ONLY a JSON array:
+          [
+            { "division": "01", "code": "01 10 00", "title": "Summary of Work" },
+            { "division": "26", "code": "26 05 19", "title": "Low-Voltage Power Conductors" }
+          ]
+          
+          Text Data:
+          ${tocText.slice(0, 80000)} // Deep scan, increased buffer
+        `
+
+        const aiResponse = await callAI(prompt)
+        try {
+          const cleanJson = aiResponse.replace(/```json|```/g, '').trim()
+          const match = cleanJson.match(/\[[\s\S]*\]/)
+          sections = JSON.parse(match ? match[0] : cleanJson)
+        } catch (err) {
+          console.error('AI JSON Parse Error:', err, 'Response was:', aiResponse)
+          sections = []
+        }
+      }
+
+      if (sections.length === 0) {
+        throw new Error("Could not auto-detect any spec sections in this document. Please use the Bulk Register Lane (Excel/CSV Import) instead.")
       }
 
       setDiscoveredSections(sections)

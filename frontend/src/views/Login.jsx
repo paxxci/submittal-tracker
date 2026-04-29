@@ -16,6 +16,7 @@ export default function Login({ initialMode = MODE_LOGIN, onComplete }) {
   const [success, setSuccess] = useState(false)
   const [message, setMessage] = useState(null)
   const [signupCode, setSignupCode] = useState('')
+  const [cooldown, setCooldown] = useState(0)
 
   useEffect(() => {
     // 1. Check for URL Parameters (Invitations & Errors)
@@ -63,6 +64,14 @@ export default function Login({ initialMode = MODE_LOGIN, onComplete }) {
 
   const [isInvited, setIsInvited] = useState(false)
   const [checkingInvite, setCheckingInvite] = useState(false)
+
+  useEffect(() => {
+    let timer;
+    if (cooldown > 0) {
+      timer = setInterval(() => setCooldown(c => c - 1), 1000);
+    }
+    return () => clearInterval(timer);
+  }, [cooldown]);
 
   const checkInviteStatus = async (emailToCheck) => {
     if (!emailToCheck || !emailToCheck.includes('@')) {
@@ -129,7 +138,8 @@ export default function Login({ initialMode = MODE_LOGIN, onComplete }) {
           redirectTo: window.location.origin,
         })
         if (error) throw error
-        setMessage("Recovery link sent! Check your inbox.")
+        setMessage("Recovery link sent! It may take a minute to arrive. Please check your Spam or Junk folder if you don't see it.")
+        setCooldown(60)
       }
       else if (mode === MODE_RESET) {
         const { error } = await supabase.auth.updateUser({ password })
@@ -288,13 +298,17 @@ export default function Login({ initialMode = MODE_LOGIN, onComplete }) {
                </div>
             )}
 
-            <button type="submit" className="btn btn-primary login-btn" disabled={loading}>
+            <button 
+              type="submit" 
+              className="btn btn-primary login-btn" 
+              disabled={loading || (mode === MODE_FORGOT && cooldown > 0)}
+            >
               {loading ? 'Processing...' : (
                 mode === MODE_LOGIN ? 'Sign In' : 
                 mode === MODE_SIGNUP ? 'Create Account' : 
-                mode === MODE_FORGOT ? 'Send Link' : 'Update Password'
+                mode === MODE_FORGOT ? (cooldown > 0 ? `Wait ${cooldown}s` : 'Send Link') : 'Update Password'
               )}
-              {!loading && <ArrowRight size={18} />}
+              {!loading && cooldown === 0 && <ArrowRight size={18} />}
             </button>
           </form>
 

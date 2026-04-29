@@ -189,8 +189,19 @@ export default function App() {
     setView('dashboard')
   }
 
+  const isRecovery = typeof window !== 'undefined' && (window.location.hash.includes('type=recovery') || window.location.hash.includes('type=invite'))
+
   if (!isLoaded) return <div style={{ background: '#0a0a0a', height: '100vh' }} />
-  if (!session) return <Login onComplete={() => { localStorage.setItem('sa-active-view', 'dashboard'); window.location.reload() }} />
+  if (!session || isRecovery) {
+    return <Login 
+      initialMode={isRecovery ? 'reset' : 'login'} 
+      onComplete={() => { 
+        window.location.hash = ''
+        localStorage.setItem('sa-active-view', 'dashboard')
+        window.location.reload() 
+      }} 
+    />
+  }
 
   const isGlobalAdmin = userProfile?.is_global_staff === true
   const explicitRole = currentProject?.project_members?.find(m => m.email === session.user.email)?.role

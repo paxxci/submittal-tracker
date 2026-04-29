@@ -117,11 +117,20 @@ export default function Settings({ project, onProjectUpdated, activeUserRole, or
     if (!contactForm.name.trim()) return
     try {
       setSaving(true)
-      await createContact({ ...contactForm, project_id: project.id })
+      await createContact({ 
+        ...contactForm, 
+        project_id: project.id,
+        organization_id: organization?.id // Required for RLS policies
+      })
       setContactForm({ name: '', company: '', role: 'vendor', email: '' })
       setShowForm(false)
       loadContacts()
-    } finally { setSaving(false) }
+    } catch (err) {
+      console.error('Error adding contact:', err)
+      alert(`Failed to add contact: ${err.message || 'Unknown error'}`)
+    } finally { 
+      setSaving(false) 
+    }
   }
 
   const handleDeleteContact = async (id) => {
