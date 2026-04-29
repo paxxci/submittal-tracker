@@ -151,8 +151,8 @@ export default function SpecView({ project, onBack, activeUser }) {
           
           const allTitles = flattenOutline(outline)
           
-          // Look for CSI codes in the bookmark titles: "26 05 19 - Wire" or "260519 Wire"
-          const csiRegex = /^(\d{2})[\s-]?(\d{2})[\s-]?(\d{2})\s*[-:]?\s*(.+)$/
+          // Look for CSI codes in the bookmark titles: "26 05 19 - Wire" or "260519 Wire" or "26_05_44" or "27 05 28.29"
+          const csiRegex = /^(\d{2})[\s-_]?(\d{2})[\s-_]?(\d{2}(?:\.\d+)?)\s*[-_:]?\s*(.+)$/
           
           for (const title of allTitles) {
             const match = title.trim().match(csiRegex)
@@ -189,8 +189,8 @@ export default function SpecView({ project, onBack, activeUser }) {
           const pageText = strings.join(' ')
           
           // SMART DETECTION: High density of CSI codes means it IS a TOC page.
-          // Looks for 6 digits with optional spaces or dashes (e.g. 26 05 19, 26-05-19, 260519)
-          const csiMatches = pageText.match(/\b\d{2}[\s-]?\d{2}[\s-]?\d{2}\b/g)
+          // Looks for 6 digits with optional spaces, dashes, or underscores, and optional decimals
+          const csiMatches = pageText.match(/\b\d{2}[\s-_]?\d{2}[\s-_]?\d{2}(?:\.\d+)?\b/g)
           const hasHighCsiDensity = csiMatches && csiMatches.length >= 3
           
           // Also check for explicit TOC headers on the first 15 pages
@@ -208,20 +208,23 @@ export default function SpecView({ project, onBack, activeUser }) {
         console.log(`Extracted text from ${detectedPages.length} actual TOC pages. Sending to AI...`)
         
         const prompt = `
-          You are a construction specification expert. I am providing a text dump from a ${file.name} project index.
+          You are a construction specification expert. I am providing a text dump from a ${file.name} project index or body pages.
           
-          GOAL: Extract ALL Divisions and Sections listed in this index (e.g. Div 01, 02, 08, 10, 26, 27, 28, etc.).
+          GOAL: Extract ALL Divisions and Sections listed in this text.
           Do not filter by trade; extract everything so the user can choose their responsibility.
           
           RULES FOR WEIRD FORMATTING:
-          1. Codes might be missing spaces (e.g. "260519"). Format them properly as "26 05 19".
-          2. The word "Division" or "Section" might be missing entirely. Just look for the 6-digit codes and the title next to them.
-          3. Ignore page numbers, architectural stamps, and introductory legal jargon.
+          1. Codes might be missing spaces (e.g. "260519") or use underscores ("26_05_19"). YOU MUST format them properly as "26 05 19" in your JSON output.
+          2. Codes might have decimals (e.g. "27 05 28.29"). Include the decimal in the formatted code.
+          3. The word "Division" or "Section" might be missing entirely. Just look for the 6-digit codes and the title next to them.
+          4. If the text appears to be body pages (e.g., "SECTION 26 05 11 - REQUIREMENTS"), extract the section headers anyway.
+          5. Ignore page numbers, architectural stamps, and introductory legal jargon.
           
           Return ONLY a JSON array:
           [
             { "division": "01", "code": "01 10 00", "title": "Summary of Work" },
-            { "division": "26", "code": "26 05 19", "title": "Low-Voltage Power Conductors" }
+            { "division": "26", "code": "26 05 19", "title": "Low-Voltage Power Conductors" },
+            { "division": "27", "code": "27 05 28.29", "title": "Hangers and Supports" }
           ]
           
           Text Data:
