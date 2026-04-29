@@ -334,6 +334,7 @@ export default function Settings({ project, onProjectUpdated, activeUserRole, or
         try {
           setPurging(true)
           await deleteProject(project.id)
+          localStorage.removeItem('sa-active-project-id')
           window.location.href = '/'
         } catch (err) {
           console.error('Delete failed:', err)
