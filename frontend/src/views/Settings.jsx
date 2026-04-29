@@ -31,7 +31,7 @@ const ROLE_CONFIG = {
 export default function Settings({ project, onProjectUpdated, activeUserRole, organization }) {
   const [contacts, setContacts] = useState([])
   const [showForm, setShowForm] = useState(false)
-  const [contactForm, setContactForm] = useState({ name: '', company: '', role: 'vendor', email: '' })
+  const [contactForm, setContactForm] = useState({ name: '', company: '', role: 'vendor' })
   const [saving, setSaving] = useState(false)
 
   // Project edit form
@@ -118,11 +118,12 @@ export default function Settings({ project, onProjectUpdated, activeUserRole, or
     try {
       setSaving(true)
       await createContact({ 
-        ...contactForm, 
-        project_id: project.id,
-        organization_id: organization?.id // Required for RLS policies
+        name: contactForm.name,
+        company: contactForm.company,
+        role: contactForm.role,
+        project_id: project.id
       })
-      setContactForm({ name: '', company: '', role: 'vendor', email: '' })
+      setContactForm({ name: '', company: '', role: 'vendor' })
       setShowForm(false)
       loadContacts()
     } catch (err) {
@@ -422,14 +423,14 @@ export default function Settings({ project, onProjectUpdated, activeUserRole, or
                 <div>
                   <div className="settings-section-title" style={{ marginBottom: 2 }}>
                     <Users size={13} style={{ display: 'inline', marginRight: 6, verticalAlign: 'middle' }} />
-                    Project Team
+                    Project Contacts (BIC)
                   </div>
                   <p style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: 12 }}>
                     Add everyone involved — GC, engineers, architects, vendors, manufacturers. They'll appear in the <strong style={{ color: 'var(--text-sub)' }}>Ball In Court</strong> dropdown when tracking submittals.
                   </p>
                 </div>
                 <button className="btn btn-ghost btn-sm" style={{ flexShrink: 0 }} onClick={() => setShowForm(f => !f)} id="btn-add-person">
-                  <Plus size={12} /> Add Person
+                  <Plus size={12} /> Add Contact
                 </button>
               </div>
 
@@ -445,23 +446,17 @@ export default function Settings({ project, onProjectUpdated, activeUserRole, or
                       <input className="form-input" style={{ fontSize: 12, padding: '7px 10px' }} placeholder="e.g. Smith Engineering" value={contactForm.company} onChange={setContact('company')} id="input-contact-company" />
                     </div>
                   </div>
-                  <div className="form-grid-2" style={{ marginBottom: 10 }}>
-                    <div className="form-group">
-                      <label className="form-label">Role</label>
-                      <select className="form-select" style={{ fontSize: 12, padding: '7px 10px' }} value={contactForm.role} onChange={setContact('role')} id="select-contact-role">
-                        {Object.entries(ROLE_CONFIG).map(([v, { label }]) => (
-                          <option key={v} value={v}>{label}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">Email</label>
-                      <input className="form-input" style={{ fontSize: 12, padding: '7px 10px' }} placeholder="optional" type="email" value={contactForm.email} onChange={setContact('email')} id="input-contact-email" />
-                    </div>
+                  <div className="form-group" style={{ marginBottom: 10 }}>
+                    <label className="form-label">Role</label>
+                    <select className="form-select" style={{ fontSize: 12, padding: '7px 10px' }} value={contactForm.role} onChange={setContact('role')} id="select-contact-role">
+                      {Object.entries(ROLE_CONFIG).map(([v, { label }]) => (
+                        <option key={v} value={v}>{label}</option>
+                      ))}
+                    </select>
                   </div>
                   <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                     <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowForm(false)}>Cancel</button>
-                    <button type="submit" className="btn btn-primary btn-sm" disabled={saving} id="btn-save-contact">{saving ? 'Adding...' : 'Add to Team'}</button>
+                    <button type="submit" className="btn btn-primary btn-sm" disabled={saving} id="btn-save-contact">{saving ? 'Adding...' : 'Add Contact'}</button>
                   </div>
                 </form>
               )}
@@ -484,7 +479,6 @@ export default function Settings({ project, onProjectUpdated, activeUserRole, or
                           <div className="contact-meta">
                             <span style={{ color: roleCfg.color, fontWeight: 600, fontSize: 10 }}>{roleCfg.label}</span>
                             {c.company && <span> · {c.company}</span>}
-                            {c.email && <span> · {c.email}</span>}
                           </div>
                         </div>
                         <button className="btn btn-icon btn-sm" style={{ color: 'var(--s-rejected)', border: 'none' }}
