@@ -101,11 +101,23 @@ export default function SpecView({ project, onBack, activeUser }) {
       return code !== '' || title !== ''
     })
 
-    const sections = validRows.map(row => ({
-      division: String(row[codeIndex] || '').trim().substring(0, 2) || '00',
-      code: String(row[codeIndex] || '').trim() || 'GENERAL',
-      title: String(row[titleIndex] || '').trim() || 'Imported Item'
-    }))
+    const sections = validRows.map(row => {
+      let rawCode = String(row[codeIndex] || '').trim()
+      
+      // Auto-format Excel codes to standard "XX XX XX" format
+      // Matches: 260544, 26_05_44, 26.05.44, 26-05-44, 27 05 28.29
+      const csiRegex = /^(\d{2})[\s-_.]?(\d{2})[\s-_.]?(\d{2}(?:\.\d+)?)/
+      const match = rawCode.match(csiRegex)
+      if (match) {
+        rawCode = `${match[1]} ${match[2]} ${match[3]}`
+      }
+
+      return {
+        division: rawCode.substring(0, 2) || '00',
+        code: rawCode || 'GENERAL',
+        title: String(row[titleIndex] || '').trim() || 'Imported Item'
+      }
+    })
 
     setDiscoveredSections(sections)
     setStep(3)
