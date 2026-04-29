@@ -129,7 +129,7 @@ export default function App() {
                   is_redeemed: true,
                   redeemed_at: new Date().toISOString(),
                   redeemed_by: session.user.id
-                }).eq('key_code', usedCode.toUpperCase()).eq('is_redeemed', false)
+                }).ilike('key_code', usedCode).eq('is_redeemed', false)
               }
             } catch (err) {
               console.error('Organization sync failed:', err)
