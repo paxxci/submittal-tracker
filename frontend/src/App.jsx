@@ -222,6 +222,7 @@ export default function App() {
             setShowArchived={setShowArchived}
             userEmail={session.user.email}
             organization={organization}
+            isGlobalAdmin={isGlobalAdmin}
           />
         )}
 

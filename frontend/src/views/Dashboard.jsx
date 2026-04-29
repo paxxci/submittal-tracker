@@ -11,7 +11,8 @@ export default function Dashboard({
   showArchived, 
   setShowArchived,
   userEmail,
-  organization
+  organization,
+  isGlobalAdmin
 }) {
   const [showNewProject, setShowNewProject] = useState(false)
   const [search, setSearch] = useState('')
@@ -19,10 +20,7 @@ export default function Dashboard({
   const [viewMode, setViewMode] = useState('grid') // grid, list
   
   // "Island Access" check: 
-  const isIslandOwner = !loading && (
-    projects.length === 0 || 
-    projects.some(p => p.project_members?.[0]?.role === 'admin')
-  )
+  const isIslandOwner = !loading && (isGlobalAdmin || projects.some(p => p.project_members?.some(m => m.email === userEmail && m.role === 'admin')))
 
   // Filter & Sort Logic
   const filtered = projects
