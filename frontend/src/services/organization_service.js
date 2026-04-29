@@ -22,13 +22,27 @@ export const getOrganizationForUser = async (userId) => {
   return org
 }
 
+let isCreating = false
+
 export const createOrganization = async (name, ownerId) => {
-  const { data, error } = await supabase
-    .from('organizations')
-    .insert([{ name, owner_id: ownerId }])
-    .select()
-    .single()
-  
-  if (error) throw error
-  return data
+  if (isCreating) {
+    // If multiple calls happen concurrently, just wait a second and fetch the one that was just created
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    const { data } = await supabase.from('organizations').select('*').eq('owner_id', ownerId).maybeSingle()
+    if (data) return data
+  }
+
+  isCreating = true
+  try {
+    const { data, error } = await supabase
+      .from('organizations')
+      .insert([{ name, owner_id: ownerId }])
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  } finally {
+    isCreating = false
+  }
 }
