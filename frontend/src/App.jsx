@@ -189,7 +189,9 @@ export default function App() {
     setView('dashboard')
   }
 
-  const isRecovery = typeof window !== 'undefined' && (window.location.hash.includes('type=recovery') || window.location.hash.includes('type=invite'))
+  const [isRecovery, setIsRecovery] = useState(() => {
+    return typeof window !== 'undefined' && (window.location.hash.includes('type=recovery') || window.location.hash.includes('type=invite'))
+  })
 
   if (!isLoaded) return <div style={{ background: '#0a0a0a', height: '100vh' }} />
   if (!session || isRecovery) {
