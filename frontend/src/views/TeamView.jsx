@@ -157,7 +157,7 @@ export default function TeamView({ activeUser, projects: appProjects = [], organ
       <div className="stage-body" style={{ padding: '40px' }}>
         <div style={{ maxWidth: 1000, margin: '0 auto' }}>
 
-          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 32 }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 32, flexWrap: 'wrap', gap: 16 }}>
             <div>
               <h1 style={{ fontSize: 32, fontWeight: 900, marginBottom: 8, letterSpacing: '-1px' }}>Team Management</h1>
               <div style={{ display: 'flex', gap: 16 }}>
@@ -169,8 +169,8 @@ export default function TeamView({ activeUser, projects: appProjects = [], organ
                 </div>
               </div>
             </div>
-            <button className="btn btn-primary" onClick={() => { setInviteSuccess(false); setInviteError(null); setShowInvite(true) }} style={{ padding: '12px 24px', fontSize: 14 }}>
-              <Users size={18} /> Add Team Member
+            <button className="btn btn-primary btn-sm" onClick={() => { setInviteSuccess(false); setInviteError(null); setShowInvite(true) }}>
+              <Users size={14} /> Add Team Member
             </button>
           </div>
 

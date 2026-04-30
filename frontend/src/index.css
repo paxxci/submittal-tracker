@@ -1504,17 +1504,20 @@ tr:hover .row-actions { opacity: 1; }
   /* App Shell & Nav */
   .app-shell {
     flex-direction: column-reverse; /* Put Nav at bottom */
+    height: 100dvh;
   }
 
   .nav-rail {
     width: 100vw;
-    height: 65px;
+    height: calc(65px + env(safe-area-inset-bottom, 20px));
     flex-direction: row;
     border-right: none;
     border-top: 1px solid var(--border);
     padding: 0 16px;
+    padding-bottom: env(safe-area-inset-bottom, 20px);
     justify-content: space-around;
     z-index: 999;
+    flex-shrink: 0;
   }
   
   .nav-logo, .nav-spacer, .nav-tooltip, .nav-divider {
@@ -1530,7 +1533,8 @@ tr:hover .row-actions { opacity: 1; }
 
   /* Main Layout */
   .main-stage {
-    height: calc(100vh - 65px);
+    flex: 1;
+    height: 0;
   }
   
   .stage-body {
