@@ -1612,6 +1612,11 @@ tr:hover .row-actions { opacity: 1; }
     padding-bottom: 80px; /* Leave room for bottom sheet swipe/close if needed */
   }
 
+  /* Hide Intel Chat on Mobile */
+  .floating-chat-container {
+    display: none !important;
+  }
+
   /* Forms & Modals */
   .form-grid-2 {
     grid-template-columns: 1fr;
