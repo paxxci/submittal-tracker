@@ -1586,6 +1586,9 @@ tr:hover .row-actions { opacity: 1; }
   .table-wrap {
     width: 100%;
     overflow-x: auto;
+    touch-action: pan-x pan-y;
+    overscroll-behavior-x: contain;
+    overscroll-behavior-y: contain;
   }
   
   .submittal-table {

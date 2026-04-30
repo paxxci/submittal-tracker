@@ -587,7 +587,9 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
       <div className="detail-panel-header">
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
           <div className="detail-panel-title">{submittal.item_name}</div>
-          <button className="btn btn-icon btn-sm" onClick={onClose}><X size={14} /></button>
+          <button className="btn btn-icon btn-sm" onClick={onClose} style={{ color: '#ffffff', opacity: 0.9 }}>
+            <X size={22} />
+          </button>
         </div>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
           <StatusBadge status={submittal.status} />
