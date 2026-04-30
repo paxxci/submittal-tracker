@@ -1538,8 +1538,8 @@ tr:hover .row-actions { opacity: 1; }
   }
 
   .top-bar {
-    padding: 0 16px;
-    height: 56px;
+    padding: env(safe-area-inset-top, 10px) 16px 0 16px !important;
+    height: calc(56px + env(safe-area-inset-top, 10px)) !important;
   }
 
   /* Dashboard */
@@ -1610,6 +1610,10 @@ tr:hover .row-actions { opacity: 1; }
   
   .detail-panel.open {
     transform: translateY(0);
+  }
+
+  .detail-panel-header {
+    padding-top: calc(14px + env(safe-area-inset-top, 10px)) !important;
   }
 
   .detail-panel-content {
