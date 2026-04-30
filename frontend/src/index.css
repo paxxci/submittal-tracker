@@ -1603,7 +1603,9 @@ tr:hover .row-actions { opacity: 1; }
     transform: translateY(100%);
     width: 100vw;
     height: 100vh;
+    height: 100dvh; /* Use dynamic viewport height so iOS Safari toolbar doesn't hide bottom */
     border-left: none;
+    padding-bottom: env(safe-area-inset-bottom, 20px); /* iPhone home indicator clearance */
   }
   
   .detail-panel.open {
