@@ -1501,41 +1501,40 @@ tr:hover .row-actions { opacity: 1; }
     --panel-w: 100vw;
   }
 
-  .app-container {
-    flex-direction: column-reverse; /* Put nav at bottom */
+  /* App Shell & Nav */
+  .app-shell {
+    flex-direction: column-reverse; /* Put Nav at bottom */
   }
 
   .nav-rail {
-    width: 100%;
-    height: 64px;
+    width: 100vw;
+    height: 65px;
     flex-direction: row;
-    padding: 0 16px;
     border-right: none;
     border-top: 1px solid var(--border);
+    padding: 0 16px;
     justify-content: space-around;
+    z-index: 999;
+  }
+  
+  .nav-logo, .nav-spacer, .nav-tooltip, .nav-divider {
+    display: none !important;
   }
 
-  .nav-top, .nav-bottom {
-    flex-direction: row;
-    width: auto;
-    gap: 20px;
+  .command-center {
+    flex-direction: row !important;
+    width: auto !important;
+    padding-bottom: 0 !important;
+    gap: 8px !important;
   }
 
-  .nav-logo, .nav-divider {
-    display: none;
+  /* Main Layout */
+  .main-stage {
+    height: calc(100vh - 65px);
   }
-
-  .nav-btn {
-    width: 48px;
-    height: 48px;
-  }
-
-  .nav-label {
-    display: none; /* Keep it clean */
-  }
-
-  .main-content {
-    height: calc(100vh - 64px);
+  
+  .stage-body {
+    padding: 16px !important;
   }
 
   .top-bar {
@@ -1543,65 +1542,97 @@ tr:hover .row-actions { opacity: 1; }
     height: 56px;
   }
 
-  .stage-body {
-    padding: 16px;
+  /* Dashboard */
+  .dash-stats {
+    flex-direction: column;
+    gap: 12px;
   }
-
+  
   .projects-grid {
     grid-template-columns: 1fr;
-    gap: 16px;
+    gap: 12px;
   }
 
-  .submittal-table thead {
-    display: none; /* Table is too wide for mobile */
+  /* Workbench / Spec View */
+  .project-layout {
+    flex-direction: column;
+    height: calc(100vh - 56px - 65px); /* Minus topbar and bottom nav */
   }
 
-  .submittal-table, .submittal-table tbody, .submittal-table tr, .submittal-table td {
-    display: block;
+  .spec-sidebar {
     width: 100%;
-  }
-
-  .submittal-table tr {
-    padding: 16px;
+    height: 140px; /* Short horizontal row */
+    border-right: none;
     border-bottom: 1px solid var(--border);
-    margin-bottom: 8px;
-    background: var(--bg-surface);
-    border-radius: 12px;
+    flex-shrink: 0;
+  }
+  
+  .spec-list {
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+    padding: 12px;
+    gap: 8px;
+  }
+  
+  .spec-item {
+    min-width: 180px;
+    height: 100%;
+    justify-content: center;
+    border: 1px solid var(--border);
   }
 
-  .submittal-table td {
-    padding: 4px 0;
-    border: none !important;
+  /* Tables - allow horizontal scroll instead of crushing */
+  .table-wrap {
+    width: 100%;
+    overflow-x: auto;
+  }
+  
+  .submittal-table {
+    min-width: 800px;
   }
 
-  .submittal-table td:first-child {
-    font-size: 14px;
-    font-weight: 700;
-  }
-
-  /* Detail Panel on Mobile */
+  /* Details Panel (Right Slide-in) */
   .detail-panel {
     position: fixed;
     inset: 0;
     z-index: 2000;
     transform: translateY(100%);
+    width: 100vw;
+    height: 100vh;
+    border-left: none;
   }
   
   .detail-panel.open {
     transform: translateY(0);
   }
 
-  .floating-chat-container {
-    bottom: 80px; /* Above mobile nav */
-    right: 20px;
+  .detail-panel-content {
+    padding: 16px;
+    padding-bottom: 80px; /* Leave room for bottom sheet swipe/close if needed */
   }
 
-  .floating-chat-container.shifted {
-    right: 20px; /* Don't shift on mobile, overlay instead */
+  /* Forms & Modals */
+  .form-grid-2 {
+    grid-template-columns: 1fr;
+    gap: 12px;
   }
 
-  .chat-window {
-    width: calc(100vw - 40px);
-    right: 0;
+  .modal {
+    width: 95% !important;
+    margin: 10px;
+    padding: 20px !important;
+  }
+
+  .search-wrap {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  /* Top Bar Actions on Dashboard */
+  .top-bar-controls {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
   }
 }
