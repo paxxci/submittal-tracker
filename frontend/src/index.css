@@ -33,7 +33,7 @@
   --s-submit:   #3b82f6;
   --s-review:   #f59e0b;
   --s-approved: #10b981;
-  --s-revise:   #f97316;
+  --s-revise:   #ef4444;
   --s-rejected: #ef4444;
 
   /* Status BG */
@@ -41,7 +41,7 @@
   --s-submit-bg:   rgba(59, 130, 246, 0.12);
   --s-review-bg:   rgba(245, 158, 11, 0.12);
   --s-approved-bg: rgba(16, 185, 129, 0.12);
-  --s-revise-bg:   rgba(249, 115, 22, 0.12);
+  --s-revise-bg:   rgba(239, 68, 68, 0.12);
   --s-rejected-bg: rgba(239, 68, 68, 0.12);
 
   /* BIC Colors */
