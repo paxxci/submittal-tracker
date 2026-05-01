@@ -7,6 +7,7 @@ const STATUS_CONFIG = {
   submitted:       { label: 'Submitted',          cls: 'badge-submitted'    },
   in_review:       { label: 'In Review',          cls: 'badge-in_review'    },
   approved:        { label: 'Approved',           cls: 'badge-approved'     },
+  approved_as_noted:{ label: 'Approved as Noted', cls: 'badge-approved_as_noted' },
   revise_resubmit: { label: 'Revise & Resubmit',  cls: 'badge-revise_resubmit' },
   rejected:        { label: 'Rejected',           cls: 'badge-rejected'     },
 }

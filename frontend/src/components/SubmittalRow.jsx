@@ -39,15 +39,24 @@ export default function SubmittalRow({ sub, today, tags = [], selected, onClick,
   const expectedDate = calculateExpectedDate(sub.submitted_date, sub.expected_days)
   const overdue = isSubmittalOverdue(expectedDate, sub.status)
   const isApproved = sub.status === 'approved'
+  const isApprovedAsNoted = sub.status === 'approved_as_noted'
+  const isAnyApproved = isApproved || isApprovedAsNoted
 
   const hasOM = tags.some(t => t.type === 'om')
   const hasApprovedDoc = tags.some(t => t.is_approved_version)
 
+  let rowHighlightClass = ''
+  if (isApproved) rowHighlightClass = 'row-approved'
+  if (isApprovedAsNoted) rowHighlightClass = 'row-approved_as_noted'
+
   const rowClass = [
     'submittal-row',
     selected ? 'selected' : '',
-    isApproved ? 'row-approved' : ''
+    rowHighlightClass
   ].filter(Boolean).join(' ')
+
+  const nameColor = isApproved ? 'var(--s-approved)' : isApprovedAsNoted ? 'var(--s-approved-noted)' : '#fff'
+  const codeColor = isApproved ? 'var(--s-approved)' : isApprovedAsNoted ? 'var(--s-approved-noted)' : 'var(--accent)'
 
   return (
     <tr className={rowClass} onClick={onClick} id={`row-${sub.id}`}>
@@ -57,14 +66,14 @@ export default function SubmittalRow({ sub, today, tags = [], selected, onClick,
       <td style={{ width: 100 }}>
         <span style={{
           fontSize: 12, fontWeight: 800,
-          color: isApproved ? 'var(--s-approved)' : 'var(--accent)',
+          color: codeColor,
           letterSpacing: '0.5px'
         }}>
           {sub.spec_sections?.csi_code || '—'}
         </span>
       </td>
       <td className="td-name">
-        <div style={{ fontSize: 14, fontWeight: 700, color: isApproved ? 'var(--s-approved)' : '#fff', marginBottom: 2 }}>{sub.item_name}</div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: nameColor, marginBottom: 2 }}>{sub.item_name}</div>
         {sub.next_action && (
           <div className="td-name-sub" style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--accent)', marginTop: 4 }}>
             <ChevronRight size={9} style={{ color: 'var(--accent)' }} />
@@ -107,7 +116,7 @@ export default function SubmittalRow({ sub, today, tags = [], selected, onClick,
         {formatDate(sub.submitted_date)}
       </td>
       <td className={`td-date ${overdue ? 'overdue' : ''}`}>
-        {isApproved ? (
+        {isAnyApproved ? (
           <span style={{ color: 'var(--text-dim)' }}>—</span>
         ) : (
           <>

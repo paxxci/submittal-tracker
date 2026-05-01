@@ -33,6 +33,7 @@
   --s-submit:   #3b82f6;
   --s-review:   #f59e0b;
   --s-approved: #10b981;
+  --s-approved-noted: #14b8a6;
   --s-revise:   #ef4444;
   --s-rejected: #ef4444;
 
@@ -41,6 +42,7 @@
   --s-submit-bg:   rgba(59, 130, 246, 0.12);
   --s-review-bg:   rgba(245, 158, 11, 0.12);
   --s-approved-bg: rgba(16, 185, 129, 0.12);
+  --s-approved-noted-bg: rgba(20, 184, 166, 0.12);
   --s-revise-bg:   rgba(239, 68, 68, 0.12);
   --s-rejected-bg: rgba(239, 68, 68, 0.12);
 
@@ -481,6 +483,7 @@ body {
 .badge-submitted   { background: var(--s-submit-bg);   color: var(--s-submit);   }
 .badge-in_review   { background: var(--s-review-bg);   color: var(--s-review);   }
 .badge-approved    { background: var(--s-approved-bg); color: var(--s-approved); }
+.badge-approved_as_noted { background: var(--s-approved-noted-bg); color: var(--s-approved-noted); }
 .badge-revise_resubmit { background: var(--s-revise-bg); color: var(--s-revise); }
 .badge-rejected    { background: var(--s-rejected-bg); color: var(--s-rejected); }
 
@@ -746,6 +749,17 @@ table.submittal-table {
 .submittal-table tbody tr.row-approved.selected {
   background: rgba(16,185,129,0.15);
   border-color: rgba(16,185,129,0.3);
+}
+
+.submittal-table tbody tr.row-approved_as_noted {
+  background: rgba(20,184,166,0.08);
+}
+.submittal-table tbody tr.row-approved_as_noted:hover {
+  background: rgba(20,184,166,0.12);
+}
+.submittal-table tbody tr.row-approved_as_noted.selected {
+  background: rgba(20,184,166,0.15);
+  border-color: rgba(20,184,166,0.3);
 }
 .submittal-table tbody tr.om-sub-row {
   background: rgba(16,185,129,0.02);

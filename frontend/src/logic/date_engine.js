@@ -9,7 +9,7 @@ export const calculateExpectedDate = (submittedDate, reviewDuration = 15) => {
 
 export const isSubmittalOverdue = (expectedDate, status) => {
   if (!expectedDate) return false
-  if (['approved', 'rejected'].includes(status)) return false
+  if (['approved', 'approved_as_noted', 'rejected'].includes(status)) return false
   
   const today = new Date().toISOString().split('T')[0]
   return expectedDate < today
