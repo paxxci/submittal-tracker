@@ -64,7 +64,7 @@ export default function SubmittalRow({ sub, today, tags = [], selected, onClick,
         </span>
       </td>
       <td className="td-name">
-        <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: 2 }}>{sub.item_name}</div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: isApproved ? 'var(--s-approved)' : '#fff', marginBottom: 2 }}>{sub.item_name}</div>
         {sub.next_action && (
           <div className="td-name-sub" style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--accent)', marginTop: 4 }}>
             <ChevronRight size={9} style={{ color: 'var(--accent)' }} />

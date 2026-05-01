@@ -738,14 +738,14 @@ table.submittal-table {
   border-color: rgba(0,180,216,0.2);
 }
 .submittal-table tbody tr.row-approved {
-  background: rgba(16,185,129,0.04);
-}
-.submittal-table tbody tr.row-approved:hover {
   background: rgba(16,185,129,0.08);
 }
+.submittal-table tbody tr.row-approved:hover {
+  background: rgba(16,185,129,0.12);
+}
 .submittal-table tbody tr.row-approved.selected {
-  background: rgba(16,185,129,0.1);
-  border-color: rgba(16,185,129,0.25);
+  background: rgba(16,185,129,0.15);
+  border-color: rgba(16,185,129,0.3);
 }
 .submittal-table tbody tr.om-sub-row {
   background: rgba(16,185,129,0.02);
