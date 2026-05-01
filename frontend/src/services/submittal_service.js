@@ -36,11 +36,13 @@ const cleanDates = (obj) => {
   const DATE_FIELDS = ['due_date', 'submitted_date']
   const cleaned = { ...obj }
   for (const field of DATE_FIELDS) {
-    if (cleaned[field] === '' || cleaned[field] === undefined) {
+    // Only nullify if explicitly empty string (e.g., cleared by user in form)
+    // If undefined, it means this is a partial update and the field isn't included.
+    if (cleaned[field] === '') {
       cleaned[field] = null
     }
   }
-  // Ensure expected_days is an integer
+  // Ensure expected_days is an integer, but only if it was actually provided
   if (cleaned.expected_days !== undefined) {
     cleaned.expected_days = parseInt(cleaned.expected_days) || 21
   }

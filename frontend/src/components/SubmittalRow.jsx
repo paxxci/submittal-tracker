@@ -107,8 +107,14 @@ export default function SubmittalRow({ sub, today, tags = [], selected, onClick,
         {formatDate(sub.submitted_date)}
       </td>
       <td className={`td-date ${overdue ? 'overdue' : ''}`}>
-        {overdue && <AlertTriangle size={10} style={{ marginRight: 4, display: 'inline' }} />}
-        {formatDate(expectedDate)}
+        {isApproved ? (
+          <span style={{ color: 'var(--text-dim)' }}>—</span>
+        ) : (
+          <>
+            {overdue && <AlertTriangle size={10} style={{ marginRight: 4, display: 'inline' }} />}
+            {formatDate(expectedDate)}
+          </>
+        )}
       </td>
       <td style={{ textAlign: 'center' }}>
         {sub.round > 1
