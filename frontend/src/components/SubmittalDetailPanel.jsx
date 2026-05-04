@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { X, Send, Upload, FileText, Trash2, ExternalLink, BookOpen, Star, Paperclip, Printer, Flag } from 'lucide-react'
+import { X, Send, Upload, FileText, Trash2, ExternalLink, BookOpen, Star, Paperclip, Printer, Flag, RotateCcw } from 'lucide-react'
 import { StatusBadge, BicChip, STATUS_OPTIONS, BIC_OPTIONS } from './StatusBadge'
 import ConfirmModal from './ConfirmModal'
 import { getActivityLog, addActivity, toggleActivityFlag } from '../services/activity_service'
@@ -497,8 +497,28 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
 
   // Filter pinned vs regular logs
   const pinnedLogs = log.filter(l => l.is_flagged)
-  const actionLogs = log.filter(l => /🎯/.test(l.message))
-  const submissionLogs = log.filter(l => /📤|🚀|✅|⏪|🔄|🆕|🗑️/.test(l.message))
+  const isSystemLog = (msg) => {
+    if (!msg || typeof msg !== 'string') return false;
+    if (/^🎯/.test(msg)) return true;
+    if (/^[📤🚀✅⏪🔄🆕🗑️]/.test(msg)) return true;
+    if (msg.startsWith('Status changed')) return true;
+    if (msg.startsWith('Created submittal')) return true;
+    if (msg.startsWith('BIC changed')) return true;
+    return false;
+  }
+
+  const isActionLog = (msg) => {
+    if (!msg || typeof msg !== 'string') return false;
+    return /^🎯/.test(msg);
+  }
+
+  const actionLogs = log.filter(l => isActionLog(l.message))
+  const submissionLogs = log.filter(l => isSystemLog(l.message) && !isActionLog(l.message))
+  const noteLogs = log.filter(l => {
+    const msg = l.message;
+    if (!msg || typeof msg !== 'string') return false; // Ignore corrupted logs in notes
+    return !isSystemLog(msg);
+  })
 
   const renderLogEntry = (entry, isPinned = false) => {
     // Robust Self-Healing for legacy data (Converts JSON dumps into clean text)
@@ -518,8 +538,11 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
       displayAuthor = displayAuthor.split('@')[0]
     }
 
-    let displayMsg = clean(entry.message)
-    if (typeof displayMsg === 'string' && displayMsg.includes('Auto-Audit:')) return null
+    let displayMsg = clean(entry.message) || ''
+    if (typeof displayMsg !== 'string') {
+      try { displayMsg = JSON.stringify(displayMsg) } catch { displayMsg = String(displayMsg) }
+    }
+    if (displayMsg.includes('Auto-Audit:')) return null
     displayMsg = displayMsg.replace(/📤 PDF "(.+?)" \(Revision (\d+)\) was submitted/, 'Submittal: Submitted - Rev $2 "$1"')
     displayMsg = displayMsg.replace(/📤 OFFICIAL SUBMISSION FILED \(Revision (\d+)\)/, 'Submittal: Submitted - Rev $1 (No File)')
     displayMsg = displayMsg.replace(/\[R(\d+)\] Submittal Document uploaded: "(.+?)"/, 'Submittal: Uploaded - Rev $1 "$2"')
@@ -753,7 +776,17 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
           {activeTab === 'activity' && (
             <div className="detail-section" style={{ border: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', height: '100%' }}>
               <div className="activity-feed-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                <div className="detail-section-title" style={{ marginBottom: 0 }}>Activity Log</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div className="detail-section-title" style={{ marginBottom: 0 }}>Activity Log {activityFilter !== 'all' && <span style={{ color: 'var(--text-muted)', fontSize: '11px', fontWeight: 600 }}>({activityFilter === 'notes' ? 'Comments' : activityFilter === 'flags' ? 'Flags' : activityFilter === 'actions' ? 'Actions' : 'Submissions'})</span>}</div>
+                  {activityFilter !== 'all' && (
+                    <button 
+                      className="btn btn-icon btn-sm" 
+                      onClick={() => setActivityFilter('all')} 
+                      style={{ color: 'var(--accent)', fontSize: '10px', display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(0,180,216,0.1)', padding: '2px 6px', borderRadius: '4px', height: 'auto' }}>
+                      <RotateCcw size={10} /> View All
+                    </button>
+                  )}
+                </div>
                 <button className="btn btn-icon btn-sm" onClick={handlePrintLog} title="Print Fully Formatted Activity Log" style={{ color: 'var(--text-muted)' }}>
                   <Printer size={14} />
                 </button>
@@ -762,9 +795,9 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
               {/* FILTER TABS */}
               <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', padding: '0 4px', flexShrink: 0 }}>
                 <button 
-                  onClick={() => setActivityFilter('all')}
-                  style={{ flex: 1, padding: '6px', borderRadius: '6px', background: activityFilter === 'all' ? 'var(--bg-surface-elevated)' : 'transparent', border: '1px solid', borderColor: activityFilter === 'all' ? 'var(--border)' : 'transparent', color: activityFilter === 'all' ? 'var(--text-main)' : 'var(--text-muted)', fontSize: '11px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}>
-                  All Activity
+                  onClick={() => setActivityFilter('notes')}
+                  style={{ flex: 1, padding: '6px', borderRadius: '6px', background: activityFilter === 'notes' ? 'rgba(168, 85, 247, 0.1)' : 'transparent', border: '1px solid', borderColor: activityFilter === 'notes' ? 'rgba(168, 85, 247, 0.3)' : 'transparent', color: activityFilter === 'notes' ? '#c084fc' : 'var(--text-muted)', fontSize: '11px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}>
+                  💬 Notes
                 </button>
                 <button 
                   onClick={() => setActivityFilter('flags')}
@@ -812,6 +845,15 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
                       </div>
                     )}
                     {submissionLogs.map(entry => renderLogEntry(entry, entry.is_flagged))}
+                  </>
+                ) : activityFilter === 'notes' ? (
+                  <>
+                    {noteLogs.length === 0 && (
+                      <div style={{ color: 'var(--text-muted)', fontSize: 11, textAlign: 'center', padding: '12px 0' }}>
+                        No notes or comments yet.
+                      </div>
+                    )}
+                    {noteLogs.map(entry => renderLogEntry(entry, entry.is_flagged))}
                   </>
                 ) : (
                   <>
