@@ -361,7 +361,7 @@ export default function TeamView({ activeUser, projects: appProjects = [], organ
                 </p>
                 <button
                   className="btn btn-primary"
-                  style={{ width: '100%', justifyContent: 'center' }}
+                  style={{ width: '100%', justifyContent: 'center', marginBottom: 12 }}
                   onClick={() => {
                     const link = `${window.location.origin}/?signup=true&email=${encodeURIComponent(inviteForm.email)}`
                     navigator.clipboard.writeText(link)
@@ -370,6 +370,13 @@ export default function TeamView({ activeUser, projects: appProjects = [], organ
                   }}
                 >
                   {copiedInviteLink ? '✅ Link Copied! Send it to them.' : '🔗 Copy Invite Link'}
+                </button>
+                <button
+                  className="btn btn-ghost"
+                  style={{ width: '100%', justifyContent: 'center' }}
+                  onClick={() => { setShowInvite(false); setInviteSuccess(false); setCopiedInviteLink(false); setInviteForm({ name: '', email: '', isGlobal: false, projectIds: [], role: 'editor' }); }}
+                >
+                  Done
                 </button>
               </div>
             ) : (
