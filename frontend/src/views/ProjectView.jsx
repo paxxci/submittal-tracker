@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react'
-import { ArrowLeft, Plus, ChevronRight, Layers, Trash2, AlertTriangle, List, Search, X, BookOpen, ExternalLink, FileDown, Printer } from 'lucide-react'
+import { ArrowLeft, Plus, ChevronRight, Layers, Trash2, AlertTriangle, List, Search, X, BookOpen, ExternalLink, FileDown, Printer, Columns2 } from 'lucide-react'
 import ConfirmModal from '../components/ConfirmModal'
 import { generateProjectReport } from '../services/reports'
 import { StatusBadge, BicChip, PriorityChip } from '../components/StatusBadge'
@@ -42,6 +42,13 @@ export default function ProjectView({ project, onBack, activeUser, onSpecIntel, 
   const [sortField, setSortField] = useState(null)
   const [sortDir, setSortDir] = useState('asc')
   const [csvUrl, setCsvUrl] = useState('')
+  const [showDueDate, setShowDueDate] = useState(() => localStorage.getItem('sa-col-due-date') === 'true')
+
+  const toggleDueDate = () => {
+    const next = !showDueDate
+    setShowDueDate(next)
+    localStorage.setItem('sa-col-due-date', String(next))
+  }
 
   // Universal Confirmation Modal State
   const [confirm, setConfirm] = useState({ 
@@ -203,6 +210,16 @@ export default function ProjectView({ project, onBack, activeUser, onSpecIntel, 
               <Printer size={12} /> Print Log
             </button>
 
+            <button
+              className={`btn btn-sm ${showDueDate ? 'btn-primary' : 'btn-ghost'}`}
+              onClick={toggleDueDate}
+              title={showDueDate ? 'Hide Due Date column' : 'Show Due Date column'}
+              id="btn-toggle-due-date"
+              style={{ gap: 5 }}
+            >
+              <Columns2 size={12} /> Due Date
+            </button>
+
             {/* Status filter chips */}
             <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
               <button
@@ -263,6 +280,7 @@ export default function ProjectView({ project, onBack, activeUser, onSpecIntel, 
                     <th>Ball In Court</th>
                     <SortTh label="Submitted"       field="submitted" sortField={sortField} sortDir={sortDir} onSort={handleSort} />
                     <th>Expected Return Date</th>
+                    {showDueDate && <SortTh label="Due Date" field="due" sortField={sortField} sortDir={sortDir} onSort={handleSort} />}
                     <th style={{ textAlign: 'center', width: 80 }}>Revision</th>
                     <th style={{ width: 48 }} />
                   </tr>
@@ -277,6 +295,7 @@ export default function ProjectView({ project, onBack, activeUser, onSpecIntel, 
                         selected={selectedSubmittal?.id === sub.id}
                         onClick={() => setSelectedSubmittal(sub)}
                         onDelete={handleDeleteSubmittal}
+                        showDueDate={showDueDate}
                       />
                     </React.Fragment>
                   ))}

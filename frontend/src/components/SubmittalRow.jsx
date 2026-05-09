@@ -35,12 +35,23 @@ function BicDisplay({ bic }) {
   return <div style={{ fontWeight: 700, fontSize: 12, color: 'var(--text-sub)' }}>{bic}</div>
 }
 
-export default function SubmittalRow({ sub, today, tags = [], selected, onClick, onDelete }) {
+export default function SubmittalRow({ sub, today, tags = [], selected, onClick, onDelete, showDueDate = false }) {
   const expectedDate = calculateExpectedDate(sub.submitted_date, sub.expected_days)
   const overdue = isSubmittalOverdue(expectedDate, sub.status)
   const isApproved = sub.status === 'approved'
   const isApprovedAsNoted = sub.status === 'approved_as_noted'
   const isAnyApproved = isApproved || isApprovedAsNoted
+
+  // Due date color logic
+  const dueDateColor = (() => {
+    if (!sub.due_date || isAnyApproved) return null
+    const due = new Date(sub.due_date + 'T00:00:00')
+    const now = new Date(today)
+    const daysUntil = Math.ceil((due - now) / (1000 * 60 * 60 * 24))
+    if (daysUntil < 0) return 'var(--s-rejected)'   // overdue
+    if (daysUntil <= 3) return '#f59e0b'             // due soon (amber)
+    return 'var(--text-sub)'                          // normal
+  })()
 
   const hasOM = tags.some(t => t.type === 'om')
   const hasApprovedDoc = tags.some(t => t.is_approved_version)
@@ -125,11 +136,26 @@ export default function SubmittalRow({ sub, today, tags = [], selected, onClick,
           </>
         )}
       </td>
+      {showDueDate && (
+        <td className="td-date">
+          {!sub.due_date ? (
+            <span style={{ color: 'var(--text-dim)' }}>—</span>
+          ) : isAnyApproved ? (
+            <span style={{ color: 'var(--text-dim)' }}>—</span>
+          ) : (
+            <span style={{ color: dueDateColor, fontWeight: dueDateColor !== 'var(--text-sub)' ? 700 : 400 }}>
+              {dueDateColor === 'var(--s-rejected)' && <AlertTriangle size={10} style={{ marginRight: 4, display: 'inline' }} />}
+              {formatDate(sub.due_date)}
+            </span>
+          )}
+        </td>
+      )}
       <td style={{ textAlign: 'center' }}>
         {sub.round > 1
           ? <span style={{ color: 'var(--s-revise)', fontWeight: 700, fontSize: 11 }}>Rev {sub.round}</span>
           : <span style={{ color: 'var(--text-dim)', fontSize: 11 }}>—</span>}
       </td>
+
       <td>
         <div className="row-actions">
           <button
