@@ -41,9 +41,7 @@ export const getProjects = async (includeArchived = false) => {
     }
 
     if (!isGlobal) {
-      // If NOT admin, only show membership matches
-      // We use a separate query or join depending on preference, 
-      // but let's keep it very simple for stability.
+      // Non-global users only see projects they are explicitly added to
       const { data: memberProjects } = await supabase
         .from('project_members')
         .select('project_id')
@@ -53,6 +51,7 @@ export const getProjects = async (includeArchived = false) => {
       if (ids.length === 0) return []
       query = query.in('id', ids)
     }
+    // Global staff: no extra filter — they see all projects in the org (handled by org filter above)
 
     if (!includeArchived) {
       query = query.eq('is_archived', false)

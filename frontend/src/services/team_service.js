@@ -27,6 +27,13 @@ export const getTeamProfiles = async (organizationId) => {
 
   if (pError || mError || iError) throw pError || mError || iError
 
+  // Build a set of emails that are actively in this org (via invite or project membership)
+  // This prevents deleted members (whose profile update failed due to RLS) from reappearing
+  const activeEmails = new Set([
+    ...(invites || []).map(i => i.email?.toLowerCase().trim()).filter(Boolean),
+    ...(members || []).map(m => m.email?.toLowerCase().trim()).filter(Boolean),
+  ])
+
   // 4. Merge them into a unique roster
   const roster = {}
 
@@ -52,10 +59,12 @@ export const getTeamProfiles = async (organizationId) => {
       }
     })
 
-    // Overlay profile data
+    // Overlay profile data — but ONLY for emails still active in this org
     ; (profiles || []).forEach(p => {
       const email = p.email?.toLowerCase().trim()
       if (!email) return
+      // Skip profiles that were "removed" — they're no longer in invites or project_members
+      if (!activeEmails.has(email)) return
       if (roster[email]) {
         roster[email] = { ...roster[email], ...p, is_pending: false }
       } else {
