@@ -126,3 +126,40 @@ export const toggleProjectAccess = async (projectId, email, role = 'editor', gra
     }, { onConflict: 'project_id,email' })
   if (error) throw error
 }
+
+/**
+ * REMOVE TEAM MEMBER (Full Offboarding)
+ * Wipes someone completely from the organization:
+ * 1. Removes all their project_members rows in this org
+ * 2. Deletes their organization_invites record
+ * 3. Clears organization_id from their profile (if they've signed up)
+ */
+export const removeTeamMember = async (email, organizationId) => {
+  const cleanEmail = email?.toLowerCase().trim()
+
+  // 1. Remove from all projects in this org
+  const { error: memberError } = await supabase
+    .from('project_members')
+    .delete()
+    .eq('email', cleanEmail)
+    .eq('organization_id', organizationId)
+
+  if (memberError) throw memberError
+
+  // 2. Remove the island-level invite
+  const { error: inviteError } = await supabase
+    .from('organization_invites')
+    .delete()
+    .eq('email', cleanEmail)
+    .eq('organization_id', organizationId)
+
+  if (inviteError) throw inviteError
+
+  // 3. Detach their profile from this org (they can no longer log in and see anything)
+  await supabase
+    .from('profiles')
+    .update({ organization_id: null, is_global_staff: false })
+    .eq('email', cleanEmail)
+    .eq('organization_id', organizationId)
+  // Intentionally swallowing profile error — they may not have registered yet (pending invite)
+}

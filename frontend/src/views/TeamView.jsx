@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { Users, Shield, ShieldCheck, Lock, Search, ChevronRight, Folder as ProjectIcon } from 'lucide-react'
-import { getTeamProfiles, updateGlobalAccess, getUserMemberships, toggleProjectAccess, createOrganizationInvite } from '../services/team_service'
+import { Users, Shield, ShieldCheck, Lock, Search, ChevronRight, Folder as ProjectIcon, UserMinus } from 'lucide-react'
+import { getTeamProfiles, updateGlobalAccess, getUserMemberships, toggleProjectAccess, createOrganizationInvite, removeTeamMember } from '../services/team_service'
 import ProjectSearchableDropdown from '../components/ProjectSearchableDropdown'
 
 export default function TeamView({ activeUser, projects: appProjects = [], organization }) {
@@ -19,6 +19,9 @@ export default function TeamView({ activeUser, projects: appProjects = [], organ
   const [inviteSuccess, setInviteSuccess] = useState(false)
   const [copiedInviteLink, setCopiedInviteLink] = useState(false)
   const [inviteError, setInviteError] = useState(null)
+
+  // Remove member confirmation
+  const [confirmRemove, setConfirmRemove] = useState(null) // holds the member to remove
 
   useEffect(() => {
     if (organization?.id) {
@@ -88,6 +91,22 @@ export default function TeamView({ activeUser, projects: appProjects = [], organ
     } catch (err) {
       console.error('Project toggle failed:', err)
       alert('Action Failed: ' + (err.message || 'The database rejected this change. Please check your permissions.'))
+    } finally {
+      setUpdating(null)
+    }
+  }
+
+  const handleRemoveMember = async (member) => {
+    try {
+      setUpdating('removing')
+      await removeTeamMember(member.email, organization.id)
+      // Remove from roster and close the panel
+      setProfiles(prev => prev.filter(p => p.email !== member.email))
+      setSelectedMember(null)
+      setConfirmRemove(null)
+    } catch (err) {
+      console.error('Remove failed:', err)
+      alert('Failed to remove member: ' + (err.message || 'Check your permissions.'))
     } finally {
       setUpdating(null)
     }
@@ -337,6 +356,55 @@ export default function TeamView({ activeUser, projects: appProjects = [], organ
                   </div>
                 </div>
               )}
+
+              {/* ── Danger Zone ────────────────────────── */}
+              <div style={{
+                marginTop: 40, padding: 20, borderRadius: 12,
+                border: '1px solid rgba(239, 68, 68, 0.25)',
+                background: 'rgba(239, 68, 68, 0.04)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                  <UserMinus size={14} color="var(--s-rejected)" />
+                  <span style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1.5, color: 'var(--s-rejected)' }}>Remove from Organization</span>
+                </div>
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: 16 }}>
+                  Permanently revokes all project access and removes them from this island. If they've already signed up, they'll be logged out on next refresh.
+                </p>
+                {confirmRemove === selectedMember.email ? (
+                  <div className="animate-in">
+                    <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--s-rejected)', marginBottom: 12, textAlign: 'center' }}>
+                      Are you sure? This cannot be undone.
+                    </p>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button
+                        className="btn btn-ghost btn-sm"
+                        style={{ flex: 1 }}
+                        onClick={() => setConfirmRemove(null)}
+                        disabled={updating === 'removing'}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        className="btn btn-danger btn-sm"
+                        style={{ flex: 1 }}
+                        onClick={() => handleRemoveMember(selectedMember)}
+                        disabled={updating === 'removing'}
+                      >
+                        {updating === 'removing' ? 'Removing...' : 'Yes, Remove'}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    style={{ width: '100%', justifyContent: 'center', color: 'var(--s-rejected)', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+                    onClick={() => setConfirmRemove(selectedMember.email)}
+                  >
+                    <UserMinus size={14} /> Remove {selectedMember.full_name || selectedMember.email.split('@')[0]}
+                  </button>
+                )}
+              </div>
+
             </div>
           </div>
         </div>
