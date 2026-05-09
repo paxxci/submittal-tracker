@@ -14,12 +14,13 @@ export const getTeamProfiles = async (organizationId) => {
     .select('*')
     .eq('organization_id', organizationId)
 
-  // 2. Get all distinct emails from project_members linked to projects in this organization
+  // 2. Get project membership counts for this org
   const { data: members, error: mError } = await supabase
     .from('project_members')
     .select('email, role, project_id, projects!inner(organization_id)')
     .eq('projects.organization_id', organizationId)
 
+  // 3. Get all organization-level invites (pending + active)
   const { data: invites, error: iError } = await supabase
     .from('organization_invites')
     .select('*')
@@ -27,53 +28,46 @@ export const getTeamProfiles = async (organizationId) => {
 
   if (pError || mError || iError) throw pError || mError || iError
 
-  // Build a set of emails that are actively in this org (via invite or project membership)
-  // This prevents deleted members (whose profile update failed due to RLS) from reappearing
-  const activeEmails = new Set([
-    ...(invites || []).map(i => i.email?.toLowerCase().trim()).filter(Boolean),
-    ...(members || []).map(m => m.email?.toLowerCase().trim()).filter(Boolean),
-  ])
-
-  // 4. Merge them into a unique roster
   const roster = {}
 
-    // Add members first
-    ; (members || []).forEach(m => {
-      const email = m.email?.toLowerCase().trim()
-      if (!email) return
-      if (!roster[email]) {
-        roster[email] = { email, full_name: '', is_global_staff: false, projects_count: 0, is_pending: true, roles: [] }
-      }
-      roster[email].projects_count++
-      if (!roster[email].roles.includes(m.role)) roster[email].roles.push(m.role)
-    })
+  // Step 1: seed roster from invites (captures pending members not yet signed up)
+  ;(invites || []).forEach(i => {
+    const email = i.email?.toLowerCase().trim()
+    if (!email) return
+    roster[email] = {
+      email,
+      full_name: '',
+      is_global_staff: i.is_portfolio_access,
+      projects_count: 0,
+      is_pending: true,
+      roles: [i.role]
+    }
+  })
 
-    // Add organization invites
-    ; (invites || []).forEach(i => {
-      const email = i.email?.toLowerCase().trim()
-      if (!email) return
-      if (!roster[email]) {
-        roster[email] = { email, full_name: '', is_global_staff: i.is_portfolio_access, projects_count: 0, is_pending: true, roles: [i.role] }
-      } else {
-        roster[email].is_global_staff = roster[email].is_global_staff || i.is_portfolio_access
-      }
-    })
+  // Step 2: overlay signed-up profiles (org_id already scoped, so these are all valid members)
+  ;(profiles || []).forEach(p => {
+    const email = p.email?.toLowerCase().trim()
+    if (!email) return
+    if (roster[email]) {
+      roster[email] = { ...roster[email], ...p, is_pending: false }
+    } else {
+      roster[email] = { ...p, email, projects_count: 0, is_pending: false, roles: [] }
+    }
+  })
 
-    // Overlay profile data — but ONLY for emails still active in this org
-    ; (profiles || []).forEach(p => {
-      const email = p.email?.toLowerCase().trim()
-      if (!email) return
-      // Skip profiles that were "removed" — they're no longer in invites or project_members
-      if (!activeEmails.has(email)) return
-      if (roster[email]) {
-        roster[email] = { ...roster[email], ...p, is_pending: false }
-      } else {
-        roster[email] = { ...p, email, projects_count: 0, is_pending: false, roles: [] }
-      }
-    })
+  // Step 3: add project membership counts
+  ;(members || []).forEach(m => {
+    const email = m.email?.toLowerCase().trim()
+    if (!email || !roster[email]) return
+    roster[email].projects_count = (roster[email].projects_count || 0) + 1
+    if (!roster[email].roles?.includes(m.role)) {
+      roster[email].roles = [...(roster[email].roles || []), m.role]
+    }
+  })
 
   return Object.values(roster).sort((a, b) => (a.email || '').localeCompare(b.email || ''))
 }
+
 
 export const createOrganizationInvite = async ({ email, organizationId, isPortfolioAccess, role }) => {
   const { data, error } = await supabase
