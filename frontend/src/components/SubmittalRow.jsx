@@ -35,7 +35,7 @@ function BicDisplay({ bic }) {
   return <div style={{ fontWeight: 700, fontSize: 12, color: 'var(--text-sub)' }}>{bic}</div>
 }
 
-export default function SubmittalRow({ sub, today, tags = [], selected, onClick, onDelete, showDueDate = false }) {
+export default function SubmittalRow({ sub, today, tags = [], selected, onClick, onDelete }) {
   const expectedDate = calculateExpectedDate(sub.submitted_date, sub.expected_days)
   const overdue = isSubmittalOverdue(expectedDate, sub.status)
   const isApproved = sub.status === 'approved'
@@ -123,20 +123,18 @@ export default function SubmittalRow({ sub, today, tags = [], selected, onClick,
       <td>
         <BicDisplay bic={sub.bic} />
       </td>
-      {showDueDate && (
-        <td className="td-date">
-          {!sub.due_date ? (
-            <span style={{ color: 'var(--text-dim)' }}>—</span>
-          ) : isAnyApproved ? (
-            <span style={{ color: 'var(--text-dim)' }}>—</span>
-          ) : (
-            <span style={{ color: dueDateColor, fontWeight: dueDateColor !== 'var(--text-sub)' ? 700 : 400 }}>
-              {dueDateColor === 'var(--s-rejected)' && <AlertTriangle size={10} style={{ marginRight: 4, display: 'inline' }} />}
-              {formatDate(sub.due_date)}
-            </span>
-          )}
-        </td>
-      )}
+      <td className="td-date">
+        {!sub.due_date ? (
+          <span style={{ color: 'var(--text-dim)' }}>—</span>
+        ) : isAnyApproved ? (
+          <span style={{ color: 'var(--text-dim)' }}>—</span>
+        ) : (
+          <span style={{ color: dueDateColor, fontWeight: dueDateColor !== 'var(--text-sub)' ? 700 : 400 }}>
+            {dueDateColor === 'var(--s-rejected)' && <AlertTriangle size={10} style={{ marginRight: 4, display: 'inline' }} />}
+            {formatDate(sub.due_date)}
+          </span>
+        )}
+      </td>
       <td className="td-date">
         {formatDate(sub.submitted_date)}
       </td>
