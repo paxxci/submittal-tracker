@@ -17,6 +17,8 @@ export default function Login({ initialMode = MODE_LOGIN, onComplete }) {
   const [message, setMessage] = useState(null)
   const [signupCode, setSignupCode] = useState('')
   const [cooldown, setCooldown] = useState(0)
+  const [isInvited, setIsInvited] = useState(false)
+  const [checkingInvite, setCheckingInvite] = useState(false)
 
   useEffect(() => {
     // 1. Check for URL Parameters (Invitations & Errors)
@@ -42,6 +44,12 @@ export default function Login({ initialMode = MODE_LOGIN, onComplete }) {
     const inviteEmail = params.get('email')
     if (inviteEmail) {
       setEmail(inviteEmail)
+      // KEY FIX: If the URL has BOTH ?signup=true AND ?email=xxx, this person
+      // came from an admin-generated invite link — mark as invited immediately.
+      // No RPC needed. The server-side check in App.jsx enforces real security.
+      if (params.get('signup') === 'true') {
+        setIsInvited(true)
+      }
     }
 
     // 2. Listen for Password Recovery events from Supabase links
@@ -62,8 +70,6 @@ export default function Login({ initialMode = MODE_LOGIN, onComplete }) {
     return () => subscription.unsubscribe()
   }, [initialMode])
 
-  const [isInvited, setIsInvited] = useState(false)
-  const [checkingInvite, setCheckingInvite] = useState(false)
 
   useEffect(() => {
     let timer;
