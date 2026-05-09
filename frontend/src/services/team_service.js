@@ -181,10 +181,10 @@ export const removeTeamMember = async (email, organizationId) => {
     if (inviteError) throw inviteError
   }
 
-  // 3. Best-effort profile detach (may be blocked by RLS if they have an account)
-  await supabase
-    .from('profiles')
-    .update({ organization_id: null, is_global_staff: false })
-    .ilike('email', cleanEmail)
-    .eq('organization_id', organizationId)
+  // 3. Detach profile via SECURITY DEFINER RPC (bypasses RLS so this always works)
+  const { error: rpcError } = await supabase.rpc('remove_member_from_org', { member_email: cleanEmail })
+  if (rpcError) {
+    console.warn('Profile detach via RPC failed:', rpcError.message)
+    // Non-fatal — invites + project_members are already cleaned up
+  }
 }
