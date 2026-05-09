@@ -139,36 +139,52 @@ export const toggleProjectAccess = async (projectId, email, role = 'editor', gra
 /**
  * REMOVE TEAM MEMBER (Full Offboarding)
  * Wipes someone completely from the organization:
- * 1. Removes all their project_members rows in this org
+ * 1. Looks up all project IDs for this org, then removes their project_members rows
  * 2. Deletes their organization_invites record
- * 3. Clears organization_id from their profile (if they've signed up)
+ * 3. Clears organization_id from their profile (best-effort, may be blocked by RLS)
  */
 export const removeTeamMember = async (email, organizationId) => {
   const cleanEmail = email?.toLowerCase().trim()
 
-  // 1. Remove from all projects in this org
-  const { error: memberError } = await supabase
-    .from('project_members')
-    .delete()
-    .eq('email', cleanEmail)
+  // 1. Get all project IDs in this org, then remove from project_members by project_id.
+  //    We cannot rely on project_members.organization_id because older rows may not have it set.
+  const { data: orgProjects } = await supabase
+    .from('projects')
+    .select('id')
     .eq('organization_id', organizationId)
 
-  if (memberError) throw memberError
+  const projectIds = orgProjects?.map(p => p.id) || []
 
-  // 2. Remove the island-level invite
-  const { error: inviteError } = await supabase
+  if (projectIds.length > 0) {
+    const { error: memberError } = await supabase
+      .from('project_members')
+      .delete()
+      .ilike('email', cleanEmail)   // case-insensitive match
+      .in('project_id', projectIds)
+
+    if (memberError) throw memberError
+  }
+
+  // 2. Remove the island-level invite (case-insensitive)
+  const { data: inviteRows } = await supabase
     .from('organization_invites')
-    .delete()
-    .eq('email', cleanEmail)
+    .select('id')
+    .ilike('email', cleanEmail)
     .eq('organization_id', organizationId)
 
-  if (inviteError) throw inviteError
+  if (inviteRows?.length) {
+    const { error: inviteError } = await supabase
+      .from('organization_invites')
+      .delete()
+      .in('id', inviteRows.map(r => r.id))
 
-  // 3. Detach their profile from this org (they can no longer log in and see anything)
+    if (inviteError) throw inviteError
+  }
+
+  // 3. Best-effort profile detach (may be blocked by RLS if they have an account)
   await supabase
     .from('profiles')
     .update({ organization_id: null, is_global_staff: false })
-    .eq('email', cleanEmail)
+    .ilike('email', cleanEmail)
     .eq('organization_id', organizationId)
-  // Intentionally swallowing profile error — they may not have registered yet (pending invite)
 }
