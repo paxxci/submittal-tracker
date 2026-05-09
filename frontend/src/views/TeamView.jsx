@@ -17,6 +17,7 @@ export default function TeamView({ activeUser, projects: appProjects = [], organ
   const [showInvite, setShowInvite] = useState(false)
   const [inviteForm, setInviteForm] = useState({ name: '', email: '', isGlobal: false, projectIds: [], role: 'editor' })
   const [inviteSuccess, setInviteSuccess] = useState(false)
+  const [copiedInviteLink, setCopiedInviteLink] = useState(false)
   const [inviteError, setInviteError] = useState(null)
 
   useEffect(() => {
@@ -117,11 +118,8 @@ export default function TeamView({ activeUser, projects: appProjects = [], organ
       // Refresh data immediately in the background
       await loadData()
 
-      setTimeout(() => {
-        setShowInvite(false)
-        setInviteSuccess(false)
-        setInviteForm({ name: '', email: '', isGlobal: false, projectIds: [], role: 'editor' })
-      }, 1500)
+      // NOTE: We no longer auto-close — the admin needs to copy and send
+      // the invite link from the success screen before dismissing.
     } catch (err) {
       console.error('Invite failed:', err)
       setInviteError(err.message || 'An unexpected error occurred while granting access.')
@@ -354,10 +352,25 @@ export default function TeamView({ activeUser, projects: appProjects = [], organ
                   <ShieldCheck size={32} />
                 </div>
                 <h2 style={{ fontSize: 24, fontWeight: 900, marginBottom: 8 }}>Permissions Granted</h2>
-                <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>
+                <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24 }}>
                   Access has been established for <br />
                   <strong style={{ color: 'var(--text)' }}>{inviteForm.email}</strong>
                 </p>
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>
+                  Send them this link to sign up — no license key required:
+                </p>
+                <button
+                  className="btn btn-primary"
+                  style={{ width: '100%', justifyContent: 'center' }}
+                  onClick={() => {
+                    const link = `${window.location.origin}/?signup=true&email=${encodeURIComponent(inviteForm.email)}`
+                    navigator.clipboard.writeText(link)
+                    setCopiedInviteLink(true)
+                    setTimeout(() => setCopiedInviteLink(false), 3000)
+                  }}
+                >
+                  {copiedInviteLink ? '✅ Link Copied! Send it to them.' : '🔗 Copy Invite Link'}
+                </button>
               </div>
             ) : (
               <>
@@ -445,7 +458,7 @@ export default function TeamView({ activeUser, projects: appProjects = [], organ
                 </div>
 
                 <div style={{ display: 'flex', gap: 12, borderTop: '1px solid var(--border)', paddingTop: 24 }}>
-                  <button className="btn btn-ghost" style={{ flex: 1 }} onClick={() => setShowInvite(false)}>Cancel</button>
+                  <button className="btn btn-ghost" style={{ flex: 1 }} onClick={() => { setShowInvite(false); setInviteSuccess(false); setCopiedInviteLink(false); setInviteForm({ name: '', email: '', isGlobal: false, projectIds: [], role: 'editor' }); }}>Cancel</button>
                   <button
                     className="btn btn-primary"
                     style={{ flex: 1.5 }}

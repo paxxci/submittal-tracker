@@ -11,12 +11,32 @@ export const getProjectMembers = async (projectId) => {
 }
 
 export const addProjectMember = async (projectId, email, role = 'editor', name = '', organizationId = null) => {
+  const cleanEmail = email?.toLowerCase().trim()
+
+  // 1. Add to project_members
   const { data, error } = await supabase
     .from('project_members')
-    .insert([{ project_id: projectId, email, role, name, organization_id: organizationId }])
+    .insert([{ project_id: projectId, email: cleanEmail, role, name, organization_id: organizationId }])
     .select()
     .single()
   if (error) throw error
+
+  // 2. CRITICAL: Also write to organization_invites so signup can find them
+  // This is what the check_invitation RPC queries — without this, the
+  // signup page thinks they're a stranger and demands a license key.
+  if (organizationId) {
+    await supabase
+      .from('organization_invites')
+      .upsert([{
+        email: cleanEmail,
+        organization_id: organizationId,
+        is_portfolio_access: false,
+        role
+      }], { onConflict: 'organization_id,email' })
+    // We intentionally swallow errors here — if it fails, the
+    // member was still added to the project successfully.
+  }
+
   return data
 }
 
