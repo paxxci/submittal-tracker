@@ -39,7 +39,7 @@ export default function ProjectView({ project, onBack, activeUser, onSpecIntel, 
   const [loading, setLoading] = useState(true)
   const [filterStatus, setFilterStatus] = useState(null)
   const [search, setSearch] = useState('')
-  const [sortField, setSortField] = useState(null)
+  const [sortField, setSortField] = useState('spec')
   const [sortDir, setSortDir] = useState('asc')
   const [csvUrl, setCsvUrl] = useState('')
 

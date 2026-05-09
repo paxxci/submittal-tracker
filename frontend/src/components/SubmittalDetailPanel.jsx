@@ -736,7 +736,7 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
                   </div>
                 </div>
                 <div className="field-row">
-                  <label className="field-label">Due Date <span style={{ color: 'var(--text-dim)', fontWeight: 400, fontSize: 10 }}>(optional)</span></label>
+                  <label className="field-label">Due Date</label>
                   <input className="field-input" type="date" value={form.due_date || ''} onChange={set('due_date')} id="detail-due-date" />
                 </div>
               </div>
