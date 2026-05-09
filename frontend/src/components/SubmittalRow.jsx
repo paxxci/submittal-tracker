@@ -123,19 +123,6 @@ export default function SubmittalRow({ sub, today, tags = [], selected, onClick,
       <td>
         <BicDisplay bic={sub.bic} />
       </td>
-      <td className="td-date">
-        {formatDate(sub.submitted_date)}
-      </td>
-      <td className={`td-date ${overdue ? 'overdue' : ''}`}>
-        {isAnyApproved ? (
-          <span style={{ color: 'var(--text-dim)' }}>—</span>
-        ) : (
-          <>
-            {overdue && <AlertTriangle size={10} style={{ marginRight: 4, display: 'inline' }} />}
-            {formatDate(expectedDate)}
-          </>
-        )}
-      </td>
       {showDueDate && (
         <td className="td-date">
           {!sub.due_date ? (
@@ -150,6 +137,19 @@ export default function SubmittalRow({ sub, today, tags = [], selected, onClick,
           )}
         </td>
       )}
+      <td className="td-date">
+        {formatDate(sub.submitted_date)}
+      </td>
+      <td className={`td-date ${overdue ? 'overdue' : ''}`}>
+        {isAnyApproved ? (
+          <span style={{ color: 'var(--text-dim)' }}>—</span>
+        ) : (
+          <>
+            {overdue && <AlertTriangle size={10} style={{ marginRight: 4, display: 'inline' }} />}
+            {formatDate(expectedDate)}
+          </>
+        )}
+      </td>
       <td style={{ textAlign: 'center' }}>
         {sub.round > 1
           ? <span style={{ color: 'var(--s-revise)', fontWeight: 700, fontSize: 11 }}>Rev {sub.round}</span>
