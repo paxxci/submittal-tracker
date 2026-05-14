@@ -754,19 +754,7 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
                   </div>
                 </div>
                 <div className="field-row">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                    <label className="field-label" style={{ marginBottom: 0 }}>Due Date</label>
-                    {form.due_date && (
-                      <button 
-                        className="btn btn-ghost btn-sm" 
-                        onClick={() => setForm(f => ({ ...f, due_date: '' }))}
-                        style={{ padding: 0, height: 'auto', fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}
-                        title="Clear due date"
-                      >
-                        Clear
-                      </button>
-                    )}
-                  </div>
+                  <label className="field-label">Due Date</label>
                   <input className="field-input" type="date" value={form.due_date || ''} onChange={set('due_date')} id="detail-due-date" />
                 </div>
               </div>
