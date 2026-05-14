@@ -62,8 +62,21 @@ export function BicChip({ bic, role }) {
     else if (lBic.includes('pm') || lBic.includes('manager')) cfg = BIC_CONFIG.pm
   }
 
-  // If we found a mapped color, use it. The text displayed will be the custom `bic` name, not the generic role label.
-  if (cfg) return <span className={`bic-chip ${cfg.cls}`}>{bic && !BIC_CONFIG[bic] ? bic : cfg.label}</span>
+  // Format the display text: Prioritize Company, fallback to Name
+  let displayText = cfg ? cfg.label : bic
+  if (bic && !BIC_CONFIG[bic.toLowerCase()]) {
+    const match = bic.match(/^(.*?)\s*\((.*?)\)$/)
+    if (match) {
+      const company = match[2].trim()
+      const person = match[1].trim()
+      displayText = company ? company.toUpperCase() : person.toUpperCase()
+    } else {
+      displayText = bic.toUpperCase()
+    }
+  }
+
+  // If we found a mapped color, use it.
+  if (cfg) return <span className={`bic-chip ${cfg.cls}`}>{displayText}</span>
   
   // Custom contact name with no recognizable role — show as neutral chip
   if (!bic) return null
@@ -73,7 +86,7 @@ export function BicChip({ bic, role }) {
       color: 'var(--text-sub)',
       border: '1px solid var(--border)',
     }}>
-      {bic}
+      {displayText}
     </span>
   )
 }

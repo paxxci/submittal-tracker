@@ -20,21 +20,14 @@ function BicDisplay({ bic, role }) {
   const match = bic.match(/^(.*?)\s*\((.*?)\)$/)
 
   if (match) {
-    const person = match[1]
-    const company = match[2]
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-        <div style={{ fontWeight: 700, fontSize: 12, color: 'var(--text-sub)' }}>{company}</div>
-        <div className="td-name-sub" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <ChevronRight size={9} style={{ opacity: 0.6 }} />
-          {person}
-        </div>
-      </div>
-    )
+    const company = match[2].trim()
+    const person = match[1].trim()
+    const displayText = company ? company.toUpperCase() : person.toUpperCase()
+    return <div style={{ fontWeight: 800, fontSize: 11, color: 'var(--text-sub)' }}>{displayText}</div>
   }
 
   // Fallback for single strings (could be just Name or just Company)
-  return <div style={{ fontWeight: 700, fontSize: 12, color: 'var(--text-sub)' }}>{bic}</div>
+  return <div style={{ fontWeight: 800, fontSize: 11, color: 'var(--text-sub)' }}>{bic.toUpperCase()}</div>
 }
 
 export default function SubmittalRow({ sub, today, tags = [], contacts = [], selected, onClick, onDelete }) {
