@@ -4,6 +4,7 @@ const STATUS_CONFIG = {
   not_started:     { label: 'Not Started',       cls: 'badge-not_started'  },
   pending:         { label: 'Pending',            cls: 'badge-pending'      },
   working:         { label: 'Working',            cls: 'badge-working'      },
+  ready:           { label: 'Ready',              cls: 'badge-ready'        },
   submitted:       { label: 'Submitted',          cls: 'badge-submitted'    },
   in_review:       { label: 'In Review',          cls: 'badge-in_review'    },
   approved:        { label: 'Approved',           cls: 'badge-approved'     },

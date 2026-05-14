@@ -16,6 +16,7 @@ import { getContacts } from '../services/contact_service'
 const ALL_STATUSES = [
   { value: 'not_started',     label: 'Not Started' },
   { value: 'working',         label: 'Working'      },
+  { value: 'ready',           label: 'Ready'        },
   { value: 'submitted',       label: 'Submitted'    },
   { value: 'in_review',       label: 'In Review'    },
   { value: 'approved',        label: 'Approved'     },
@@ -25,7 +26,7 @@ const ALL_STATUSES = [
 
 const PRIORITY_LABELS = { high: 'High', medium: 'Medium', low: 'Low' }
 const STATUS_LABELS = {
-  not_started: 'Not Started', working: 'Working', submitted: 'Submitted',
+  not_started: 'Not Started', working: 'Working', ready: 'Ready', submitted: 'Submitted',
   in_review: 'In Review', approved: 'Approved', revise_resubmit: 'Revise & Resubmit', rejected: 'Rejected',
 }
 
@@ -118,7 +119,7 @@ export default function ProjectView({ project, onBack, activeUser, onSpecIntel, 
 
   // Filter + search + sort
   const PRIORITY_ORDER = { high: 0, medium: 1, low: 2 }
-  const STATUS_ORDER = { not_started: 0, working: 1, submitted: 2, in_review: 3, approved: 4, revise_resubmit: 5, rejected: 6 }
+  const STATUS_ORDER = { not_started: 0, working: 1, ready: 2, submitted: 3, in_review: 4, approved: 5, revise_resubmit: 6, rejected: 7 }
 
   const filtered = useMemo(() => {
     return submittals
