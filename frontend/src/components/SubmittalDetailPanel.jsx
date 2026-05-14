@@ -149,9 +149,12 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
     const value = e.target.value
     setForm(f => {
       const next = { ...f, [field]: value }
-      if (field === 'status' && value === 'submitted' && !f.submitted_date) {
-        const d = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles" }));
-        next.submitted_date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+      if (field === 'status' && value === 'submitted') {
+        next.due_date = '' // Clear due date when submitted
+        if (!f.submitted_date) {
+          const d = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles" }));
+          next.submitted_date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+        }
       }
       return next
     })
@@ -751,7 +754,19 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
                   </div>
                 </div>
                 <div className="field-row">
-                  <label className="field-label">Due Date</label>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                    <label className="field-label" style={{ marginBottom: 0 }}>Due Date</label>
+                    {form.due_date && (
+                      <button 
+                        className="btn btn-ghost btn-sm" 
+                        onClick={() => setForm(f => ({ ...f, due_date: '' }))}
+                        style={{ padding: 0, height: 'auto', fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}
+                        title="Clear due date"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
                   <input className="field-input" type="date" value={form.due_date || ''} onChange={set('due_date')} id="detail-due-date" />
                 </div>
               </div>
