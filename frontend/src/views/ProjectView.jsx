@@ -11,6 +11,7 @@ import SortTh from '../components/SortHeader'
 import { getSubmittals, deleteSubmittal } from '../services/submittal_service'
 import { getImportantAttachmentsForSubmittals } from '../services/attachment_service'
 import { getAllActivityLogs } from '../services/activity_service'
+import { getContacts } from '../services/contact_service'
 
 const ALL_STATUSES = [
   { value: 'not_started',     label: 'Not Started' },
@@ -34,6 +35,7 @@ export default function ProjectView({ project, onBack, activeUser, onSpecIntel, 
   const [submittals, setSubmittals] = useState([])
   const [tagsMap, setTagsMap] = useState({}) // submittal_id → [attachments]
   const [activityLogs, setActivityLogs] = useState([])
+  const [contacts, setContacts] = useState([])
   const [selectedSubmittal, setSelectedSubmittal] = useState(null)
   const [showAddSubmittal, setShowAddSubmittal] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -84,6 +86,9 @@ export default function ProjectView({ project, onBack, activeUser, onSpecIntel, 
         const logs = await getAllActivityLogs(subs.map(s => s.id))
         setActivityLogs(logs)
       }
+      
+      const loadedContacts = await getContacts(project.id)
+      setContacts(loadedContacts)
     } catch (err) { console.error(err) }
     finally { setLoading(false) }
   }
@@ -275,6 +280,7 @@ export default function ProjectView({ project, onBack, activeUser, onSpecIntel, 
                         sub={sub}
                         today={today}
                         tags={tagsMap[sub.id] || []}
+                        contacts={contacts}
                         selected={selectedSubmittal?.id === sub.id}
                         onClick={() => setSelectedSubmittal(sub)}
                         onDelete={handleDeleteSubmittal}

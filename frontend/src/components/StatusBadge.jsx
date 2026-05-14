@@ -37,11 +37,22 @@ export function StatusBadge({ status }) {
   )
 }
 
-export function BicChip({ bic }) {
-  // First, check exact match
-  let cfg = BIC_CONFIG[bic]
+export function BicChip({ bic, role }) {
+  // 1. Try explicit role mapping first (e.g. from Project Contacts database)
+  let cfg = null
+  if (role) {
+    const lRole = role.toLowerCase()
+    if (lRole.includes('vendor')) cfg = BIC_CONFIG.vendor
+    else if (lRole.includes('architect')) cfg = BIC_CONFIG.architect
+    else if (lRole.includes('engineer') || lRole.includes('eng')) cfg = BIC_CONFIG.engineer
+    else if (lRole.includes('gc') || lRole.includes('general contractor')) cfg = BIC_CONFIG.gc
+    else if (lRole.includes('pm') || lRole.includes('manager')) cfg = BIC_CONFIG.pm
+  }
+
+  // 2. Fallback to exact match on the bic string itself
+  if (!cfg) cfg = BIC_CONFIG[bic]
   
-  // If not an exact match but exists, try to intelligently match custom names
+  // 3. Fallback to fuzzy match on the bic string
   if (!cfg && bic) {
     const lBic = bic.toLowerCase()
     if (lBic.includes('vendor')) cfg = BIC_CONFIG.vendor
@@ -51,6 +62,7 @@ export function BicChip({ bic }) {
     else if (lBic.includes('pm') || lBic.includes('manager')) cfg = BIC_CONFIG.pm
   }
 
+  // If we found a mapped color, use it. The text displayed will be the custom `bic` name, not the generic role label.
   if (cfg) return <span className={`bic-chip ${cfg.cls}`}>{bic && !BIC_CONFIG[bic] ? bic : cfg.label}</span>
   
   // Custom contact name with no recognizable role — show as neutral chip

@@ -3,14 +3,16 @@ import { Trash2, ChevronRight, AlertTriangle, Building2, BookOpen, Star } from '
 import { StatusBadge, BicChip, PriorityChip } from './StatusBadge'
 import { calculateExpectedDate, isSubmittalOverdue, formatDate } from '../logic/date_engine'
 
-function BicDisplay({ bic }) {
+function BicDisplay({ bic, role }) {
   if (!bic) return null
 
   // Standard roles (e.g. "ENGINEER", "ARCHITECT")
   const isStandard = ['you', 'pm', 'gc', 'engineer', 'architect', 'vendor'].includes(bic.toLowerCase())
 
-  if (isStandard) {
-    return <BicChip bic={bic} />
+  // If we found a specific role from the contacts database, or if it's a standard role string,
+  // we render it as a colored pill badge.
+  if (isStandard || role) {
+    return <BicChip bic={bic} role={role} />
   }
 
   // Custom contact parsing: "Name (Company)"
@@ -35,7 +37,15 @@ function BicDisplay({ bic }) {
   return <div style={{ fontWeight: 700, fontSize: 12, color: 'var(--text-sub)' }}>{bic}</div>
 }
 
-export default function SubmittalRow({ sub, today, tags = [], selected, onClick, onDelete }) {
+export default function SubmittalRow({ sub, today, tags = [], contacts = [], selected, onClick, onDelete }) {
+  // Find contact role if available
+  const matchBic = sub.bic || ''
+  const matchedContact = contacts.find(c => {
+    const formatted = c.company ? `${c.name} (${c.company})` : c.name;
+    return formatted === matchBic;
+  })
+  const contactRole = matchedContact ? matchedContact.role : null;
+
   const expectedDate = calculateExpectedDate(sub.submitted_date, sub.expected_days)
   const overdue = isSubmittalOverdue(expectedDate, sub.status)
   const isApproved = sub.status === 'approved'
@@ -121,7 +131,7 @@ export default function SubmittalRow({ sub, today, tags = [], selected, onClick,
       </td>
       <td><StatusBadge status={sub.status} /></td>
       <td>
-        <BicDisplay bic={sub.bic} />
+        <BicDisplay bic={sub.bic} role={contactRole} />
       </td>
       <td className="td-date">
         {!sub.due_date ? (

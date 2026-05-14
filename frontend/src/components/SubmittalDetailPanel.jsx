@@ -613,6 +613,12 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
     )
   }
 
+  const matchedContact = contacts.find(c => {
+    const formatted = c.company ? `${c.name} (${c.company})` : c.name;
+    return formatted === submittal.bic;
+  })
+  const contactRole = matchedContact ? matchedContact.role : null;
+
   return (
     <div className={`detail-panel open`} id="detail-panel">
       {/* Header */}
@@ -625,7 +631,7 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
         </div>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
           <StatusBadge status={submittal.status} />
-          <BicChip bic={submittal.bic} />
+          <BicChip bic={submittal.bic} role={contactRole} />
           {submittal.round > 1 && (
             <span style={{ fontSize: 10, color: 'var(--s-revise)', background: 'rgba(249,115,22,0.1)', padding: '2px 7px', borderRadius: 4, fontWeight: 700 }}>
               R{submittal.round}
