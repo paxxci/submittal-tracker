@@ -504,6 +504,10 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
     if (msg.startsWith('Status changed')) return true;
     if (msg.startsWith('Created submittal')) return true;
     if (msg.startsWith('BIC changed')) return true;
+    if (msg.includes('uploaded:')) return true;
+    if (msg.startsWith('[R')) return true;
+    if (msg.startsWith('O&M Document')) return true;
+    if (msg.startsWith('Reference File')) return true;
     return false;
   }
 
@@ -512,8 +516,13 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
     return /^🎯/.test(msg);
   }
 
+  const isExplicitSubmission = (msg) => {
+    if (!msg || typeof msg !== 'string') return false;
+    return /^[📤🚀✅⏪]/.test(msg);
+  }
+
   const actionLogs = log.filter(l => isActionLog(l.message))
-  const submissionLogs = log.filter(l => isSystemLog(l.message) && !isActionLog(l.message))
+  const submissionLogs = log.filter(l => isExplicitSubmission(l.message))
   const noteLogs = log.filter(l => {
     const msg = l.message;
     if (!msg || typeof msg !== 'string') return false; // Ignore corrupted logs in notes

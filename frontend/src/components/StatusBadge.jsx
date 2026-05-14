@@ -38,9 +38,22 @@ export function StatusBadge({ status }) {
 }
 
 export function BicChip({ bic }) {
-  const cfg = BIC_CONFIG[bic]
-  if (cfg) return <span className={`bic-chip ${cfg.cls}`}>{cfg.label}</span>
-  // Custom contact name — show as neutral chip
+  // First, check exact match
+  let cfg = BIC_CONFIG[bic]
+  
+  // If not an exact match but exists, try to intelligently match custom names
+  if (!cfg && bic) {
+    const lBic = bic.toLowerCase()
+    if (lBic.includes('vendor')) cfg = BIC_CONFIG.vendor
+    else if (lBic.includes('architect')) cfg = BIC_CONFIG.architect
+    else if (lBic.includes('engineer') || lBic.includes('eng')) cfg = BIC_CONFIG.engineer
+    else if (lBic.includes('gc') || lBic.includes('general contractor')) cfg = BIC_CONFIG.gc
+    else if (lBic.includes('pm') || lBic.includes('manager')) cfg = BIC_CONFIG.pm
+  }
+
+  if (cfg) return <span className={`bic-chip ${cfg.cls}`}>{bic && !BIC_CONFIG[bic] ? bic : cfg.label}</span>
+  
+  // Custom contact name with no recognizable role — show as neutral chip
   if (!bic) return null
   return (
     <span className="bic-chip" style={{
