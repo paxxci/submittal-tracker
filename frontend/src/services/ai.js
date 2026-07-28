@@ -1,5 +1,5 @@
 const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
-const MODEL = "google/gemini-2.0-flash-001";
+const MODEL = "google/gemini-3.1-flash-lite";
 
 export async function getChatCompletion(messages, submittals, activityLogs, projectName) {
   if (!OPENROUTER_API_KEY) {
