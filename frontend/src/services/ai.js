@@ -101,6 +101,11 @@ Use markdown for bolding critical info. Keep responses short and actionable.
     }
 
     const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error?.message || "Failed to fetch from OpenRouter");
+    }
+    
     return data.choices[0].message.content;
   } catch (error) {
     console.error("AI Service Error:", error);
@@ -125,6 +130,11 @@ export async function callAI(prompt) {
       })
     });
     const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error?.message || "Failed to fetch from OpenRouter");
+    }
+    
     return data.choices[0].message.content;
   } catch (error) {
     console.error("AI callAI Error:", error);
