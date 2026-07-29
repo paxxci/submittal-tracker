@@ -578,8 +578,20 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
     let finalBg = bgColor;
     let finalInitials = initials;
     
-    if (entry.message && entry.message.includes("Status changed")) {
-      finalBg = "#3b82f6"; // Blue for status
+    if (entry.message && (entry.message.includes("✅") || entry.message.includes("Officially Approved"))) {
+      finalBg = "#22c55e"; // Green for final approval
+      finalInitials = "✅";
+    } else if (entry.message && entry.message.includes("Status changed")) {
+      const lowerMsg = entry.message.toLowerCase();
+      if (lowerMsg.includes("approved")) {
+        finalBg = "#22c55e"; // Green
+      } else if (lowerMsg.includes("revise") || lowerMsg.includes("rejected")) {
+        finalBg = "#ef4444"; // Red
+      } else if (lowerMsg.includes("review")) {
+        finalBg = "#f59e0b"; // Orange/Yellow
+      } else {
+        finalBg = "#3b82f6"; // Blue default
+      }
       finalInitials = "🔄";
     } else if (entry.message && /^🎯/.test(entry.message)) {
       finalBg = "#a855f7"; // Purple for actions
