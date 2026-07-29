@@ -573,6 +573,17 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
     const bgColor = getAvatarColor(displayAuthor)
     const initials = getInitials(displayAuthor)
 
+    let finalBg = bgColor;
+    let finalInitials = initials;
+    
+    if (entry.message && entry.message.includes("Status changed")) {
+      finalBg = "#3b82f6"; // Blue for status
+      finalInitials = "🔄";
+    } else if (entry.message && /^🎯/.test(entry.message)) {
+      finalBg = "#a855f7"; // Purple for actions
+      finalInitials = "🎯";
+    }
+
     return (
       <div key={entry.id} className="activity-entry" style={isPinned ? {
         background: 'rgba(239, 68, 68, 0.04)',
@@ -585,12 +596,12 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <div style={{
               width: 22, height: 22, borderRadius: '50%',
-              background: bgColor, color: '#fff',
+              background: finalBg, color: '#fff',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: 9, fontWeight: 800, flexShrink: 0,
               boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
             }}>
-              {initials}
+              {finalInitials}
             </div>
             <span className="activity-time" style={{ fontWeight: 700, color: 'var(--text)', fontSize: 13, letterSpacing: '-0.2px' }}>{fmt(entry.created_at)}</span>
             <span className="activity-author-name" style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 500 }}>by {displayAuthor}</span>
