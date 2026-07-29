@@ -598,14 +598,26 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
       finalInitials = "🎯";
     }
 
+    const isCustomAction = (entry.message && (entry.message.includes("✅") || entry.message.includes("Officially Approved") || entry.message.includes("Status changed") || /^🎯/.test(entry.message)));
+    
+    let blockStyle = {};
+    if (isPinned) {
+      blockStyle = {
+        background: "rgba(239, 68, 68, 0.04)",
+        border: "1px solid rgba(239, 68, 68, 0.3)",
+        borderRadius: "8px",
+        padding: "12px",
+        marginBottom: "8px"
+      };
+    } else if (isCustomAction) {
+      blockStyle = {
+        background: finalBg + "10",
+        border: "1px solid " + finalBg + "40"
+      };
+    }
+
     return (
-      <div key={entry.id} className="activity-entry" style={isPinned ? {
-        background: 'rgba(239, 68, 68, 0.04)',
-        border: '1px solid rgba(239, 68, 68, 0.2)',
-        borderRadius: '8px',
-        padding: '12px',
-        marginBottom: '8px'
-      } : {}}>
+      <div key={entry.id} className="activity-entry" style={blockStyle}>
         <div className="activity-meta" style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <div style={{
