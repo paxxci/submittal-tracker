@@ -516,7 +516,7 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
 
   const isActionLog = (msg) => {
     if (!msg || typeof msg !== 'string') return false;
-    return /^🎯/.test(msg);
+    return /^🎯/.test(msg) || msg.includes('Status changed');
   }
 
   const isExplicitSubmission = (msg) => {
