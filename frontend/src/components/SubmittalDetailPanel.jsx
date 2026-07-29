@@ -511,6 +511,8 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
     if (msg.startsWith('[R')) return true;
     if (msg.startsWith('O&M Document')) return true;
     if (msg.startsWith('Reference File')) return true;
+    if (msg.startsWith('Submitted Round')) return true;
+    if (msg.startsWith('Uploaded O&M Document')) return true;
     return false;
   }
 
