@@ -57,7 +57,7 @@ export default function ProjectView({ project, onBack, activeUser, onSpecIntel, 
   })
 
   const handleDownloadReport = () => {
-    const doc = generateProjectReport(project, submittals)
+    const doc = generateProjectReport(project, filtered)
     doc.save(`${project.number || 'PROJECT'}_SUBMITTAL_LOG_${new Date().toISOString().split('T')[0]}.pdf`)
   }
 
@@ -129,7 +129,8 @@ export default function ProjectView({ project, onBack, activeUser, onSpecIntel, 
         const matchSearch = !q ||
           (s.spec_sections?.csi_code || '').toLowerCase().includes(q) ||
           (s.item_name || '').toLowerCase().includes(q) ||
-          (s.next_action || '').toLowerCase().includes(q)
+          (s.next_action || '').toLowerCase().includes(q) ||
+          (s.bic || '').toLowerCase().includes(q)
         return matchStatus && matchSearch
       })
       .sort((a, b) => {
