@@ -1,5 +1,5 @@
 const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
-const MODEL = "google/gemini-flash-1.5";
+const MODEL = "openai/gpt-4o-mini";
 
 export async function getChatCompletion(messages, submittals, activityLogs, projectName) {
   if (!OPENROUTER_API_KEY) {
