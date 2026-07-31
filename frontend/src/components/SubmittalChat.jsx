@@ -16,7 +16,7 @@ export default function SubmittalChat({ submittals = [], activityLogs = [], proj
       setMessages([{ 
         id: 'initial', 
         role: 'assistant', 
-        content: `Hello! I'm your Project Intelligence assistant. I've analyzed all ${submittals.length} submittals and their activity logs for **${projectName}**. Try asking about **overdue** items, **next steps**, or specific **activity log** notes!` 
+        content: `Hello! I'm your Project Assistant. I've analyzed all ${submittals.length} submittals and their activity logs for **${projectName}**. Try asking about **overdue** items, **next steps**, or specific **activity log** notes!` 
       }])
     }
   }, [submittals.length, projectName, messages.length])
@@ -90,7 +90,7 @@ export default function SubmittalChat({ submittals = [], activityLogs = [], proj
                 <Sparkles size={16} />
               </div>
               <div>
-                <div style={{ fontWeight: 800, fontSize: 13, letterSpacing: '0.5px' }}>PROJECT INTEL</div>
+                <div style={{ fontWeight: 800, fontSize: 13, letterSpacing: '0.5px' }}>ASSISTANT</div>
                 <div style={{ fontSize: 10, color: 'var(--text-dim)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 4 }}>
                   <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981' }} />
                   Gemini 2.0 Live
@@ -129,7 +129,7 @@ export default function SubmittalChat({ submittals = [], activityLogs = [], proj
               </div>
               <div className="chat-input-row">
                 <input 
-                  placeholder="Ask project intel..."
+                  placeholder="Ask assistant..."
                   value={input}
                   onChange={e => setInput(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleSend()}
@@ -150,10 +150,10 @@ export default function SubmittalChat({ submittals = [], activityLogs = [], proj
         <button 
           className="chat-fab-button animate-pulse-glow"
           onClick={() => setIsOpen(true)}
-          title="Open Project Intel"
+          title="Open Assistant"
         >
           <Sparkles size={24} />
-          <div className="fab-label">Ask Intel</div>
+          <div className="fab-label">Assistant</div>
         </button>
       )}
 

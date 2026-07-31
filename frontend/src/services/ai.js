@@ -53,7 +53,7 @@ export async function getChatCompletion(messages, submittals, activityLogs, proj
   }).filter(Boolean).join('\n');
 
   const systemPrompt = `
-You are "Ask Intel", a premium project intelligence assistant for a Submittal Tracker application.
+You are "Assistant", a premium project assistant for a Submittal Tracker application.
 Current Project: ${projectName}
 
 CONTEXT DATA:
@@ -83,7 +83,7 @@ Use markdown for bolding critical info. Keep responses short and actionable.
       headers: {
         "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
         "HTTP-Referer": "http://localhost:5174",
-        "X-Title": "Submittal Tracker Intel",
+        "X-Title": "Submittal Tracker Assistant",
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
