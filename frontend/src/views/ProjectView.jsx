@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react'
-import { ArrowLeft, Plus, ChevronRight, Layers, Trash2, AlertTriangle, List, Search, X, BookOpen, ExternalLink, FileDown, Printer } from 'lucide-react'
+import { ArrowLeft, Plus, ChevronRight, Layers, Trash2, AlertTriangle, List, Search, X, BookOpen, ExternalLink, FileDown, Printer, FileSpreadsheet } from 'lucide-react'
 import ConfirmModal from '../components/ConfirmModal'
-import { generateProjectReport } from '../services/reports'
+import { generateProjectReport, generateProjectCSV } from '../services/reports'
 import { StatusBadge, BicChip, PriorityChip } from '../components/StatusBadge'
 import SubmittalDetailPanel from '../components/SubmittalDetailPanel'
 import AddSubmittalModal from '../components/AddSubmittalModal'
@@ -59,6 +59,10 @@ export default function ProjectView({ project, onBack, activeUser, onSpecIntel, 
   const handleDownloadReport = () => {
     const doc = generateProjectReport(project, filtered)
     doc.save(`${project.number || 'PROJECT'}_SUBMITTAL_LOG_${new Date().toISOString().split('T')[0]}.pdf`)
+  }
+
+  const handleDownloadCSV = () => {
+    generateProjectCSV(project, filtered)
   }
 
   const handleSort = (field) => {
@@ -201,14 +205,23 @@ export default function ProjectView({ project, onBack, activeUser, onSpecIntel, 
               )}
             </div>
 
-            <button 
-              className="btn btn-ghost btn-sm" 
-              onClick={handleDownloadReport}
-              title="Download Professional PDF Log"
-              id="btn-print-log"
-            >
-              <Printer size={12} /> Print Log
-            </button>
+            <div style={{ display: 'flex', gap: 5 }}>
+              <button 
+                className="btn btn-ghost btn-sm" 
+                onClick={handleDownloadReport}
+                title="Download Professional PDF Log"
+                id="btn-print-log"
+              >
+                <Printer size={12} /> Print PDF
+              </button>
+              <button 
+                className="btn btn-ghost btn-sm" 
+                onClick={handleDownloadCSV}
+                title="Download Raw CSV Log"
+              >
+                <FileSpreadsheet size={12} /> CSV
+              </button>
+            </div>
 
             {/* Status filter chips */}
             <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>

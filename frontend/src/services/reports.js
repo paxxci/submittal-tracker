@@ -250,3 +250,43 @@ export const generateActivityLogReport = (submittal, logData, title = 'ACTIVITY 
 
   return doc
 }
+
+
+export const generateProjectCSV = (project, submittals) => {
+  const headers = ["CSI Code", "Item Name", "Status", "Ball In Court", "Priority", "Submitted Date", "Due Date", "Revision", "Next Action"]
+  
+  const rows = submittals.map(s => {
+    const escapeCsv = (str) => {
+      if (!str) return ""
+      const st = String(str)
+      if (st.includes(",") || st.includes("\"") || st.includes("\n")) {
+        return `"${st.replace(/"/g, """")}"`
+      }
+      return st
+    }
+
+    return [
+      escapeCsv(s.spec_sections?.csi_code || "N/A"),
+      escapeCsv(s.item_name),
+      escapeCsv(s.status),
+      escapeCsv(s.bic),
+      escapeCsv(s.priority),
+      escapeCsv(s.submitted_date ? new Date(s.submitted_date).toLocaleDateString() : "N/A"),
+      escapeCsv(s.due_date ? new Date(s.due_date).toLocaleDateString() : "N/A"),
+      escapeCsv(s.round || 1),
+      escapeCsv(s.next_action)
+    ]
+  })
+  
+  const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join("\n")
+  
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement("a")
+  link.setAttribute("href", url)
+  link.setAttribute("download", `${project.number || "PROJECT"}_SUBMITTAL_LOG_${new Date().toISOString().split("T")[0]}.csv`)
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+}
+
