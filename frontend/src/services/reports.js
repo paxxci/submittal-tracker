@@ -260,7 +260,7 @@ export const generateProjectCSV = (project, submittals) => {
       if (!str) return ""
       const st = String(str)
       if (st.includes(",") || st.includes("\"") || st.includes("\n")) {
-        return `"${st.replace(/"/g, """")}"`
+        return `"${st.replace(/"/g, "\"\"")}"`
       }
       return st
     }
