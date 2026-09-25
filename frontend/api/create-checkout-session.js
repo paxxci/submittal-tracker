@@ -20,8 +20,8 @@ export default async function handler(req, res) {
       line_items: [{ price: process.env.STRIPE_PRICE_ID || 'price_dummy', quantity: 1 }],
       mode: 'subscription',
       allow_promotion_codes: true,
-      success_url: ,
-      cancel_url: ,
+      success_url: `${returnUrl}?success=true`,
+      cancel_url: `${returnUrl}?canceled=true`,
       client_reference_id: organizationId,
     };
     
