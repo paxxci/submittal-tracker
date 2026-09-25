@@ -326,7 +326,15 @@ export default function Login({ initialMode = MODE_LOGIN, onComplete }) {
               </>
             )}
             {mode === MODE_SIGNUP && (
-              <p>Already have an account? <button className="btn-link" onClick={() => setMode(MODE_LOGIN)}>Sign In</button></p>
+              <>
+                <p style={{ marginBottom: 12 }}>Already have an account? <button className="btn-link" onClick={() => setMode(MODE_LOGIN)}>Sign In</button></p>
+                <div style={{ padding: '16px', background: 'var(--bg-overlay)', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                  <p style={{ fontSize: '13px', color: 'var(--text-main)', marginBottom: 0 }}>
+                    Don't have a license key? <br/>
+                    <a href="mailto:submittaltrackerpro@gmail.com?subject=Requesting%20Access%20to%20Submittal%20Tracker" style={{ color: 'var(--accent)', textDecoration: 'none', fontWeight: 600 }}>Request access here.</a>
+                  </p>
+                </div>
+              </>
             )}
             {(mode === MODE_FORGOT || mode === MODE_RESET) && (
               <button className="btn-link" onClick={() => setMode(MODE_LOGIN)}>Back to Sign In</button>
