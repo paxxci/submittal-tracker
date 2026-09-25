@@ -87,6 +87,7 @@ app.post('/api/create-checkout-session', async (req, res) => {
         },
       ],
       mode: 'subscription',
+      allow_promotion_codes: true,
       success_url: `${returnUrl}?success=true`,
       cancel_url: `${returnUrl}?canceled=true`,
       client_reference_id: organizationId,
