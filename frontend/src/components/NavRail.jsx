@@ -1,5 +1,5 @@
 import React from 'react'
-import { LayoutDashboard, FolderOpen, Settings, Cpu, LogOut, Users } from 'lucide-react'
+import { LayoutDashboard, FolderOpen, Settings, Cpu, LogOut, Users, CreditCard } from 'lucide-react' 
 import { supabase } from '../supabase_client'
 
 export default function NavRail({ view, setView, currentProject, goToDashboard, userEmail, onLogoutRequest, activeUserRole, userProfile, isGlobalAdmin }) {
@@ -75,6 +75,18 @@ export default function NavRail({ view, setView, currentProject, goToDashboard, 
             <span className="nav-tooltip">Team Management</span>
           </button>
         )}
+
+        {isGlobalAdmin && (
+          <button
+            className={`nav-btn ${view === 'billing' ? 'active' : ''}`}
+            onClick={() => setView('billing')}
+            id="nav-billing"
+          >
+            <CreditCard size={18} />
+            <span className="nav-tooltip">Billing</span>
+          </button>
+        )}
+
 
         <button 
           className={`nav-btn user-switcher ${view === 'security' ? 'active' : ''}`} 

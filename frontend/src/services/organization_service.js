@@ -24,7 +24,7 @@ export const getOrganizationForUser = async (userId) => {
 
 let isCreating = false
 
-export const createOrganization = async (name, ownerId) => {
+export const createOrganization = async (name, ownerId, agreedToTosAt = null) => {
   if (isCreating) {
     // If multiple calls happen concurrently, just wait a second and fetch the one that was just created
     await new Promise(resolve => setTimeout(resolve, 1000))
@@ -36,7 +36,7 @@ export const createOrganization = async (name, ownerId) => {
   try {
     const { data, error } = await supabase
       .from('organizations')
-      .insert([{ name, owner_id: ownerId }])
+      .insert([{ name, owner_id: ownerId, agreed_to_tos_at: agreedToTosAt }])
       .select()
       .single()
     

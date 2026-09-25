@@ -1,5 +1,5 @@
 const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
-const MODEL = "openai/gpt-4o-mini";
+const MODEL = "google/gemini-2.5-flash";
 
 export async function getChatCompletion(messages, submittals, activityLogs, projectName) {
   if (!OPENROUTER_API_KEY) {
@@ -71,7 +71,7 @@ GOALS & INSTRUCTIONS:
 3. Help the user identify bottlenecks (e.g., items in their court) and exact times actions occurred.
 4. Be professional, concise, and helpful. 
 5. If asked about a specific item, use the context to provide the most accurate status and timeline.
-6. If the user asks "What model are you?", respond that you are a "Gemini 2.0 Live Brain".
+6. If the user asks "What model are you?", respond that you are a "Gemini 2.5 Live Brain".
 
 FORMATTING:
 Use markdown for bolding critical info. Keep responses short and actionable.

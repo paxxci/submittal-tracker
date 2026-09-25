@@ -12,7 +12,6 @@ import {
   deleteProject, 
   purgeProjectArchive 
 } from '../services/project_service'
-import { getProjectMembers, addProjectMember, removeProjectMember } from '../services/member_service'
 import { getSubmittals } from '../services/submittal_service'
 import { getAttachments } from '../services/attachment_service'
 import { generateProjectReport } from '../services/reports'
@@ -42,13 +41,6 @@ export default function Settings({ project, onProjectUpdated, activeUserRole, or
 
   const [inviteSuccess, setInviteSuccess] = useState(null)
 
-  // Team Access State (Restored)
-  const [members, setMembers] = useState([])
-  const [showMemberForm, setShowMemberForm] = useState(false)
-  const [memberForm, setMemberForm] = useState({ name: '', email: '', role: 'editor' })
-  const [addingMember, setAddingMember] = useState(false)
-  const [copiedEmail, setCopiedEmail] = useState(null)
-
   // Universal Confirmation Modal State
   const [confirm, setConfirm] = useState({ 
     isOpen: false, 
@@ -73,22 +65,14 @@ export default function Settings({ project, onProjectUpdated, activeUserRole, or
       const savedDuration = localStorage.getItem(`sa-project-duration-${project.id}`)
       setDefaultReviewDuration(savedDuration ? parseInt(savedDuration, 10) : 15)
       loadContacts()
-      loadMembers()
     } else {
       setContacts([])
-      setMembers([])
     }
   }, [project?.id])
 
   const loadContacts = async () => {
     if (!project?.id) return
     try { setContacts(await getContacts(project.id)) }
-    catch {}
-  }
-
-  const loadMembers = async () => {
-    if (!project?.id) return
-    try { setMembers(await getProjectMembers(project.id)) }
     catch {}
   }
 
@@ -151,47 +135,6 @@ export default function Settings({ project, onProjectUpdated, activeUserRole, or
         }
       }
     })
-  }
-
-  const handleAddMember = async (e) => {
-    e.preventDefault()
-    if (!memberForm.email.trim()) return
-    try {
-      setAddingMember(true)
-      await addProjectMember(project.id, memberForm.email, memberForm.role, memberForm.name, organization?.id)
-      setInviteSuccess(memberForm.email)
-      setMemberForm({ name: '', email: '', role: 'editor' })
-      setShowMemberForm(false)
-      loadMembers()
-      setTimeout(() => setInviteSuccess(null), 10000)
-    } catch (err) {
-      alert('Failed to add member. They might already have access.')
-    } finally { setAddingMember(false) }
-  }
-
-  const handleRemoveMember = async (id, email) => {
-    if (email === 'PM') return alert('Cannot remove the Project Manager role.')
-    
-    setConfirm({
-      isOpen: true,
-      title: 'Revoke Access?',
-      message: `Revoke project access for "${email}"? They will no longer be able to view this project.`,
-      confirmLabel: 'Revoke Access',
-      onConfirm: async () => {
-        try {
-          await removeProjectMember(id)
-          setMembers(m => m.filter(x => x.id !== id))
-          setConfirm(c => ({ ...c, isOpen: false }))
-        } catch {}
-      }
-    })
-  }
-
-  const handleCopyInvite = (email) => {
-    const inviteLink = `${window.location.origin}/?signup=true&email=${encodeURIComponent(email)}`
-    navigator.clipboard.writeText(inviteLink)
-    setCopiedEmail(email)
-    setTimeout(() => setCopiedEmail(null), 2000)
   }
 
   // ─── Project Closeout ──────────────────────────────────────────────
@@ -489,100 +432,6 @@ export default function Settings({ project, onProjectUpdated, activeUserRole, or
                     )
                   })
                 )}
-              </div>
-            </div>
-
-            {/* ── Team Access ───────────────────────────────────── */}
-            <div className="settings-section">
-              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 6 }}>
-                <div>
-                  <div className="settings-section-title" style={{ marginBottom: 2 }}>
-                    <Users size={13} style={{ display: 'inline', marginRight: 6, verticalAlign: 'middle' }} />
-                    Team Access & Permissions
-                  </div>
-                  <p style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: 12 }}>
-                    Manage who has keys to this job. Only people on this list can see the project on their dashboard.
-                  </p>
-                </div>
-                <button className="btn btn-ghost btn-sm" style={{ flexShrink: 0 }} onClick={() => setShowMemberForm(f => !f)} id="btn-add-member">
-                  <Plus size={12} /> Add Member
-                </button>
-              </div>
-
-              {inviteSuccess && (
-                <div style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid var(--s-approved)', color: 'var(--s-approved)', padding: '12px 16px', borderRadius: 8, marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div style={{ fontSize: 13 }}>
-                    <div style={{ fontWeight: 700 }}>Member Added! 🛡️✨</div>
-                    <div style={{ opacity: 0.8, fontSize: 12 }}>Invite link ready for <strong>{inviteSuccess}</strong></div>
-                  </div>
-                  <button className="btn btn-primary btn-sm" onClick={() => handleCopyInvite(inviteSuccess)}>
-                    Copy Link
-                  </button>
-                </div>
-              )}
-
-              {showMemberForm && (
-                <form onSubmit={handleAddMember} style={{ background: 'var(--bg-overlay)', border: '1px solid var(--border)', borderRadius: 8, padding: 14, marginBottom: 12 }}>
-                  <div className="form-group" style={{ marginBottom: 10 }}>
-                    <label className="form-label">Member Name <span className="form-required">*</span></label>
-                    <input className="form-input" style={{ fontSize: 12, padding: '7px 10px' }} placeholder="e.g. John Smith" value={memberForm.name} onChange={e => setMemberForm(m => ({ ...m, name: e.target.value }))} required id="input-member-name" />
-                  </div>
-                  <div className="form-grid-2" style={{ marginBottom: 10 }}>
-                    <div className="form-group">
-                      <label className="form-label">Email <span className="form-required">*</span></label>
-                      <input className="form-input" style={{ fontSize: 12, padding: '7px 10px' }} placeholder="e.g. john@email.com" value={memberForm.email} onChange={e => setMemberForm(m => ({ ...m, email: e.target.value }))} required id="input-member-email" />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">Permission Level</label>
-                      <select className="form-select" style={{ fontSize: 12, padding: '7px 10px' }} value={memberForm.role} onChange={e => setMemberForm(m => ({ ...m, role: e.target.value }))} id="select-member-role">
-                        <option value="admin">Admin (Full Control)</option>
-                        <option value="editor">Editor (Can Track)</option>
-                        <option value="viewer">Viewer (Read Only)</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                    <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowMemberForm(false)}>Cancel</button>
-                    <button type="submit" className="btn btn-primary btn-sm" disabled={addingMember} id="btn-save-member">{addingMember ? 'Granting Access...' : 'Grant Access'}</button>
-                  </div>
-                </form>
-              )}
-
-              <div style={{ display: 'grid', gap: 4 }}>
-                {members.map(m => (
-                  <div key={m.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--bg-card)', borderRadius: 6, border: '1px solid var(--border)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-sub)' }}>{m.name || m.email}</div>
-                      {m.name && <div style={{ fontSize: 11, color: 'var(--text-dim)', marginLeft: 4 }}>({m.email})</div>}
-                      <span style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', color: 'var(--accent)', background: 'rgba(0,186,198,0.1)', padding: '1px 6px', borderRadius: 4, marginLeft: 8 }}>
-                        {m.role}
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <button 
-                        className="btn btn-ghost btn-sm" 
-                        style={{ position: 'relative', fontSize: 11, padding: '4px 8px', color: copiedEmail === m.email ? 'var(--s-approved)' : 'var(--text-dim)', background: copiedEmail === m.email ? 'rgba(34,197,94,0.1)' : 'transparent' }}
-                        onClick={() => handleCopyInvite(m.email)}
-                      >
-                        {copiedEmail === m.email ? 'Link Copied!' : 'Copy Invite Link'}
-                        {copiedEmail === m.email && (
-                          <span style={{ position: 'absolute', top: -24, right: 0, fontSize: 10, background: 'var(--bg-overlay)', padding: '2px 6px', borderRadius: 4, border: '1px solid var(--border)', whiteSpace: 'nowrap', zIndex: 10 }}>
-                            Ready to Send! ✅
-                          </span>
-                        )}
-                      </button>
-                      <button 
-                        className="btn btn-icon btn-sm" 
-                        style={{ color: 'var(--s-rejected)', border: 'none', opacity: m.email === 'PM' ? 0.3 : 1 }}
-                        onClick={() => handleRemoveMember(m.id, m.email)}
-                        disabled={m.email === 'PM'}
-                        title="Revoke Access"
-                      >
-                        <X size={12} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
               </div>
             </div>
 

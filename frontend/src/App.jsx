@@ -6,7 +6,9 @@ import SpecView from './views/SpecView'
 import Settings from './views/Settings'
 import AccountSecurity from './views/AccountSecurity'
 import TeamView from './views/TeamView'
+import BillingView from './views/BillingView'
 import Login from './views/Login'
+import OnboardingScreen from './views/OnboardingScreen'
 import { getProjects } from './services/project_service'
 import { getOrganizationForUser, createOrganization } from './services/organization_service'
 import { supabase } from './supabase_client'
@@ -29,6 +31,7 @@ export default function App() {
   const [loading, setLoading] = useState(false)
   const [showArchived, setShowArchived] = useState(false)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
+  const [needsOnboarding, setNeedsOnboarding] = useState(false)
 
   const setView = (v) => {
     localStorage.setItem('sa-active-view', v)
@@ -103,21 +106,9 @@ export default function App() {
                   // 4. Clean up invite
                   await supabase.from('organization_invites').delete().eq('id', invite.id)
                 } else {
-                  // Create a NEW Island (New customer)
-                  org = await createOrganization(`${session.user.email.split('@')[0]}'s Island`, session.user.id)
-
-                  // UPSERT PROFILE (Create if missing)
-                  const { data: newProfile, error: profileErr } = await supabase.from('profiles').upsert({
-                    id: session.user.id,
-                    email: session.user.email,
-                    organization_id: org.id,
-                    is_global_staff: true, // The island creator is always the admin
-                    signup_code: session.user.user_metadata?.signup_code // Store here for secure RLS
-                  }).select().single()
-
-                  if (profileErr) throw profileErr
-                  setUserProfile(newProfile)
-
+                  // Trigger Onboarding UI instead of auto-creating
+                  setNeedsOnboarding(true)
+                  return // Stop execution here so we don't set org to null yet
                 }
               }
               setOrganization(org)
@@ -194,6 +185,15 @@ export default function App() {
   })
 
   if (!isLoaded) return <div style={{ background: '#0a0a0a', height: '100vh' }} />
+
+  if (session && needsOnboarding) {
+    return <OnboardingScreen session={session} onComplete={(profile, org) => {
+      setUserProfile(profile)
+      setOrganization(org)
+      setNeedsOnboarding(false)
+    }} />
+  }
+
   if (!session || isRecovery) {
     return <Login 
       initialMode={isRecovery ? 'reset' : 'login'} 
@@ -205,9 +205,13 @@ export default function App() {
     />
   }
 
-  const isGlobalAdmin = userProfile?.is_global_staff === true
+const isGlobalAdmin = userProfile?.is_global_staff === true
   const explicitRole = currentProject?.project_members?.find(m => m.email === session.user.email)?.role
   const activeUserRole = isGlobalAdmin ? 'admin' : (explicitRole || 'viewer')
+
+  const isTrialExpired = organization?.subscription_status === 'trialing' && (new Date() - new Date(organization?.created_at)) > 30 * 24 * 60 * 60 * 1000
+  const isPastDue = organization?.subscription_status === 'past_due' || organization?.subscription_status === 'canceled' || isTrialExpired
+  const activeView = isPastDue ? (isGlobalAdmin ? 'billing' : 'locked') : view
 
   return (
     <div className="app-shell">
@@ -225,7 +229,7 @@ export default function App() {
       />
 
       <div className="main-stage">
-        {view === 'dashboard' && (
+        {activeView === 'dashboard' && (
           <Dashboard
             projects={projects}
             loading={loading}
@@ -239,7 +243,7 @@ export default function App() {
           />
         )}
 
-        {view === 'project' && currentProject && (
+        {activeView === 'project' && currentProject && (
           <ProjectView
             project={currentProject}
             activeUser={session.user}
@@ -249,7 +253,7 @@ export default function App() {
           />
         )}
 
-        {view === 'spec' && currentProject && (
+        {activeView === 'spec' && currentProject && (
           <SpecView
             project={currentProject}
             activeUser={session.user.email}
@@ -257,7 +261,7 @@ export default function App() {
           />
         )}
 
-        {view === 'team' && (
+        {activeView === 'team' && (
           <TeamView
             activeUser={session.user}
             projects={projects}
@@ -265,7 +269,7 @@ export default function App() {
           />
         )}
 
-        {view === 'settings' && currentProject && (
+        {activeView === 'settings' && currentProject && (
           <Settings
             project={currentProject}
             onProjectUpdated={loadProjects}
@@ -274,9 +278,25 @@ export default function App() {
           />
         )}
 
-        {view === 'security' && (
+        {activeView === 'security' && (
           <AccountSecurity userEmail={session.user.email} />
         )}
+
+        {activeView === 'billing' && (
+          <BillingView organization={organization} isGlobalAdmin={isGlobalAdmin} />
+        )}
+
+        {activeView === 'locked' && (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', padding: 40, textAlign: 'center' }}>
+            <div style={{ background: 'var(--bg-card)', padding: 40, borderRadius: 12, border: '1px solid var(--border)', maxWidth: 500 }}>
+              <h2 style={{ color: 'var(--s-rejected)', marginBottom: 16 }}>Subscription Inactive</h2>
+              <p style={{ color: 'var(--text-main)', lineHeight: 1.5 }}>
+                This organization\'s subscription is currently inactive. Please contact your administrator to restore access to your projects.
+              </p>
+            </div>
+          </div>
+        )}
+
       </div>
 
       {showLogoutConfirm && (
