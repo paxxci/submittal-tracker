@@ -217,9 +217,9 @@ export default function ProjectView({ project, onBack, activeUser, onSpecIntel, 
               <button 
                 className="btn btn-ghost btn-sm" 
                 onClick={handleDownloadCSV}
-                title="Download Raw CSV Log"
+                title="Download Excel Backup"
               >
-                <FileSpreadsheet size={12} /> CSV
+                <FileSpreadsheet size={12} /> Excel
               </button>
             </div>
 
