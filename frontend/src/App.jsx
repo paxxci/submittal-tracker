@@ -224,7 +224,7 @@ const isGlobalAdmin = userProfile?.is_global_staff === true
         onLogoutRequest={() => setShowLogoutConfirm(true)}
         activeUserRole={activeUserRole}
         userProfile={userProfile}
-        isGlobalAdmin={isGlobalAdmin}
+        isGlobalAdmin={isGlobalAdmin} isOrgOwner={organization?.owner_id === userProfile?.id}
         organization={organization}
       />
 
@@ -239,7 +239,7 @@ const isGlobalAdmin = userProfile?.is_global_staff === true
             setShowArchived={setShowArchived}
             userEmail={session.user.email}
             organization={organization}
-            isGlobalAdmin={isGlobalAdmin}
+            isGlobalAdmin={isGlobalAdmin} isOrgOwner={organization?.owner_id === userProfile?.id}
           />
         )}
 
@@ -283,7 +283,7 @@ const isGlobalAdmin = userProfile?.is_global_staff === true
         )}
 
         {activeView === 'billing' && (
-          <BillingView organization={organization} isGlobalAdmin={isGlobalAdmin} />
+          <BillingView organization={organization} isGlobalAdmin={isGlobalAdmin} isOrgOwner={organization?.owner_id === userProfile?.id} />
         )}
 
         {activeView === 'locked' && (
