@@ -215,7 +215,8 @@ const isGlobalAdmin = userProfile?.is_global_staff === true
   const trialDaysLeft = isTrialing ? Math.max(0, 15 - Math.floor((new Date() - new Date(organization?.created_at)) / (1000 * 60 * 60 * 24))) : 0
 
   const isPastDue = organization?.subscription_status === 'past_due' || organization?.subscription_status === 'canceled' || isTrialExpired
-  const activeView = isPastDue ? (isGlobalAdmin ? 'billing' : 'locked') : view
+  const isOrgOwner = organization?.owner_id === userProfile?.id
+  const activeView = isPastDue ? ((isGlobalAdmin || isOrgOwner) ? 'billing' : 'locked') : view
 
   return (
     <div className="app-shell">
