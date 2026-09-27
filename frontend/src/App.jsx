@@ -209,7 +209,11 @@ const isGlobalAdmin = userProfile?.is_global_staff === true
   const explicitRole = currentProject?.project_members?.find(m => m.email === session.user.email)?.role
   const activeUserRole = isGlobalAdmin ? 'admin' : (explicitRole || 'viewer')
 
-  const isTrialExpired = organization?.subscription_status === 'trialing' && (new Date() - new Date(organization?.created_at)) > 30 * 24 * 60 * 60 * 1000
+  const isTrialExpired = organization?.subscription_status === 'trialing' && (new Date() - new Date(organization?.created_at)) > 15 * 24 * 60 * 60 * 1000
+  
+  const isTrialing = organization?.subscription_status === 'trialing'
+  const trialDaysLeft = isTrialing ? Math.max(0, 15 - Math.floor((new Date() - new Date(organization?.created_at)) / (1000 * 60 * 60 * 24))) : 0
+
   const isPastDue = organization?.subscription_status === 'past_due' || organization?.subscription_status === 'canceled' || isTrialExpired
   const activeView = isPastDue ? (isGlobalAdmin ? 'billing' : 'locked') : view
 
