@@ -47,7 +47,7 @@ export default function BillingView({ organization, isGlobalAdmin }) {
     setLoading(false)
   }
 
-  const isTrialExpired = organization?.subscription_status === 'trialing' && (new Date() - new Date(organization?.created_at)) > 30 * 24 * 60 * 60 * 1000
+  const isTrialExpired = organization?.subscription_status === 'trialing' && (new Date() - new Date(organization?.created_at)) > 15 * 24 * 60 * 60 * 1000
   const isPastDue = organization?.subscription_status === 'past_due' || organization?.subscription_status === 'canceled' || isTrialExpired
   const isTrialing = organization?.subscription_status === 'trialing'
   const isActive = organization?.subscription_status === 'active'
@@ -74,7 +74,7 @@ export default function BillingView({ organization, isGlobalAdmin }) {
             {isPastDue && (
               <div style={{ background: 'rgba(239,68,68,0.1)', color: 'var(--s-rejected)', padding: 16, borderRadius: 8, marginBottom: 32, border: '1px solid rgba(239,68,68,0.2)' }}>
                 <strong style={{ display: 'block', marginBottom: 4 }}>Action Required:</strong> 
-                Your subscription or 30-day free trial has expired. Please subscribe to instantly unlock your projects.
+                Your subscription or 15-day free trial has expired. Please subscribe to instantly unlock your projects.
               </div>
             )}
             
