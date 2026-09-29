@@ -234,6 +234,12 @@ const isGlobalAdmin = userProfile?.is_global_staff === true
       />
 
       <div className="main-stage">
+        {isTrialing && !isPastDue && (
+          <div style={{ background: 'var(--accent)', color: '#000', padding: '8px 16px', textAlign: 'center', fontWeight: 'bold', fontSize: '14px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '12px' }}>
+            <span>Your 15-day free trial expires in {trialDaysLeft} day{trialDaysLeft !== 1 ? 's' : ''}.</span>
+            <button onClick={() => setView('billing')} style={{ background: '#000', color: '#fff', border: 'none', padding: '4px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>Upgrade Now</button>
+          </div>
+        )}
         {activeView === 'dashboard' && (
           <Dashboard
             projects={projects}
