@@ -131,7 +131,7 @@ export default function UpdatesView() {
             <p style={{ color: 'var(--text-main)', marginBottom: 24, lineHeight: 1.6 }}>
               We are constantly building new features based on feedback from Project Managers like you. If you run into an issue, need help, or want to suggest a new feature, email the founder directly at:
             </p>
-            <a href="mailto:paxtonmike11@gmail.com" style={{ display: 'inline-block', background: 'var(--accent)', color: '#000', padding: '12px 24px', borderRadius: '8px', fontWeight: 'bold', textDecoration: 'none' }}>
+            <a href="mailto:submittaltrackerpro@gmail.com" style={{ display: 'inline-block', background: 'var(--accent)', color: '#000', padding: '12px 24px', borderRadius: '8px', fontWeight: 'bold', textDecoration: 'none' }}>
               Email Support
             </a>
           </div>
