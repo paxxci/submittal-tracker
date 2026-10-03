@@ -88,6 +88,15 @@ export default function NavRail({ view, setView, currentProject, goToDashboard, 
         )}
 
 
+        <button
+          className={`nav-btn ${view === 'updates' ? 'active' : ''}`}
+          onClick={() => setView('updates')}
+          id="nav-updates"
+        >
+          <Gift size={18} />
+          <span className="nav-tooltip">What's New</span>
+        </button>
+
         <button 
           className={`nav-btn user-switcher ${view === 'security' ? 'active' : ''}`} 
           onClick={() => setView('security')}
