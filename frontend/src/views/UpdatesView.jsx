@@ -125,6 +125,17 @@ export default function UpdatesView() {
             </div>
           </div>
 
+          {/* SUPPORT BLOCK */}
+          <div className="card" style={{ padding: 40, border: '1px solid var(--accent)', background: 'rgba(0, 180, 216, 0.05)', marginTop: 40 }}>
+            <h2 style={{ fontSize: 24, fontWeight: 800, color: 'var(--accent)', marginBottom: 16 }}>Need Help or Have a Suggestion?</h2>
+            <p style={{ color: 'var(--text-main)', marginBottom: 24, lineHeight: 1.6 }}>
+              We are constantly building new features based on feedback from Project Managers like you. If you run into an issue, need help, or want to suggest a new feature, email the founder directly at:
+            </p>
+            <a href="mailto:paxtonmike11@gmail.com" style={{ display: 'inline-block', background: 'var(--accent)', color: '#000', padding: '12px 24px', borderRadius: '8px', fontWeight: 'bold', textDecoration: 'none' }}>
+              Email Support
+            </a>
+          </div>
+
         </div>
       </div>
     </div>
