@@ -298,6 +298,10 @@ const isGlobalAdmin = userProfile?.is_global_staff === true
           <BillingView organization={organization} isGlobalAdmin={isGlobalAdmin} isOrgOwner={organization?.owner_id === userProfile?.id} />
         )}
 
+        {activeView === 'updates' && (
+          <UpdatesView />
+        )}
+
         {activeView === 'locked' && (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', padding: 40, textAlign: 'center' }}>
             <div style={{ background: 'var(--bg-card)', padding: 40, borderRadius: 12, border: '1px solid var(--border)', maxWidth: 500 }}>
