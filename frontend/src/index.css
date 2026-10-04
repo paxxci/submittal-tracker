@@ -485,6 +485,7 @@ body {
 .badge-in_review   { background: var(--s-review-bg);   color: var(--s-review);   }
 .badge-approved    { background: var(--s-approved-bg); color: var(--s-approved); }
 .badge-approved_as_noted { background: var(--s-approved-noted-bg); color: var(--s-approved-noted); }
+.badge-approved_released { background: rgba(5, 150, 105, 0.15); color: #10b981; border: 1px solid rgba(5, 150, 105, 0.4); }
 .badge-revise_resubmit { background: var(--s-revise-bg); color: var(--s-revise); }
 .badge-rejected    { background: var(--s-rejected-bg); color: var(--s-rejected); }
 
@@ -759,6 +760,8 @@ table.submittal-table {
   background: rgba(20,184,166,0.12);
 }
 .submittal-table tbody tr.row-approved_as_noted.selected {
+.submittal-table tbody tr.row-approved_released { border-left: 3px solid #10b981; }
+.submittal-table tbody tr.row-approved_released:hover { background: rgba(16, 185, 129, 0.05); }
   background: rgba(20,184,166,0.15);
   border-color: rgba(20,184,166,0.3);
 }

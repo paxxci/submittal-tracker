@@ -20,6 +20,7 @@ const ALL_STATUSES = [
   { value: 'submitted',       label: 'Submitted'    },
   { value: 'in_review',       label: 'In Review'    },
   { value: 'approved',        label: 'Approved'     },
+  { value: 'approved_released',label: 'Released'     },
   { value: 'revise_resubmit', label: 'Revise & Resubmit' },
   { value: 'rejected',        label: 'Rejected'     },
 ]
@@ -27,7 +28,7 @@ const ALL_STATUSES = [
 const PRIORITY_LABELS = { high: 'High', medium: 'Medium', low: 'Low' }
 const STATUS_LABELS = {
   not_started: 'Not Started', working: 'Working', ready: 'Ready', submitted: 'Submitted',
-  in_review: 'In Review', approved: 'Approved', revise_resubmit: 'Revise & Resubmit', rejected: 'Rejected',
+  in_review: 'In Review', approved: 'Approved', approved_released: 'Released', revise_resubmit: 'Revise & Resubmit', rejected: 'Rejected',
 }
 
 // Export logic is moving inside the component for direct URL management

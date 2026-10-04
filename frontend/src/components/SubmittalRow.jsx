@@ -41,8 +41,9 @@ export default function SubmittalRow({ sub, today, tags = [], contacts = [], sel
 
   const expectedDate = calculateExpectedDate(sub.submitted_date, sub.expected_days)
   const overdue = isSubmittalOverdue(expectedDate, sub.status)
-  const isApproved = sub.status === 'approved'
+  const isApproved = sub.status === 'approved' || sub.status === 'approved_released'
   const isApprovedAsNoted = sub.status === 'approved_as_noted'
+  const isApprovedReleased = sub.status === 'approved_released'
   const isAnyApproved = isApproved || isApprovedAsNoted
 
   // Due date color logic
@@ -62,6 +63,7 @@ export default function SubmittalRow({ sub, today, tags = [], contacts = [], sel
   let rowHighlightClass = ''
   if (isApproved) rowHighlightClass = 'row-approved'
   if (isApprovedAsNoted) rowHighlightClass = 'row-approved_as_noted'
+  
 
   const rowClass = [
     'submittal-row',

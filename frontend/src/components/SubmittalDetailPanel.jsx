@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { X, Send, Upload, FileText, Trash2, ExternalLink, BookOpen, Star, Paperclip, Printer, Flag, RotateCcw } from 'lucide-react'
+import { X, Send, Upload, FileText, Trash2, ExternalLink, BookOpen, Star, Paperclip, Printer, Flag, RotateCcw, Mail } from 'lucide-react'
 import { StatusBadge, BicChip, STATUS_OPTIONS, BIC_OPTIONS } from './StatusBadge'
 import ConfirmModal from './ConfirmModal'
 import { getActivityLog, addActivity, toggleActivityFlag } from '../services/activity_service'
@@ -81,6 +81,7 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
   const [aiFields, setAiFields] = useState(new Set())
   const [activeTab, setActiveTab] = useState('details') // 'details', 'documents', 'activity'
   const [activityFilter, setActivityFilter] = useState('all') // 'all' or 'flags'
+  const [emailModal, setEmailModal] = useState({ isOpen: false, to: '', subject: '', message: '', attachment: null, isRelease: false })
   const fileRef = useRef()
   const refFileRef = useRef()
   const omFileRef = useRef()
@@ -316,7 +317,7 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
       } else {
         await addActivity(submittal.id, `⏪ Revoked Approval Stamp from [R${att.round || 1}] "${att.file_name}"`, userDisplay)
         // Auto-revert status to pending or working if we just revoked the only approval
-        if (form.status === 'approved') updatedStatus = 'working'
+        if (form.status === 'approved' || form.status === 'approved_released' || form.status === 'approved_as_noted') updatedStatus = 'in_review'
       }
 
       const updated = await updateSubmittal(submittal.id, { status: updatedStatus }, activeUser)
@@ -495,7 +496,51 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
     })
   }
 
-  const expectedDateStr = calculateExpectedDate(form.submitted_date, form.review_duration)
+    const handleSendEmail = async () => {
+    try {
+      setSaving(true)
+      // LIVE BACKEND SEND
+      const response = await fetch(window.location.hostname === 'localhost' ? 'http://localhost:3002/api/send-release-email' : '/api/send-release-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: emailModal.to,
+          subject: emailModal.subject,
+          message: emailModal.message,
+          attachmentName: emailModal.attachment?.file_name,
+          attachmentUrl: emailModal.attachment?.file_url,
+          submittalName: submittal.item_name,
+          senderName: activeUser?.user_metadata?.full_name || activeUser?.email || 'Project Manager',
+          senderEmail: activeUser?.email
+        })
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error?.message || data.error || 'Failed to send email');
+      }
+      
+      const userDisplay = getAuthorName()
+      
+      if (emailModal.isRelease) {
+        await addActivity(submittal.id, `✉️ Release Email sent to ${emailModal.to}`, userDisplay)
+        const updateData = { status: 'approved_released' }
+        const updated = await updateSubmittal(submittal.id, updateData, activeUser)
+        setForm(f => ({ ...f, ...updateData }))
+        onUpdated(updated)
+      } else {
+        await addActivity(submittal.id, `✉️ Shared Document "${emailModal.attachment?.file_name}" with ${emailModal.to}`, userDisplay)
+      }
+      
+      setLog(await getActivityLog(submittal.id))
+      setEmailModal({ isOpen: false, to: '', subject: '', message: '', attachment: null, isRelease: false })
+    } catch (err) {
+      console.error('Email failed:', err)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+const expectedDateStr = calculateExpectedDate(form.submitted_date, form.review_duration)
   const isOverdue = isSubmittalOverdue(expectedDateStr, form.status)
 
   // Filter pinned vs regular logs
@@ -503,7 +548,7 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
   const isSystemLog = (msg) => {
     if (!msg || typeof msg !== 'string') return false;
     if (/^🎯/.test(msg)) return true;
-    if (/^[📤🚀✅⏪🔄🆕🗑️]/.test(msg)) return true;
+    if (/^[📤🚀✅⏪🔄🆕🗑️✉️]/.test(msg)) return true;
     if (msg.startsWith('Status changed')) return true;
     if (msg.startsWith('Created submittal')) return true;
     if (msg.startsWith('BIC changed')) return true;
@@ -523,7 +568,7 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
 
   const isExplicitSubmission = (msg) => {
     if (!msg || typeof msg !== 'string') return false;
-    return /^[📤🚀✅⏪]/.test(msg);
+    return /^[📤🚀✅⏪✉️]/.test(msg);
   }
 
   const actionLogs = log.filter(l => isActionLog(l.message))
@@ -943,7 +988,7 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
                   style={{ padding: '7px 10px', flexShrink: 0 }}
                   id="btn-add-note"
                 >
-                  <Send size={12} />
+                  <Mail size={12} />
                 </button>
               </div>
             </div>
@@ -962,6 +1007,7 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
                 onDelete={handleDeleteAttachment}
                 onApprove={handleApproveAttachment}
                 onChangeRound={handleUpdateAttRound}
+                onEmail={(att) => setEmailModal({ isOpen: true, to: '', subject: `Submittal Document: ${submittal.item_name}`, message: `Please find the attached document for your review.`, attachment: att, isRelease: false })}
                 showRounds={true}
                 currentStatus={form.status}
                 currentRound={form.round}
@@ -981,7 +1027,7 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
                     <button
                       className="btn btn-primary btn-sm"
                       onClick={handleOfficialSubmission}
-                      style={{ padding: '4px 12px', fontSize: 10, background: 'var(--s-submit)', color: '#000' }}
+                      style={{ padding: '4px 12px', fontSize: 10, background: 'var(--accent)', color: '#000' }}
                       title="Flip to Submitted & set Date"
                     >
                       <Send size={11} /> Official Submission
@@ -999,6 +1045,7 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
                 onUpload={e => handleUpload(e, 'reference')}
                 onDelete={handleDeleteAttachment}
                 accentColor="var(--text-sub)"
+                onEmail={(att) => setEmailModal({ isOpen: true, to: '', subject: `Reference Document: ${submittal.item_name}`, message: `Please find the attached document for your review.`, attachment: att, isRelease: false })}
                 hint="Plans, emails, RFI responses, misc info."
                 icon={<Paperclip size={12} />}
               />
@@ -1012,6 +1059,7 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
                 onUpload={e => handleUpload(e, 'om')}
                 onDelete={handleDeleteAttachment}
                 accentColor="var(--s-approved)"
+                onEmail={(att) => setEmailModal({ isOpen: true, to: '', subject: `O&M Document: ${submittal.item_name}`, message: `Please find the attached document for your review.`, attachment: att, isRelease: false })}
                 hint="Operations & maintenance manuals — uploaded at project closeout"
                 icon={<BookOpen size={12} />}
               />
@@ -1022,6 +1070,56 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
         </div>
       </div>
 
+      {emailModal.isOpen && (
+        <div className="modal-backdrop" style={{ zIndex: 9999 }}>
+          <div className="modal" style={{ width: 450, padding: 32 }}>
+            <h2 style={{ fontSize: 20, fontWeight: 800, marginBottom: 24, color: 'var(--accent)' }}>{emailModal.isRelease ? 'Email & Release' : 'Share Document'}</h2>
+            
+            <div style={{ marginBottom: 16 }}>
+              <label className="field-label">To Email:</label>
+              <input className="field-input" placeholder="supplier@example.com" value={emailModal.to} onChange={e => setEmailModal({...emailModal, to: e.target.value})} />
+            </div>
+            
+            <div style={{ marginBottom: 16 }}>
+              <label className="field-label">Subject (Header):</label>
+              <input className="field-input" placeholder="Subject..." value={emailModal.subject} onChange={e => setEmailModal({...emailModal, subject: e.target.value})} />
+            </div>
+            
+            <div style={{ marginBottom: 24 }}>
+              <label className="field-label">Message (Body):</label>
+              <textarea className="field-textarea" rows={4} value={emailModal.message} onChange={e => setEmailModal({...emailModal, message: e.target.value})} />
+            </div>
+
+            <div style={{ marginBottom: 24, padding: 12, background: 'rgba(34, 197, 94, 0.05)', border: '1px solid rgba(34, 197, 94, 0.3)', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <FileText size={16} color="var(--s-approved)" />
+              <span style={{ fontSize: 12, color: 'var(--s-approved)', fontWeight: 600 }}>Attached: {emailModal.attachment?.file_name}</span>
+            </div>
+            
+            {emailModal.attachment?.is_approved_version && (
+              <div style={{ marginBottom: 24, padding: '12px 16px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.4)', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 12 }}>
+                <input 
+                  type="checkbox" 
+                  id="release-checkbox"
+                  style={{ width: 16, height: 16, cursor: 'pointer', accentColor: '#10b981' }}
+                  checked={emailModal.isRelease}
+                  onChange={e => setEmailModal({...emailModal, isRelease: e.target.checked})}
+                />
+                <label htmlFor="release-checkbox" style={{ fontSize: 13, fontWeight: 700, color: '#10b981', cursor: 'pointer', userSelect: 'none' }}>
+                  Official Release to manufacturing
+                </label>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => setEmailModal({ isOpen: false, to: '', subject: '', message: '', attachment: null, isRelease: false })}>Cancel</button>
+              <button className="btn btn-primary" style={{ flex: 1, background: '#a78bfa', color: '#000' }} onClick={handleSendEmail} disabled={saving || !emailModal.to.trim()}>
+                {saving ? 'Sending...' : emailModal.isRelease ? 'Send Email & Release' : 'Send Document'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <ConfirmModal
         {...confirm}
         onCancel={() => setConfirm(c => ({ ...c, isOpen: false }))}
@@ -1030,7 +1128,7 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
   )
 }
 
-function AttachmentSection({ title, files, uploading, fileRef, onUpload, onDelete, accentColor, hint, icon, action, onApprove, onChangeRound, showRounds, currentStatus, currentRound }) {
+function AttachmentSection({ title, files, uploading, fileRef, onUpload, onDelete, accentColor, hint, icon, action, onApprove, onChangeRound, showRounds, currentStatus, currentRound, onEmail }) {
   return (
     <div className="detail-section">
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
@@ -1048,7 +1146,7 @@ function AttachmentSection({ title, files, uploading, fileRef, onUpload, onDelet
             const containerStyle = att.is_approved_version 
               ? { borderColor: 'rgba(16,185,129,0.5)', background: 'rgba(16,185,129,0.05)' } 
               : isOfficial
-              ? { borderColor: 'rgba(34, 197, 94, 0.6)', background: 'rgba(34, 197, 94, 0.08)' }
+              ? { borderColor: 'rgba(59, 130, 246, 0.5)', background: 'rgba(59, 130, 246, 0.05)' }
               : {};
               
             return (
@@ -1072,14 +1170,14 @@ function AttachmentSection({ title, files, uploading, fileRef, onUpload, onDelet
               )}
 
               <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden' }}>
-                <span className="attachment-name" title={att.file_name} style={{ flex: 'none', maxWidth: '100%', color: (att.is_approved_version || isOfficial) ? 'var(--s-approved)' : 'var(--text-sub)', fontWeight: (att.is_approved_version || isOfficial) ? 600 : 400 }}>
+                <span className="attachment-name" title={att.file_name} style={{ flex: 'none', maxWidth: '100%', color: att.is_approved_version ? 'var(--s-approved)' : isOfficial ? 'var(--accent)' : 'var(--text-sub)', fontWeight: (att.is_approved_version || isOfficial) ? 600 : 400 }}>
                   {att.file_name}
                 </span>
                 {att.is_approved_version && (
                   <span style={{ fontSize: 9, fontWeight: 800, color: 'var(--s-approved)', background: 'var(--s-approved-bg)', padding: '2px 6px', borderRadius: 4 }}>APPROVED</span>
                 )}
                 {isOfficial && (
-                  <span style={{ fontSize: 9, fontWeight: 800, color: '#fff', background: 'var(--s-submit)', padding: '2px 6px', borderRadius: 4, letterSpacing: '0.5px' }}>OFFICIAL SUBMISSION</span>
+                  <span style={{ fontSize: 9, fontWeight: 800, color: '#fff', background: 'var(--accent)', padding: '2px 6px', borderRadius: 4, letterSpacing: '0.5px' }}>OFFICIAL SUBMISSION</span>
                 )}
               </div>
 
@@ -1087,8 +1185,18 @@ function AttachmentSection({ title, files, uploading, fileRef, onUpload, onDelet
                 className="btn btn-icon btn-sm" title="Open" style={{ border: 'none' }}>
                 <ExternalLink size={12} />
               </a>
+              
+              {onEmail && (
+                <button className="btn btn-icon btn-sm"
+                  onClick={() => onEmail(att)}
+                  title="Share Document via Email"
+                  style={{ border: 'none', color: '#3b82f6' }}>
+                  <Mail size={12} />
+                </button>
+              )}
 
-              {onApprove && (
+              
+                {onApprove && (
                 <button className="btn btn-icon btn-sm"
                   onClick={() => onApprove(att, !att.is_approved_version)}
                   title={att.is_approved_version ? "Revoke Final Approval" : "Mark as Final Approved Version"}
