@@ -1,8 +1,6 @@
-const { Resend } = require('resend');
+import { Resend } from 'resend';
 
-// Moved inside handler
-
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   // Add CORS headers for Vercel Serverless Function
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -26,10 +24,6 @@ module.exports = async (req, res) => {
   }
 
   const resend = new Resend(process.env.RESEND_API_KEY);
-
-  if (!process.env.RESEND_API_KEY) {
-    return res.status(500).json({ error: 'Resend API key missing on server' });
-  }
 
   try {
     const { to, subject, message, attachmentName, attachmentUrl, submittalName, senderName, senderEmail } = req.body;
@@ -72,4 +66,4 @@ module.exports = async (req, res) => {
     console.error("Server Error sending email:", err);
     res.status(500).json({ error: err.message });
   }
-};
+}
