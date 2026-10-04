@@ -46,16 +46,18 @@ export default function LandingPage({ onLoginClick }) {
           </div>
         </div>
 
-        {/* ── VIDEO PLACEHOLDER ── */}
+        {/* ── VIDEO PLAYER ── */}
         <div style={{ marginTop: 80, position: 'relative', zIndex: 1, maxWidth: 1000, margin: '80px auto 0' }}>
           <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 16, padding: 8, boxShadow: '0 20px 40px rgba(0,0,0,0.5)' }}>
-            <div style={{ aspectRatio: '16/9', background: 'var(--bg-base)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px dashed var(--border-hover)', position: 'relative', overflow: 'hidden' }}>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ width: 64, height: 64, background: 'var(--accent)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', cursor: 'pointer', boxShadow: '0 0 30px rgba(0,180,216,0.4)' }}>
-                  <div style={{ width: 0, height: 0, borderTop: '10px solid transparent', borderBottom: '10px solid transparent', borderLeft: '16px solid #000', marginLeft: 6 }} />
-                </div>
-                <div style={{ color: 'var(--text-muted)', fontSize: 14, fontWeight: 500 }}>Your Video Goes Here</div>
-              </div>
+            <div style={{ aspectRatio: '16/9', background: '#000', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+              <video 
+                src="/demo.mov" 
+                controls 
+                autoPlay 
+                muted 
+                playsInline
+                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+              />
             </div>
           </div>
         </div>
