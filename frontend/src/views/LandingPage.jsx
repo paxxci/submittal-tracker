@@ -1,5 +1,5 @@
 import React from 'react'
-import { ArrowRight, ShieldCheck, Zap, Layers, BarChart, CheckCircle2 } from 'lucide-react'
+import { ArrowRight, ShieldCheck, Zap, Layers, BarChart, CheckCircle2, Users, Smartphone } from 'lucide-react'
 
 export default function LandingPage({ onLoginClick }) {
   return (
@@ -61,34 +61,8 @@ export default function LandingPage({ onLoginClick }) {
         </div>
       </section>
 
-      {/* ── THE PROBLEM WE SOLVE ── */}
+      {/* ── KEY FEATURES (PROS) ── */}
       <section style={{ padding: '100px 24px', background: 'var(--bg-surface)', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: 60 }}>
-            <h2 style={{ fontSize: 36, fontWeight: 800, letterSpacing: '-1px', marginBottom: 16 }}>The Old Way is Broken</h2>
-            <p style={{ color: 'var(--text-sub)', fontSize: 16, maxWidth: 500, margin: '0 auto' }}>
-              Managing submittals through endless email chains and excel spreadsheets costs you hours of wasted time and thousands in delays.
-            </p>
-          </div>
-          
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24 }}>
-            {[
-              { title: 'Lost in the Inbox', desc: 'No more digging through hundreds of emails trying to find if the Engineer approved the switchgear.' },
-              { title: 'Manual Data Entry', desc: 'Stop spending hours manually typing out spec section names and numbers into spreadsheets.' },
-              { title: 'Version Control Chaos', desc: 'Never accidentally release an outdated or rejected revision to the manufacturing floor again.' }
-            ].map((prob, i) => (
-              <div key={i} style={{ background: 'var(--bg-elevated)', padding: 32, borderRadius: 12, border: '1px solid var(--border)' }}>
-                <div style={{ color: 'var(--s-rejected)', marginBottom: 16 }}><ShieldCheck size={32} /></div>
-                <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 12 }}>{prob.title}</h3>
-                <p style={{ color: 'var(--text-sub)', lineHeight: 1.6 }}>{prob.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── KEY FEATURES ── */}
-      <section style={{ padding: '100px 24px' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 80 }}>
             <h2 style={{ fontSize: 36, fontWeight: 800, letterSpacing: '-1px', marginBottom: 16 }}>Built for Speed & Precision</h2>
@@ -98,6 +72,27 @@ export default function LandingPage({ onLoginClick }) {
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 40 }}>
+            
+            <div style={{ display: 'flex', gap: 20 }}>
+              <div style={{ width: 48, height: 48, background: 'rgba(0,180,216,0.1)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)', flexShrink: 0 }}>
+                <Users size={24} />
+              </div>
+              <div>
+                <h4 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Real-Time Collaboration</h4>
+                <p style={{ color: 'var(--text-muted)', lineHeight: 1.5 }}>Unlike isolated Excel spreadsheets, your entire team sees live updates simultaneously. No more "who has the latest version?"</p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 20 }}>
+              <div style={{ width: 48, height: 48, background: 'rgba(0,180,216,0.1)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)', flexShrink: 0 }}>
+                <Smartphone size={24} />
+              </div>
+              <div>
+                <h4 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Mobile & Tablet Friendly</h4>
+                <p style={{ color: 'var(--text-muted)', lineHeight: 1.5 }}>Access your entire project portfolio seamlessly whether you are at your office desk or walking the job site with an iPad.</p>
+              </div>
+            </div>
+
             <div style={{ display: 'flex', gap: 20 }}>
               <div style={{ width: 48, height: 48, background: 'rgba(0,180,216,0.1)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)', flexShrink: 0 }}>
                 <Zap size={24} />
@@ -137,6 +132,33 @@ export default function LandingPage({ onLoginClick }) {
                 <p style={{ color: 'var(--text-muted)', lineHeight: 1.5 }}>Know exactly what's pending, what's approved, and what's overdue across your entire project portfolio at a glance.</p>
               </div>
             </div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* ── THE PROBLEM WE SOLVE (CONS) ── */}
+      <section style={{ padding: '100px 24px' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: 60 }}>
+            <h2 style={{ fontSize: 36, fontWeight: 800, letterSpacing: '-1px', marginBottom: 16 }}>The Old Way is Broken</h2>
+            <p style={{ color: 'var(--text-sub)', fontSize: 16, maxWidth: 500, margin: '0 auto' }}>
+              Managing submittals through endless email chains and excel spreadsheets costs you hours of wasted time and thousands in delays.
+            </p>
+          </div>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24 }}>
+            {[
+              { title: 'Lost in the Inbox', desc: 'No more digging through hundreds of emails trying to find if the Engineer approved the switchgear.' },
+              { title: 'Manual Data Entry', desc: 'Stop spending hours manually typing out spec section names and numbers into spreadsheets.' },
+              { title: 'Version Control Chaos', desc: 'Never accidentally release an outdated or rejected revision to the manufacturing floor again.' }
+            ].map((prob, i) => (
+              <div key={i} style={{ background: 'var(--bg-elevated)', padding: 32, borderRadius: 12, border: '1px solid var(--border)' }}>
+                <div style={{ color: 'var(--s-rejected)', marginBottom: 16 }}><ShieldCheck size={32} /></div>
+                <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 12 }}>{prob.title}</h3>
+                <p style={{ color: 'var(--text-sub)', lineHeight: 1.6 }}>{prob.desc}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
