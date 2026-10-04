@@ -1,5 +1,5 @@
 import React from 'react'
-import { ArrowRight, ShieldCheck, Zap, Layers, BarChart, CheckCircle2, Users, Smartphone } from 'lucide-react'
+import { ArrowRight, ShieldCheck, Zap, Layers, BarChart, Cloud, Users, Smartphone, FileSpreadsheet, Bot, HardDrive } from 'lucide-react'
 
 export default function LandingPage({ onLoginClick }) {
   return (
@@ -37,7 +37,7 @@ export default function LandingPage({ onLoginClick }) {
             <span style={{ color: 'var(--accent)' }}>Start building.</span>
           </h1>
           <p style={{ fontSize: 18, color: 'var(--text-sub)', lineHeight: 1.6, maxWidth: 600, margin: '0 auto 40px' }}>
-            The fastest, most intelligent way for Electrical Contractors and Project Managers to extract, track, and approve submittals. End the email chaos forever.
+            The fastest, most intelligent way for Electrical Contractors and Project Managers to extract, track, and approve submittals.
           </p>
           <div style={{ display: 'flex', gap: 16, justifyContent: 'center' }}>
             <button onClick={onLoginClick} className="btn btn-primary" style={{ padding: '14px 32px', fontSize: 16, borderRadius: 8 }}>
@@ -75,11 +75,51 @@ export default function LandingPage({ onLoginClick }) {
             
             <div style={{ display: 'flex', gap: 20 }}>
               <div style={{ width: 48, height: 48, background: 'rgba(0,180,216,0.1)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)', flexShrink: 0 }}>
+                <Zap size={24} />
+              </div>
+              <div>
+                <h4 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Spec Intel Extraction</h4>
+                <p style={{ color: 'var(--text-muted)', lineHeight: 1.5 }}>Upload your spec book and our system instantly reads and extracts every required section automatically.</p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 20 }}>
+              <div style={{ width: 48, height: 48, background: 'rgba(0,180,216,0.1)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)', flexShrink: 0 }}>
+                <Bot size={24} />
+              </div>
+              <div>
+                <h4 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>AI Project Assistant</h4>
+                <p style={{ color: 'var(--text-muted)', lineHeight: 1.5 }}>Chat with our intelligent AI to get instant feedback, analyze submittal data, and answer questions about anything in your project.</p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 20 }}>
+              <div style={{ width: 48, height: 48, background: 'rgba(0,180,216,0.1)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)', flexShrink: 0 }}>
                 <Users size={24} />
               </div>
               <div>
                 <h4 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Real-Time Collaboration</h4>
-                <p style={{ color: 'var(--text-muted)', lineHeight: 1.5 }}>Unlike isolated Excel spreadsheets, your entire team sees live updates simultaneously. No more "who has the latest version?"</p>
+                <p style={{ color: 'var(--text-muted)', lineHeight: 1.5 }}>Invite your team to view your live work log during meetings or instantly generate professional PDF reports for clients.</p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 20 }}>
+              <div style={{ width: 48, height: 48, background: 'rgba(0,180,216,0.1)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)', flexShrink: 0 }}>
+                <Layers size={24} />
+              </div>
+              <div>
+                <h4 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Smart Version Control</h4>
+                <p style={{ color: 'var(--text-muted)', lineHeight: 1.5 }}>Easily keep track of Rev 1, Rev 2, and the Official Approved Version with foolproof visual stamping so you never lose track.</p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 20 }}>
+              <div style={{ width: 48, height: 48, background: 'rgba(0,180,216,0.1)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)', flexShrink: 0 }}>
+                <Cloud size={24} />
+              </div>
+              <div>
+                <h4 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Cloud Centralization</h4>
+                <p style={{ color: 'var(--text-muted)', lineHeight: 1.5 }}>Keep everything in one secure place. When the job is done, you have a perfect, organized archive of all approved documents.</p>
               </div>
             </div>
 
@@ -93,46 +133,6 @@ export default function LandingPage({ onLoginClick }) {
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: 20 }}>
-              <div style={{ width: 48, height: 48, background: 'rgba(0,180,216,0.1)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)', flexShrink: 0 }}>
-                <Zap size={24} />
-              </div>
-              <div>
-                <h4 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Spec Intel Extraction</h4>
-                <p style={{ color: 'var(--text-muted)', lineHeight: 1.5 }}>Upload your spec book and our system instantly reads and extracts every required section automatically.</p>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: 20 }}>
-              <div style={{ width: 48, height: 48, background: 'rgba(0,180,216,0.1)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)', flexShrink: 0 }}>
-                <Layers size={24} />
-              </div>
-              <div>
-                <h4 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Smart Version Control</h4>
-                <p style={{ color: 'var(--text-muted)', lineHeight: 1.5 }}>Keep track of Rev 1, Rev 2, and the Official Approved Version with foolproof visual stamping.</p>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: 20 }}>
-              <div style={{ width: 48, height: 48, background: 'rgba(0,180,216,0.1)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)', flexShrink: 0 }}>
-                <CheckCircle2 size={24} />
-              </div>
-              <div>
-                <h4 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>One-Click Releases</h4>
-                <p style={{ color: 'var(--text-muted)', lineHeight: 1.5 }}>Automatically send gorgeous, branded release emails directly to your manufacturers with the approved files attached.</p>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: 20 }}>
-              <div style={{ width: 48, height: 48, background: 'rgba(0,180,216,0.1)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)', flexShrink: 0 }}>
-                <BarChart size={24} />
-              </div>
-              <div>
-                <h4 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Real-Time Dashboards</h4>
-                <p style={{ color: 'var(--text-muted)', lineHeight: 1.5 }}>Know exactly what's pending, what's approved, and what's overdue across your entire project portfolio at a glance.</p>
-              </div>
-            </div>
-
           </div>
         </div>
       </section>
@@ -143,18 +143,30 @@ export default function LandingPage({ onLoginClick }) {
           <div style={{ textAlign: 'center', marginBottom: 60 }}>
             <h2 style={{ fontSize: 36, fontWeight: 800, letterSpacing: '-1px', marginBottom: 16 }}>The Old Way is Broken</h2>
             <p style={{ color: 'var(--text-sub)', fontSize: 16, maxWidth: 500, margin: '0 auto' }}>
-              Managing submittals through endless email chains and excel spreadsheets costs you hours of wasted time and thousands in delays.
+              Managing submittals through manual spreadsheets and scattered folders costs you hours of wasted time and thousands in delays.
             </p>
           </div>
           
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24 }}>
             {[
-              { title: 'Lost in the Inbox', desc: 'No more digging through hundreds of emails trying to find if the Engineer approved the switchgear.' },
-              { title: 'Manual Data Entry', desc: 'Stop spending hours manually typing out spec section names and numbers into spreadsheets.' },
-              { title: 'Version Control Chaos', desc: 'Never accidentally release an outdated or rejected revision to the manufacturing floor again.' }
+              { 
+                title: 'The Desktop Graveyard', 
+                desc: 'End the chaos of having Rev 1, Rev 2, and "Rev 2 Final" PDFs scattered across your downloads folder, desktop, and endless network drives.',
+                icon: <HardDrive size={32} />
+              },
+              { 
+                title: 'The Excel Nightmare', 
+                desc: 'Ditch the clunky spreadsheets. Stop wasting hours fighting with broken formatting and ugly logs just to keep things looking halfway decent.',
+                icon: <FileSpreadsheet size={32} />
+              },
+              { 
+                title: 'Manual Data Entry', 
+                desc: 'Stop spending hours manually typing out spec section names and numbers into spreadsheets. Let our system extract them instantly.',
+                icon: <ShieldCheck size={32} />
+              }
             ].map((prob, i) => (
               <div key={i} style={{ background: 'var(--bg-elevated)', padding: 32, borderRadius: 12, border: '1px solid var(--border)' }}>
-                <div style={{ color: 'var(--s-rejected)', marginBottom: 16 }}><ShieldCheck size={32} /></div>
+                <div style={{ color: 'var(--s-rejected)', marginBottom: 16 }}>{prob.icon}</div>
                 <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 12 }}>{prob.title}</h3>
                 <p style={{ color: 'var(--text-sub)', lineHeight: 1.6 }}>{prob.desc}</p>
               </div>
