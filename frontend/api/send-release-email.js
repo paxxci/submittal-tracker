@@ -29,22 +29,15 @@ export default async function handler(req, res) {
     const { to, subject, message, attachmentName, attachmentUrl, submittalName, senderName, senderEmail } = req.body;
 
     const htmlContent = `
-        <div style="font-family: 'Inter', sans-serif; background-color: #070d1a; color: #e2e8f0; max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #1e4678; border-radius: 12px;">
-          <h2 style="color: #00b4d8; margin-bottom: 24px; font-weight: 700; letter-spacing: -0.5px;">Submittal Released for Production</h2>
-          <p style="font-size: 15px; line-height: 1.6; margin-bottom: 24px; color: #e2e8f0;">${message.replace(/
-/g, '<br/>')}</p>
-          <div style="background-color: #0e1829; padding: 20px; border-radius: 8px; border: 1px solid #1e4678; margin-bottom: 24px;">
-            <p style="margin: 0; font-weight: 600; color: #94a3b8; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">Attached Document</p>
-            <p style="margin: 12px 0 0 0;">
-              <a href="${attachmentUrl}" style="color: #00b4d8; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 8px;">
-                📄 ${attachmentName} <span style="font-size: 12px; color: #94a3b8; font-weight: 400;">(Download PDF)</span>
-              </a>
+        <div style="font-family: sans-serif; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eaeaea; border-radius: 8px;">
+          <h2 style="color: #10b981; margin-bottom: 24px;">Submittal Released for Production</h2>
+          <p style="font-size: 16px; line-height: 1.5; margin-bottom: 24px;">${message.replace(/\n/g, '<br/>')}</p>
+          <div style="background: #f9fafb; padding: 16px; border-radius: 6px; margin-bottom: 24px;">
+            <p style="margin: 0; font-weight: 600;">Attached Document:</p>
+            <p style="margin: 8px 0 0 0;">
+              <a href="${attachmentUrl}" style="color: #3b82f6; text-decoration: none;">📄 ${attachmentName} (Download PDF)</a>
             </p>
           </div>
-          <div style="border-top: 1px solid rgba(30, 70, 120, 0.45); padding-top: 24px; margin-top: 32px;">
-            <p style="font-size: 12px; color: #475569; margin: 0;">Sent securely via <strong>Submittal Tracker Pro</strong>.</p>
-          </div>
-        </div>
           <p style="font-size: 12px; color: #999; margin-top: 32px;">Sent securely via Submittal Tracker Pro.</p>
         </div>
     `;
