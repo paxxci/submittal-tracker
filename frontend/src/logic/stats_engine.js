@@ -13,16 +13,16 @@ export const getProjectStats = async (projectId) => {
     pending: data.filter(s => s.status === 'pending').length,
     submitted: data.filter(s => s.status === 'submitted').length,
     in_review: data.filter(s => s.status === 'in_review').length,
-    approved: data.filter(s => s.status === 'approved').length,
+    approved: data.filter(s => ['approved', 'approved_as_noted', 'approved_released'].includes(s.status)).length,
     revise: data.filter(s => s.status === 'revise_resubmit').length,
     rejected: data.filter(s => s.status === 'rejected').length,
     overdue: data.filter(s =>
       s.due_date && s.due_date < today &&
-      !['approved', 'rejected'].includes(s.status)
+      !['approved', 'approved_as_noted', 'approved_released', 'rejected'].includes(s.status)
     ).length,
     action_required: data.filter(s => 
       ['you', 'pm'].includes(s.bic?.toLowerCase()) && 
-      !['approved', 'rejected'].includes(s.status)
+      !['approved', 'approved_as_noted', 'approved_released', 'rejected'].includes(s.status)
     ).length
   }
 }
