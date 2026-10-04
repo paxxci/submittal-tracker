@@ -1,6 +1,6 @@
 const { Resend } = require('resend');
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Moved inside handler
 
 module.exports = async (req, res) => {
   // Add CORS headers for Vercel Serverless Function
@@ -20,6 +20,12 @@ module.exports = async (req, res) => {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
+
+  if (!process.env.RESEND_API_KEY) {
+    return res.status(500).json({ error: 'Resend API key missing on server' });
+  }
+
+  const resend = new Resend(process.env.RESEND_API_KEY);
 
   if (!process.env.RESEND_API_KEY) {
     return res.status(500).json({ error: 'Resend API key missing on server' });
