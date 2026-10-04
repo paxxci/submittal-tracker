@@ -29,30 +29,24 @@ export default async function handler(req, res) {
     const { to, subject, message, attachmentName, attachmentUrl, submittalName, senderName, senderEmail } = req.body;
 
     const htmlContent = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eaeaea; border-radius: 10px;">
-        <h2 style="color: #333;">Document Shared via Submittal Tracker</h2>
-        <p style="color: #555; font-size: 16px;"><strong>${senderName}</strong> has shared a document with you regarding <strong>${submittalName}</strong>.</p>
-        <div style="background-color: #f9f9f9; padding: 15px; border-left: 4px solid #4a90e2; margin: 20px 0;">
-          <p style="margin: 0; color: #333; font-size: 15px; white-space: pre-wrap;">${message || 'No additional message provided.'}</p>
+        <div style="font-family: sans-serif; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eaeaea; border-radius: 8px;">
+          <h2 style="color: #10b981; margin-bottom: 24px;">Submittal Released for Production</h2>
+          <p style="font-size: 16px; line-height: 1.5; margin-bottom: 24px;">${message.replace(/\n/g, '<br/>')}</p>
+          <div style="background: #f9fafb; padding: 16px; border-radius: 6px; margin-bottom: 24px;">
+            <p style="margin: 0; font-weight: 600;">Attached Document:</p>
+            <p style="margin: 8px 0 0 0;">
+              <a href="${attachmentUrl}" style="color: #3b82f6; text-decoration: none;">📄 ${attachmentName} (Download PDF)</a>
+            </p>
+          </div>
+          <p style="font-size: 12px; color: #999; margin-top: 32px;">Sent securely via Submittal Tracker Pro.</p>
         </div>
-        ${attachmentName && attachmentUrl ? `
-        <div style="margin-top: 30px;">
-          <a href="${attachmentUrl}" style="background-color: #4a90e2; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
-            Download: ${attachmentName}
-          </a>
-        </div>
-        ` : ''}
-        <p style="color: #999; font-size: 12px; margin-top: 40px; border-top: 1px solid #eaeaea; padding-top: 20px;">
-          This is an automated message sent via Submittal Tracker Pro.
-        </p>
-      </div>
     `;
 
     const { data, error } = await resend.emails.send({
-      from: `${senderName || 'Submittal Tracker Pro'} <notifications@submittaltrackerpro.com>`,
+      from: `"${senderName || 'Submittal Tracker Pro'}" <notifications@submittaltrackerpro.com>`,
       reply_to: senderEmail,
       to: [to],
-      subject: subject || `Submittal Document: ${submittalName}`,
+      subject: subject || `Document: ${submittalName}`,
       html: htmlContent
     });
 
