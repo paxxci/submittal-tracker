@@ -129,7 +129,6 @@ app.post(['/api/create-portal-session', '/create-portal-session'], async (req, r
 
 
 const { Resend } = require('resend');
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 app.post(['/api/send-release-email', '/send-release-email'], async (req, res) => {
   try {
