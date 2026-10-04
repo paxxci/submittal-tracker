@@ -17,7 +17,7 @@ import { supabase } from './supabase_client'
 export default function App() {
   const [session, setSession] = useState(null)
   const [isLoaded, setIsLoaded] = useState(false)
-  const [view, setViewInternal] = useState(localStorage.getItem('sa-active-view') || 'dashboard')
+  const [view, setViewInternal] = useState(sessionStorage.getItem('sa-active-view') || 'dashboard')
 
   // URL Self-Healing (Prevents white screens if user is at /login or other ghost paths)
   useEffect(() => {
@@ -35,7 +35,7 @@ export default function App() {
   const [needsOnboarding, setNeedsOnboarding] = useState(false)
 
   const setView = (v) => {
-    localStorage.setItem('sa-active-view', v)
+    sessionStorage.setItem('sa-active-view', v)
     setViewInternal(v)
   }
 
@@ -162,7 +162,7 @@ export default function App() {
 
   // Restore active project from memory
   useEffect(() => {
-    const savedPid = localStorage.getItem('sa-active-project-id')
+    const savedPid = sessionStorage.getItem('sa-active-project-id')
     if (projects.length > 0 && savedPid && !currentProject) {
       const p = projects.find(proj => proj.id === savedPid)
       if (p) setCurrentProject(p)
@@ -170,13 +170,13 @@ export default function App() {
   }, [projects])
 
   const openProject = (p) => {
-    localStorage.setItem('sa-active-project-id', p.id)
+    sessionStorage.setItem('sa-active-project-id', p.id)
     setCurrentProject(p)
     setView('project')
   }
 
   const goToDashboard = () => {
-    localStorage.removeItem('sa-active-project-id')
+    sessionStorage.removeItem('sa-active-project-id')
     setCurrentProject(null)
     setView('dashboard')
   }
@@ -200,7 +200,7 @@ export default function App() {
       initialMode={isRecovery ? 'reset' : 'login'} 
       onComplete={() => { 
         window.location.hash = ''
-        localStorage.setItem('sa-active-view', 'dashboard')
+        sessionStorage.setItem('sa-active-view', 'dashboard')
         window.location.reload() 
       }} 
     />
