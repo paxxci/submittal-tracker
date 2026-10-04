@@ -9,6 +9,7 @@ import TeamView from './views/TeamView'
 import BillingView from './views/BillingView'
 import UpdatesView from './views/UpdatesView'
 import Login from './views/Login'
+import LandingPage from './views/LandingPage'
 import OnboardingScreen from './views/OnboardingScreen'
 import { getProjects } from './services/project_service'
 import { getOrganizationForUser, createOrganization } from './services/organization_service'
@@ -181,8 +182,11 @@ export default function App() {
     setView('dashboard')
   }
 
+  const [showLogin, setShowLogin] = useState(false)
   const [isRecovery, setIsRecovery] = useState(() => {
-    return typeof window !== 'undefined' && (window.location.hash.includes('type=recovery') || window.location.hash.includes('type=invite'))
+    const rec = typeof window !== 'undefined' && (window.location.hash.includes('type=recovery') || window.location.hash.includes('type=invite'))
+    if (rec) setShowLogin(true)
+    return rec
   })
 
   if (!isLoaded) return <div style={{ background: '#0a0a0a', height: '100vh' }} />
@@ -196,6 +200,9 @@ export default function App() {
   }
 
   if (!session || isRecovery) {
+    if (!showLogin) {
+      return <LandingPage onLoginClick={() => setShowLogin(true)} />
+    }
     return <Login 
       initialMode={isRecovery ? 'reset' : 'login'} 
       onComplete={() => { 
