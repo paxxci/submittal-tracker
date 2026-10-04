@@ -401,8 +401,16 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
       const cleanFileName = (submittal.item_name || 'Submittal').replace(/[^a-zA-Z0-9]/g, '_')
 
       const pinnedLogs = log.filter(l => l.is_flagged)
-      const actionLogs = log.filter(l => /🎯/.test(l.message))
-      const submissionLogs = log.filter(l => /📤|🚀|✅|⏪|🔄|🆕|🗑️/.test(l.message))
+      
+      const isAct = (msg) => typeof msg === 'string' && (/^🎯/.test(msg) || msg.includes('Status changed'));
+      const isSub = (msg) => typeof msg === 'string' && (/^[📤🚀✅⏪✉️🔄🆕🗑️]/.test(msg) || msg.includes('uploaded:') || msg.startsWith('[R') || msg.startsWith('O&M Document') || msg.startsWith('Reference File') || msg.startsWith('Uploaded O&M'));
+      
+      const actionLogs = log.filter(l => isAct(l.message))
+      const submissionLogs = log.filter(l => isSub(l.message))
+      const notesLogs = log.filter(l => {
+        if (!l.message || typeof l.message !== 'string') return false;
+        return !isAct(l.message) && !isSub(l.message) && !l.message.startsWith('Created submittal') && !l.message.startsWith('BIC changed') && !l.message.includes('Auto-Audit:');
+      });
 
       const docAll = generateActivityLogReport(submittal, log, "ALL ACTIVITY LOG")
       zip.file(`Activity_Log_All.pdf`, docAll.output('blob'))
@@ -415,6 +423,9 @@ export default function SubmittalDetailPanel({ submittal, projectId, activeUser,
 
       const docSub = generateActivityLogReport(submittal, submissionLogs, "SUBMISSION HISTORY")
       zip.file(`Activity_Log_Submissions.pdf`, docSub.output('blob'))
+      
+      const docNotes = generateActivityLogReport(submittal, notesLogs, "NOTES & COMMENTS")
+      zip.file(`Activity_Log_Notes.pdf`, docNotes.output('blob'))
 
       const content = await zip.generateAsync({ type: "blob" })
       saveAs(content, `Activity_Logs_${cleanFileName}.zip`)
@@ -568,7 +579,7 @@ const expectedDateStr = calculateExpectedDate(form.submitted_date, form.review_d
 
   const isExplicitSubmission = (msg) => {
     if (!msg || typeof msg !== 'string') return false;
-    return /^[📤🚀✅⏪✉️]/.test(msg);
+    return /^[📤🚀✅⏪✉️🔄🆕🗑️]/.test(msg) || msg.includes('uploaded:') || msg.startsWith('[R') || msg.startsWith('O&M Document') || msg.startsWith('Reference File') || msg.startsWith('Uploaded O&M');
   }
 
   const actionLogs = log.filter(l => isActionLog(l.message))

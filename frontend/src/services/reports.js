@@ -176,9 +176,9 @@ export const generateActivityLogReport = (submittal, logData, title = 'ACTIVITY 
      let msg = clean(entry.message).replace(/\n/g, ' ')
      
      // ASCII Text translations to mimic frontend emojis without breaking the PDF Font Engine
-     msg = msg.replace(/\[R\d+\] Submittal Document uploaded: ".+?"/, '[FILE] Uploaded Document')
-     msg = msg.replace(/O&M Document uploaded: ".+?"/, '[FILE] Uploaded O&M Document')
-     msg = msg.replace(/Reference File uploaded: ".+?"/, '[FILE] Uploaded Reference File')
+     msg = msg.replace(/\[R\d+\] Submittal Document uploaded: "(.+?)"/, '[FILE] Uploaded Document: $1')
+     msg = msg.replace(/O&M Document uploaded: "(.+?)"/, '[FILE] Uploaded O&M Document: $1')
+     msg = msg.replace(/Reference File uploaded: "(.+?)"/, '[FILE] Uploaded Reference File: $1')
      msg = msg.replace(/🔄 Re-classified ".+?" to Revision (\d+)/, '[UPDATE] Changed to Revision $1')
      msg = msg.replace(/📤 OFFICIAL SUBMISSION FILED/, '[STATUS] Marked as Official Submission')
      msg = msg.replace(/✅ Stamped .+? as Officially Approved Version/, '[APPROVED]')
