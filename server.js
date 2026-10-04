@@ -16,7 +16,7 @@ const PORT = process.env.PORT || 3002
 app.use(cors())
 
 // Webhook endpoint needs raw body
-app.post('/api/webhook', express.raw({type: 'application/json'}), async (req, res) => {
+app.post(['/api/webhook', '/webhook'], express.raw({type: 'application/json'}), async (req, res) => {
   const sig = req.headers['stripe-signature']
   const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET || 'whsec_dummy'
 
@@ -66,7 +66,7 @@ app.post('/api/webhook', express.raw({type: 'application/json'}), async (req, re
 
 app.use(express.json())
 
-app.post('/api/create-checkout-session', async (req, res) => {
+app.post(['/api/create-checkout-session', '/create-checkout-session'], async (req, res) => {
   try {
     const { organizationId, returnUrl } = req.body
     
@@ -104,7 +104,7 @@ app.post('/api/create-checkout-session', async (req, res) => {
   }
 })
 
-app.post('/api/create-portal-session', async (req, res) => {
+app.post(['/api/create-portal-session', '/create-portal-session'], async (req, res) => {
   try {
     const { organizationId, returnUrl } = req.body
     
@@ -131,7 +131,7 @@ app.post('/api/create-portal-session', async (req, res) => {
 const { Resend } = require('resend');
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-app.post('/api/send-release-email', async (req, res) => {
+app.post(['/api/send-release-email', '/send-release-email'], async (req, res) => {
   try {
     const { to, subject, message, attachmentName, attachmentUrl, submittalName, senderName, senderEmail } = req.body;
     
@@ -175,7 +175,7 @@ app.post('/api/send-release-email', async (req, res) => {
 app.use(express.static(path.join(__dirname, 'frontend', 'dist')))
 
 // ─── Health check ──────────────────────────────
-app.get('/api/status', (req, res) => {
+app.get(['/api/status', '/status'], (req, res) => {
   res.json({ status: 'ok', service: 'Submittal Tracker', version: '1.0.0' })
 })
 
