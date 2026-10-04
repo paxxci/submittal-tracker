@@ -3,7 +3,7 @@ import { ArrowRight, ShieldCheck, Zap, Layers, BarChart, CheckCircle2 } from 'lu
 
 export default function LandingPage({ onLoginClick }) {
   return (
-    <div style={{ background: 'var(--bg-base)', minHeight: '100vh', color: 'var(--text)', overflowX: 'hidden' }}>
+    <div style={{ background: 'var(--bg-base)', height: '100vh', color: 'var(--text)', overflowX: 'hidden', overflowY: 'auto' }}>
       
       {/* ── TOP NAV ── */}
       <nav style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '24px 48px', position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 }}>
