@@ -150,11 +150,6 @@ export default function LandingPage({ onLoginClick }) {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24 }}>
             {[
               { 
-                title: 'The Desktop Graveyard', 
-                desc: 'End the chaos of having Rev 1, Rev 2, and "Rev 2 Final" PDFs scattered across your downloads folder, desktop, and endless network drives.',
-                icon: <HardDrive size={32} />
-              },
-              { 
                 title: 'The Excel Nightmare', 
                 desc: 'Ditch the clunky spreadsheets. Stop wasting hours fighting with broken formatting and ugly logs just to keep things looking halfway decent.',
                 icon: <FileSpreadsheet size={32} />
@@ -163,6 +158,11 @@ export default function LandingPage({ onLoginClick }) {
                 title: 'Manual Data Entry', 
                 desc: 'Stop spending hours manually typing out spec section names and numbers into spreadsheets. Let our system extract them instantly.',
                 icon: <ShieldCheck size={32} />
+              },
+              { 
+                title: 'The Desktop Graveyard', 
+                desc: 'End the chaos of having Rev 1, Rev 2, and "Rev 2 Final" PDFs scattered across your downloads folder, desktop, and endless network drives.',
+                icon: <HardDrive size={32} />
               }
             ].map((prob, i) => (
               <div key={i} style={{ background: 'var(--bg-elevated)', padding: 32, borderRadius: 12, border: '1px solid var(--border)' }}>
