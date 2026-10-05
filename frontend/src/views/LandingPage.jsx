@@ -165,6 +165,11 @@ export default function LandingPage({ onLoginClick }) {
                 title: 'The Desktop Graveyard', 
                 desc: 'End the chaos of having Rev 1, Rev 2, and "Rev 2 Final" PDFs scattered across your downloads folder, desktop, and endless network drives.',
                 icon: <HardDrive size={32} />
+              },
+              { 
+                title: 'Lost in Limbo', 
+                desc: 'When it takes months to get cut sheets back from suppliers, it is easy to forget where you left off. Stop guessing what your next move is.',
+                icon: <Layers size={32} />
               }
             ].map((prob, i) => (
               <div key={i} style={{ background: 'var(--bg-elevated)', padding: 32, borderRadius: 12, border: '1px solid var(--border)' }}>
